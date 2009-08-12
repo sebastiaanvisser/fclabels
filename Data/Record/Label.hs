@@ -6,7 +6,7 @@ module Data.Record.Label
   , mkLabel
   , Lens (..)
   , (%)
-  , getM, setM, modM, (<~)
+  , getM, setM, modM, (=:)
 
   , enterM
   , enterMT
@@ -58,8 +58,8 @@ getM = gets . lget
 setM :: MonadState s m => s :-> b -> b -> m ()
 setM l = modify . lset l
 
-(<~) :: MonadState s m => s :-> b -> b -> m ()
-(<~) = setM
+(=:) :: MonadState s m => s :-> b -> b -> m ()
+(=:) = setM
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
 modM l = modify . lmod l
