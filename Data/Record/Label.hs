@@ -58,6 +58,7 @@ getM = gets . lget
 setM :: MonadState s m => s :-> b -> b -> m ()
 setM l = modify . lset l
 
+infixr 7 =:
 (=:) :: MonadState s m => s :-> b -> b -> m ()
 (=:) = setM
 
