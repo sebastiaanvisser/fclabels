@@ -1,21 +1,36 @@
 {-# LANGUAGE TypeOperators #-}
 module Data.Record.Label
-  ( Getter, Setter, Modifier
+  (
+  -- * Getter, setter and modifier types.
+    Getter
+  , Setter
+  , Modifier
+
+  -- * Label type.
   , (:->) (..)
   , mkModifier
   , mkLabel
-  , Lens (..)
-  , (%)
-  , getM, setM, modM, (=:)
 
+  -- * Bidirectional composition.
+
+  , (%)
+  , Lens (..)
+
+  -- * State monadic label operations.
+
+  , getM, setM, modM, (=:)
   , enterM
   , enterMT
   , bothM
   , localM
   , withM
 
+  -- * Convenient label for list indexing.
   , list
+
+  -- * Derive labels using Template Haskell.
   , module Data.Record.Label.TH
+
   ) where
 
 import Control.Monad.State
@@ -31,8 +46,13 @@ data a :-> b = Label
   , lmod :: Modifier a b
   }
 
+-- | Create a modifier function out of a getter and a setter.
+
 mkModifier :: Getter a b -> Setter a b -> Modifier a b
 mkModifier gg ss f a = ss (f (gg a)) a
+
+-- | Smart constructor for `Label's, the modifier will be computed based on
+-- getter and setter.
 
 mkLabel :: Getter a b -> Setter a b -> a :-> b
 mkLabel g s = Label g s (mkModifier g s)
@@ -52,18 +72,31 @@ instance Lens ((:->) f) where
 
 -- Extend the state monad with support for labels.
 
+-- | Get a value out of state pointed to by the specified label.
+
 getM :: MonadState s m => s :-> b -> m b
 getM = gets . lget
 
+-- | Set a value somewhere in state pointed to by the specified label.
+
 setM :: MonadState s m => s :-> b -> b -> m ()
 setM l = modify . lset l
+
+-- | Alias for `setM' that reads like an assignment.
 
 infixr 7 =:
 (=:) :: MonadState s m => s :-> b -> b -> m ()
 (=:) = setM
 
+-- | Modify a value with a function somewhere in state pointed to by the
+-- specified label.
+
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
 modM l = modify . lmod l
+
+
+
+
 
 -- Run a state computation for a sub element updating this part of the state afterwards.
 
