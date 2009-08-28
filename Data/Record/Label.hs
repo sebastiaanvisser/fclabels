@@ -10,11 +10,13 @@ module Data.Record.Label
   , (:->) (..)
   , mkModifier
   , mkLabel
+  , idL
 
   -- * Bidirectional composition.
 
   , (%)
   , Lens (..)
+  , (%%)
 
   -- * State monadic label operations.
 
@@ -33,6 +35,8 @@ module Data.Record.Label
 
   ) where
 
+import Prelude hiding ((.), id)
+import Control.Category
 import Control.Monad.State
 import Data.Record.Label.TH
 
@@ -57,9 +61,16 @@ mkModifier gg ss f a = ss (f (gg a)) a
 mkLabel :: Getter a b -> Setter a b -> a :-> b
 mkLabel g s = Label g s (mkModifier g s)
 
+idL :: a :-> a
+idL = mkLabel id const
+
 infixr 8 %
 (%) :: (g :-> a) -> (f :-> g) -> (f :-> a)
 a % b = Label (lget a . lget b) (lmod b . lset a) (lmod b . lmod a)
+
+instance Category (:->) where
+  id = idL
+  (.) = (%)
 
 -- Apply custom `parser' and 'printer' function. This can be seen as a
 -- bidirectional functorial map.
@@ -70,7 +81,11 @@ class Lens f where
 instance Lens ((:->) f) where
   lmap (f, g) (Label a b c) = Label (f . a) (b . g) (c . (g.) . (.f))
 
--- Extend the state monad with support for labels.
+-- | Apply label to lifted value and join afterwards.
+
+infixr 8 %%
+(%%) :: Functor f => a :-> b -> g :-> f a -> g :-> f b
+(%%) a b = let (Label g s _) = a in (fmap g, fmap (flip s undefined)) `lmap` b
 
 -- | Get a value out of state pointed to by the specified label.
 
