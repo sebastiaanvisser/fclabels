@@ -1,19 +1,22 @@
-name:            fclabels
-version:         0.2.0
-author:          Sebastiaan Visser, Erik Hesselink
-synopsis:        First class record labels
-description:     First class labels for records, with combinators, allowing
-                 selection, modification and update inside (nested) records.
-                 Also includes MonadState versions of these, and template
-                 haskell generation of the labels.
-maintainer:      Sebastiaan Visser <sfvisser@cs.uu.nl>
-license:         BSD3
-license-file:    LICENCE
-category:        Data
-build-type:      Simple
-cabal-version:   >= 1.6
-exposed-modules: Data.Record.Label
-other-modules:   Data.Record.Label.TH
-
-build-depends:   base >= 3 && < 5, template-haskell >= 2.2 && < 2.4, monads-fd ==0.0.*
+Name:            fclabels
+Version:         0.3.0
+Author:          Sebastiaan Visser, Erik Hesselink
+Synopsis:        First class accessor labels.
+Description:     First class labels that act as bidirectional records fields.
+                 The labels are fully composable and can be used to get, set
+                 and modify part of datatypes in a consistent way. The label
+                 datatype, conveniently called `:->', is an instance of the
+                 `Category' type class, so is has a proper identity and
+                 composition. The library has support for automatically
+                 deriving labels from record selectors that start with an
+                 underscore.
+Maintainer:      Sebastiaan Visser <sfvisser@cs.uu.nl>
+License:         BSD3
+License-File:    LICENCE
+Category:        Data
+Build-Type:      Simple
+Cabal-Version:   >= 1.6
+Exposed-Modules: Data.Record.Label
+Other-Modules:   Data.Record.Label.TH
+Build-Depends:   base >= 3 && < 5, template-haskell >= 2.2 && < 2.4, monads-fd ==0.0.*
 
