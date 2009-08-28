@@ -10,22 +10,24 @@ module Data.Record.Label
   , (:->) (..)
   , mkModifier
   , mkLabel
+
+  -- * Identity and composition.
   , idL
-
-  -- * Bidirectional composition.
-
   , (%)
+
+  -- * Bidirectional functor.
+
   , Lens (..)
   , (%%)
 
   -- * State monadic label operations.
 
   , getM, setM, modM, (=:)
-  , enterM
-  , enterMT
-  , bothM
-  , localM
-  , withM
+--   , enterM
+--   , enterMT
+--   , bothM
+--   , localM
+--   , withM
 
   -- * Convenient label for list indexing.
   , list
@@ -115,7 +117,7 @@ modM l = modify . lmod l
 
 -- Run a state computation for a sub element updating this part of the state afterwards.
 
-enterM :: MonadState s m => s :-> b -> State b b1 -> m b1
+{-enterM :: MonadState s m => s :-> b -> State b b1 -> m b1
 enterM l c = do
   b <- getM l
   let (a, s) = runState c b
@@ -145,7 +147,7 @@ localM l comp = do
   return c
 
 withM :: MonadState s m => s :-> b -> State b a -> m b1 -> m b1
-withM l c d = localM l (enterM l c >> d)
+withM l c d = localM l (enterM l c >> d)-}
 
 -- Lift list indexing to a label.
 
