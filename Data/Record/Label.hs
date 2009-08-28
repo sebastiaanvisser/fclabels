@@ -82,7 +82,7 @@ instance Lens ((:->) f) where
 
 infixr 8 %%
 (%%) :: Functor f => a :-> b -> g :-> f a -> g :-> f b
-(%%) a b = let (Label g s _) = a in (fmap g, fmap (flip s undefined)) `lmap` b
+(%%) a b = let (Label g s _) = a in (fmap g, fmap (\k -> s k (error "unused"))) `lmap` b
 
 -- | Get a value out of state pointed to by the specified label.
 
