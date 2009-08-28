@@ -23,11 +23,6 @@ module Data.Record.Label
   -- * State monadic label operations.
 
   , getM, setM, modM, (=:)
---   , enterM
---   , enterMT
---   , bothM
---   , localM
---   , withM
 
   -- * Convenient label for list indexing.
   , list
@@ -110,44 +105,6 @@ infixr 7 =:
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
 modM l = modify . lmod l
-
-
-
-
-
--- Run a state computation for a sub element updating this part of the state afterwards.
-
-{-enterM :: MonadState s m => s :-> b -> State b b1 -> m b1
-enterM l c = do
-  b <- getM l
-  let (a, s) = runState c b
-  setM l s
-  return a
-
-enterMT
-  :: (MonadState s (t m), MonadTrans t, Monad m)
-  => s :-> b -> StateT b m a -> t m a
-enterMT l c = do
-  b <- getM l
-  (a, s) <- lift $ runStateT c b
-  setM l s
-  return a
-
-bothM :: MonadState s m => s :-> b -> State b b1 -> m (b, b1)
-bothM parent cmp = do
-  p <- getM parent
-  c <- enterM parent cmp
-  return (p, c)
-
-localM :: MonadState s m => s :-> b -> m b1 -> m b1
-localM l comp = do
-  k <- getM l
-  c <- comp
-  setM l k
-  return c
-
-withM :: MonadState s m => s :-> b -> State b a -> m b1 -> m b1
-withM l c d = localM l (enterM l c >> d)-}
 
 -- Lift list indexing to a label.
 
