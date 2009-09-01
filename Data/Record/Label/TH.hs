@@ -40,7 +40,7 @@ mkLabel1 (name, _, _) =
                 (f : rest)       -> 'l' : toUpper f : rest
                 _                -> ""
     in FunD n [Clause [] (NormalB (
-           AppE (AppE (VarE (mkName "mkLabel"))
+           AppE (AppE (VarE (mkName "label"))
                       (VarE name)) -- getter
                 (LamE [VarP (mkName "b"), VarP (mkName "a")] -- setter
                       (RecUpdE (VarE (mkName "a")) [(name, VarE (mkName "b"))]))
