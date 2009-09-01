@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.3.0
+Version:         0.4.0
 Author:          Sebastiaan Visser, Erik Hesselink
 Synopsis:        First class accessor labels.
 Description:     First class labels that act as bidirectional records fields.
