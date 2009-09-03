@@ -29,6 +29,7 @@ module Data.Record.Label
   ) where
 
 import Prelude hiding ((.), id, mod)
+import Control.Applicative
 import Control.Category
 import Control.Monad.State hiding (get)
 import Data.Record.Label.TH
@@ -37,12 +38,12 @@ type Getter   a b = a -> b
 type Setter   a b = b -> a -> a
 type Modifier a b c = (b -> c) -> a -> a
 
-newtype (a :-> b) = Wrap {unWrap :: Label a b b}
+newtype (a :-> b) = Wrap {unWrap :: Label b a b}
 
-data Label a b c = Label
+data Label r a b = Label
   { get :: Getter   a b
-  , set :: Setter   a c
-  , mod :: Modifier a b c
+  , set :: Setter   a r
+  , mod :: Modifier a b r
   }
 
 -- | Smart constructor for `Label's, the modifier will be computed based on
@@ -110,13 +111,22 @@ modM (Wrap l) = modify . mod l
 -- list :: Int -> [a] :-> a
 -- list i = label (!! i) (\v a -> take i a ++ [v] ++ drop (i+1) a)
 
-pure :: a -> Label f a r
-pure a = label' (const a) (const id)
+cofmap :: (r1 -> r2) -> (Label r2 f a) -> (Label r1 f a)
+cofmap f (Label g s m) = label' g (s . f)
 
---app :: Label f (a -> b) r -> ((a1, b1) -> a1) -> (User :-> String) -> Label
-app :: Label f (a -> b) r -> (r -> a) -> (f :-> a) -> Label f b r
-app (Label g s m) dec sel = label' (\f -> g f ((get $ unWrap sel) f)) --fw sel f) 
-                                   (\r f -> (set $ unWrap sel) (dec r) (s r f))
+cofmap' :: (r -> a) -> (f :-> a) -> Label r f a
+cofmap' f x = cofmap f (unWrap x)
+
+instance Functor (Label r f) where
+  fmap f x = pure f <*> x
+
+instance Applicative (Label r f) where
+  pure a = label' (const a) (const id)
+  (<*>) = app
+
+app :: Label r f (a -> b) -> Label r f a -> Label r f b
+app (Label g s m) (Label g' s' m') = label' (\f -> g f (g' f))
+                                            (\r f -> s' r (s r f))
 
 data User = User {_name :: String, _pass :: String, _age :: Int}
  deriving Show
@@ -126,5 +136,5 @@ $(mkLabels [''User])
 
 testUser = User "Chris" "orc.,bheknoe" 100
 
-test :: Label User (String,Int) (String,Int)
-test = app (app (pure (,)) fst name) snd age
+test :: Label (String, Int) User (String,Int)
+test = (,) <$> (cofmap' fst name) <*> (cofmap' snd age)
