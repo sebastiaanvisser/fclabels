@@ -115,26 +115,12 @@ cofmap :: (r1 -> r2) -> (Label r2 f a) -> (Label r1 f a)
 cofmap f (Label g s m) = label' g (s . f)
 
 cofmap' :: (r -> a) -> (f :-> a) -> Label r f a
-cofmap' f x = cofmap f (unWrap x)
+cofmap' f = cofmap f . unWrap 
 
 instance Functor (Label r f) where
   fmap f x = pure f <*> x
 
 instance Applicative (Label r f) where
   pure a = label' (const a) (const id)
-  (<*>) = app
-
-app :: Label r f (a -> b) -> Label r f a -> Label r f b
-app (Label g s m) (Label g' s' m') = label' (\f -> g f (g' f))
-                                            (\r f -> s' r (s r f))
-
-data User = User {_name :: String, _pass :: String, _age :: Int}
- deriving Show
-
-
-$(mkLabels [''User])
-
-testUser = User "Chris" "orc.,bheknoe" 100
-
-test :: Label (String, Int) User (String,Int)
-test = (,) <$> (cofmap' fst name) <*> (cofmap' snd age)
+  (Label g s m) <*> (Label g' s' m') = label' (\f -> g f (g' f))
+                                              (\r f -> s' r (s r f))
