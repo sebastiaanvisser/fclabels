@@ -1,23 +1,24 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE
+    TypeOperators
+  , TypeSynonymInstances
+  , TemplateHaskell
+ #-}
 module Data.Record.Label
-  (
+{-  (
   -- * Getter, setter and modifier types.
     Getter
   , Setter
   , Modifier
 
   -- * Label type.
+  , Label (..)
+  , get, set, mod
   , (:->) (..)
-  , label
 
   -- * Bidirectional functor.
-
   , Lens (..)
   , (<->)
   , Iso (..)
-  , (%)
 
   -- * State monadic label operations.
 
@@ -25,8 +26,8 @@ module Data.Record.Label
 
   -- * Derive labels using Template Haskell.
   , module Data.Record.Label.TH
-
-  ) where
+  )-}
+where
 
 import Prelude hiding ((.), id, mod)
 import Control.Applicative
@@ -34,29 +35,45 @@ import Control.Category
 import Control.Monad.State hiding (get)
 import Data.Record.Label.TH
 
-type Getter   a b = a -> b
-type Setter   a b = b -> a -> a
-type Modifier a b c = (b -> c) -> a -> a
+type Getter   f o   = f -> o
+type Setter   f i   = i -> f -> f
+type Modifier f i o = (o -> i) -> f -> f
 
-newtype (a :-> b) = Wrap {unWrap :: Label b a b}
-
-data Label r a b = Label
-  { get :: Getter   a b
-  , set :: Setter   a r
-  , mod :: Modifier a b r
+data Label f i o = Label
+  { _get :: Getter f o
+  , _set :: Setter f i
   }
 
--- | Smart constructor for `Label's, the modifier will be computed based on
--- getter and setter.
+_mod :: Label f i o -> (o -> i) -> f -> f
+_mod l f a = _set l (f (_get l a)) a
 
-label :: Getter a b -> Setter a b -> a :-> b
-label g s = Wrap (label' g s)
+newtype (f :-> a) = Wrap { unWrap :: Label f a a }
 
-label' g s = Label g s (\f a -> s (f (g a)) a)
+get :: (f :-> a) -> f -> a
+get = _get . unWrap
+
+set :: (f :-> a) -> a -> f -> f
+set = _set . unWrap
+
+mod :: (f :-> a) -> (a -> a) -> f -> f
+mod = _mod . unWrap
 
 instance Category (:->) where
-  id = label id const
-  (Wrap (Label ga sa ma)) . (Wrap (Label gb _ mb)) = Wrap (Label (ga . gb) (mb . sa) (mb . ma))
+  id = Wrap (Label id const)
+  (Wrap a) . (Wrap b) = Wrap (Label (_get a . _get b) (_mod b . _set a))
+
+instance Functor (Label f i) where
+  fmap f x = Label (f . _get x) (_set x)
+
+instance Applicative (Label f i) where
+  pure a = Label (const a) (const id)
+  a <*> b = Label (\f -> _get a f (_get b f)) (\r -> _set b r . _set a r)
+
+class Iso f where
+  iso :: Lens a b -> f a -> f b
+  iso (Lens a b) = osi (b <-> a)
+  osi :: Lens a b -> f b -> f a
+  osi (Lens a b) = iso (b <-> a)
 
 data Lens a b = Lens { fw :: a -> b, bw :: b -> a }
 
@@ -68,32 +85,44 @@ instance Category Lens where
   id = Lens id id
   (Lens a b) . (Lens c d) = Lens (a . c) (d . b)
 
-{- | Minimum definition is just one of the two. -}
+instance Iso ((:->) i) where
+  iso l (Wrap a) = Wrap (Label (fw l . _get a) (_set a . bw l))
 
-class Iso f where
-  iso :: Lens a b -> f a -> f b
-  iso (Lens a b) = osi (b <-> a)
-  osi :: Lens a b -> f b -> f a
-  osi (Lens a b) = iso (b <-> a)
+dimap :: (o' -> o) -> (i -> i') -> Label f i' o' -> Label f i o
+dimap f g l = Label (f . _get l) (_set l . g)
 
-instance Iso ((:->) f) where
-  iso (Lens f g) (Wrap (Label a b c)) = Wrap (Label (f . a) (b . g) (c . (g.) . (.f)))
+data Person = Person
+  { _name   :: String
+  , _age    :: Int
+  , _isMale :: Bool
+  , _city   :: String
+  } deriving Show
 
--- | Apply label to lifted value and join afterwards.
+$(mkLabels [''Person])
 
-infixr 8 %
-(%) :: Functor f => a :-> b -> g :-> f a -> g :-> f b
-(%) a b = let (Wrap (Label g s _)) = a in (fmap g <-> fmap (\k -> s k (error "unused"))) `iso` b
+city   :: Label Person String String
+isMale :: Label Person Bool Bool
+age    :: Label Person Int Int
+name   :: Label Person String String
+
+testUser :: Person
+testUser = Person "sebas" 26 True "Utrecht"
+
+ageAndCity :: Person :-> (Int, String)
+ageAndCity = Wrap $ (,) <$> fst `for` age <*> snd `for` city
+
+for :: (i -> i') -> Label f i' o' -> Label f i o'
+for = dimap id
 
 -- | Get a value out of state pointed to by the specified label.
 
 getM :: MonadState s m => s :-> b -> m b
-getM = gets . get . unWrap
+getM = gets . get
 
 -- | Set a value somewhere in state pointed to by the specified label.
 
 setM :: MonadState s m => s :-> b -> b -> m ()
-setM (Wrap l) = modify . set l
+setM l = modify . set l
 
 -- | Alias for `setM' that reads like an assignment.
 
@@ -105,22 +134,5 @@ infixr 7 =:
 -- specified label.
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
-modM (Wrap l) = modify . mod l
+modM l = modify . mod l
 
--- Lift list indexing to a label.
--- list :: Int -> [a] :-> a
--- list i = label (!! i) (\v a -> take i a ++ [v] ++ drop (i+1) a)
-
-cofmap :: (r1 -> r2) -> (Label r2 f a) -> (Label r1 f a)
-cofmap f (Label g s m) = label' g (s . f)
-
-cofmap' :: (r -> a) -> (f :-> a) -> Label r f a
-cofmap' f = cofmap f . unWrap 
-
-instance Functor (Label r f) where
-  fmap f x = pure f <*> x
-
-instance Applicative (Label r f) where
-  pure a = label' (const a) (const id)
-  (Label g s m) <*> (Label g' s' m') = label' (\f -> g f (g' f))
-                                              (\r f -> s' r (s r f))
