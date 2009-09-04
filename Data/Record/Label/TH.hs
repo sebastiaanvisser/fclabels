@@ -4,6 +4,7 @@ import Control.Monad
 import Data.Char
 import Language.Haskell.TH.Syntax
 
+-- | Derive labels for all the record selector in a datatype.
 mkLabels :: [Name] -> Q [Dec]
 mkLabels = liftM concat . mapM mkLabels1
 
@@ -27,8 +28,7 @@ mkLabel1 (name, _, _) =
                 (f : rest)       -> 'l' : toUpper f : rest
                 _                -> ""
     in FunD n [Clause [] (NormalB (
-           AppE (AppE (ConE (mkName "Label"))
-                      (VarE name)) -- getter
+           AppE (AppE (VarE (mkName "label")) (VarE name)) -- getter
                 (LamE [VarP (mkName "b"), VarP (mkName "a")] -- setter
                       (RecUpdE (VarE (mkName "a")) [(name, VarE (mkName "b"))]))
                                    )) []]
