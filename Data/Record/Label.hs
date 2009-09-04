@@ -7,7 +7,7 @@ module Data.Record.Label
   , Modifier
 
   -- * Label type.
-  , (:->)
+  , (:->) (Label)
   , label
   , get, set, mod
 
