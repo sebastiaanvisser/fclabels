@@ -104,6 +104,9 @@ instance Category (:<->:) where
 instance Iso ((:->) i) where
   iso l (Label a) = Label (Point (fw l . _get a) (_set a . bw l))
 
+instance Iso ((:<->:) i) where
+  iso = (.)
+
 dimap :: (o' -> o) -> (i -> i') -> Point f i' o' -> Point f i o
 dimap f g l = Point (f . _get l) (_set l . g)
 

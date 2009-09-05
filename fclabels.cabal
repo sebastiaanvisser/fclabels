@@ -1,17 +1,17 @@
 Name:            fclabels
-Version:         0.4.0
+Version:         0.4.1
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels.
 
-Description:     First class labels that act as bidirectional records fields.
+Description:     First class labels that act as bidirectional record fields.
                  The labels are fully composable and can be used to get, set
-                 and modify part of datatypes in a consistent way. The label
+                 and modify parts of a datatype in a consistent way. The label
                  datatype, conveniently called `:->', is an instance of the
                  `Category' type class meaning it has a proper identity and
                  composition. The library has support for automatically
                  deriving labels from record selectors that start with an
-                 underscore. Labels can be used in a pure functional setting or
-                 be applied to mutable state in some state monad.
+                 underscore. Labels can be used in a purely functional setting
+                 or be applied to mutable state in some state monad.
                  .
                  To illustrate this package take the following two example
                  datatypes (somehow Haddock removes the braces):
