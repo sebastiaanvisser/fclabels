@@ -16,6 +16,7 @@ module Data.Record.Label
   , (:<->:) (..)
   , (<->)
   , Iso (..)
+  , lmap
   , for
 
   -- * State monadic label operations.
@@ -76,7 +77,7 @@ instance Functor (Point f i) where
 
 instance Applicative (Point f i) where
   pure a = Point (const a) (const id)
-  a <*> b = Point (\f -> _get a f (_get b f)) (\r -> _set b r . _set a r)
+  a <*> b = Point (_get a <*> _get b) (\r -> _set b r . _set a r)
 
 -- | This isomorphism type class is like a `Functor' but works in two directions.
 
@@ -106,6 +107,9 @@ instance Iso ((:->) i) where
 
 instance Iso ((:<->:) i) where
   iso = (.)
+
+lmap :: Functor f => (a :<->: b) -> f a :<->: f b 
+lmap l = let (Lens a b) = l in (fmap a <-> fmap b)
 
 dimap :: (o' -> o) -> (i -> i') -> Point f i' o' -> Point f i o
 dimap f g l = Point (f . _get l) (_set l . g)
