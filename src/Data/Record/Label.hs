@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
-module Data.Record.Label
+module src.Data.Record.Label
   (
   -- * Getter, setter and modifier types.
     Getter
@@ -34,7 +34,7 @@ import Prelude hiding ((.), id, mod)
 import Control.Applicative
 import Control.Category
 import Control.Monad.State hiding (get)
-import Data.Record.Label.TH
+import src.Data.Record.Label.TH
 
 type Getter   f o   = f -> o
 type Setter   f i   = i -> f -> f
