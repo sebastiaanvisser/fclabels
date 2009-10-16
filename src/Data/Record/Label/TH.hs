@@ -1,4 +1,4 @@
-module src.Data.Record.Label.TH (mkLabels) where
+module Data.Record.Label.TH (mkLabels) where
 
 import Control.Monad
 import Data.Char
