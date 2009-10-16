@@ -12,6 +12,8 @@ module Data.Record.Label
   , label
   , get, set, mod
 
+  , fmapL
+
   -- * Bidirectional functor.
   , (:<->:) (..)
   , (<->)
@@ -79,6 +81,9 @@ instance Applicative (Point f i) where
   pure a = Point (const a) (const id)
   a <*> b = Point (_get a <*> _get b) (\r -> _set b r . _set a r)
 
+fmapL :: Applicative f => (a :-> b) -> f a :-> f b
+fmapL l = label (fmap (get l)) (\x f -> set l <$> x <*> f)
+
 -- | This isomorphism type class is like a `Functor' but works in two directions.
 
 class Iso f where
@@ -109,7 +114,7 @@ instance Iso ((:<->:) i) where
   iso = (.)
 
 lmap :: Functor f => (a :<->: b) -> f a :<->: f b 
-lmap l = let (Lens a b) = l in (fmap a <-> fmap b)
+lmap l = let (Lens a b) = l in fmap a <-> fmap b
 
 dimap :: (o' -> o) -> (i -> i') -> Point f i' o' -> Point f i o
 dimap f g l = Point (f . _get l) (_set l . g)
