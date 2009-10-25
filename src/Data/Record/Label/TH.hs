@@ -11,8 +11,11 @@ mkLabels = liftM concat . mapM mkLabels1
 mkLabels1 :: Name -> Q [Dec]
 mkLabels1 n = do
     i <- reify n
-    let -- only process data declarations
-        cs' = case i of { TyConI (DataD _ _ _ cs _) -> cs ; _ -> [] }
+    let -- only process data and newtype declarations
+        cs' = case i of
+                TyConI (DataD _ _ _ cs _)   -> cs
+                TyConI (NewtypeD _ _ _ c _) -> [c]
+                _ -> []
         -- we're only interested in labels of record constructors
         ls' = [ l | RecC _ ls <- cs', l <- ls ]
     return (map mkLabel1 ls')
