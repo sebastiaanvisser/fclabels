@@ -24,6 +24,7 @@ module Data.Record.Label
   -- * State monadic label operations.
 
   , getM, setM, modM, (=:)
+  , askM, localM
 
   -- * Derive labels using Template Haskell.
   , module Data.Record.Label.TH
@@ -34,6 +35,7 @@ import Prelude hiding ((.), id, mod)
 import Control.Applicative
 import Control.Category
 import Control.Monad.State hiding (get)
+import Control.Monad.Reader
 import Data.Record.Label.TH
 
 type Getter   f o   = f -> o
@@ -149,4 +151,15 @@ infixr 7 =:
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
 modM l = modify . mod l
+
+-- | Fetch a value pointed to by a label out of a reader environment.
+
+askM :: MonadReader r m => (r :-> b) -> m b
+askM = asks . get
+
+-- | Execute a computation in a modified environment. The label is used to
+-- point out the part to modify.
+
+localM :: MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
+localM l f = local (mod l f)
 
