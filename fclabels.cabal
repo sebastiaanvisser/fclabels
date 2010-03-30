@@ -125,6 +125,14 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  A final note: this library might look cryptic at first sight, but give it a
                  try, it is not that hard.
+                 .
+                 .
+                 > CHANGELOG
+                 >   0.4.2 -> 0.4.3
+                 >   - Added askM and locaM for running labels inside MonadReader.
+                 >   - Minor documentaion update.
+                 >   - Exported Point internals.
+                 >   - Renamed Lens to Bijection, which is more correct.
 
 Maintainer:      Sebastiaan Visser <sfvisser@cs.uu.nl>
 License:         BSD3
