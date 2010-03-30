@@ -1,0 +1,113 @@
+First class labels that act as bidirectional record fields.
+
+The labels are fully composable and can be used to get, set and modify parts of
+a datatype in a consistent way. The label datatype, conveniently called `:->',
+is an instance of the `Category' type class: meaning it has a proper identity
+and composition. The library has support for automatically deriving labels from
+record selectors that start with an underscore. Labels can be used in a purely
+functional setting or be applied to mutable state in some state monad.
+
+To illustrate this package, let's take the following two example datatypes
+(somehow Haddock removes the curly braces):
+
+> data Person = Person {
+>     _name   :: String
+>   , _age    :: Int
+>   , _isMale :: Bool
+>   , _place  :: Place
+>   }
+
+> data Place = Place {
+>     _city
+>   , _country
+>   , _continent :: String
+>   }
+
+Both are record datatypes with all record labels prefixed by an underscore.
+This underscore is an indication for our Template Haskell code to derive labels
+for these fields.  Deriving labels can be done with this simple one-liner:
+
+> $(mkLabels [''Person, ''Place])
+
+Label functions will be generated, label type signatures will not be generated.
+This is actually not that bad, by writing the signatures Let's give the
+functions a signature by hand:
+
+> name      :: Person :-> String
+> age       :: Person :-> Int
+> isMale    :: Person :-> Bool
+> place     :: Person :-> Place
+> city      :: Place :-> String
+> country   :: Place :-> String
+> continent :: Place :-> String
+
+These type signatures look very similar to the function types for normal record
+labels, except that the additional colon indicates a true first class label.
+These labels can be used to get, set and modify the value and are fully
+composable.
+
+Now let's look at this example. This 71 year old fellow, called Jan, is my
+neighbour and didn't mind using him as an example:
+
+> jan :: Person
+> jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe")
+
+When we want to be sure Jan is really as old as he claims we can use the @get@
+function to get the age out as an integer:
+
+> hisAge :: Int
+> hisAge = get age jan
+
+Consider he now wants to move to Amsterdam: what better place to spend your old
+days. Using composition we can change the city value deep inside the structure:
+
+> moveToAmsterdam :: Person -> Person
+> moveToAmsterdam = set (city . place) "Amsterdam"
+
+> moveToAmsterdam jan ==
+>  Person "Jan" 71 True (Place "Amsterdam" "The Netherlands" "Europe")
+
+Composition is done using the dot operator which is part of the
+@Control.Category@ module. Make sure to import this module and hide the default
+@(.)@, @id@ and @mod@ function from the Prelude.
+
+Now, because Jan is an old guy, moving to another city is not a very easy task,
+this really takes a while. It will probably take no less than two years before
+he will actually be settled. To reflect this change it might be useful to have
+a first class view on the @Person@ data type that only reveals the age and
+city.  This can be done by using a neat @Applicative@ functor instance:
+
+> ageAndCity :: Person :-> (Int, String)
+> ageAndCity = Label $ (,) <$> fst `for` age <*> snd `for` (city . place)
+
+Because the applicative type class on its own is not very capable of expressing
+bidirectional relations, which we need for our labels, the actual instance is
+defined for an internal helper structure called @Point@. Points are a bit more
+general than labels. As you can see above, the @Label@ constructor has to be
+used to convert a @Point@ back into a @Label@. The @for@ function must be used
+to indicate which partial destructor to use for which label in the applicative
+composition.
+
+Now that we have an appropriate age+city view on the @Person@ data type (which
+is itself a label again), we can use the @mod@ function to make Jan move to
+Amsterdam over exactly two years:
+
+> moveToAmsterdamOverTwoYears :: Person -> Person
+> moveToAmsterdamOverTwoYears = mod ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
+
+> moveToAmsterdamOverTwoYears jan ==
+>  Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
+
+This package also contains a lens data type that encodes bidirectional
+functions. Just like labels, lenses can be composed with other lenses using the
+@Control.Category@ type class. Lenses can be used to change the type of a
+label. The @Iso@ type class, which can be seen as a bidirectional functor, can
+be used to apply lenses to labels. For example, when we want to treat the age
+of a person as a string we can do the following:
+
+> ageAsString :: Person :-> String
+> ageAsString :: (show <-> read) `iso` age
+
+A final note: this library might look cryptic at first sight, but give it a
+try, it is not that hard.
+
