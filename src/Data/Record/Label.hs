@@ -21,7 +21,7 @@ module Data.Record.Label
   , lmap
   , for
 
-  -- * State monadic label operations.
+  -- * Monadic label operations.
 
   , getM, setM, modM, (=:)
   , askM, localM
