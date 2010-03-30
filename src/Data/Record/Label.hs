@@ -101,7 +101,7 @@ data a :<->: b = Lens { fw :: a -> b, bw :: b -> a }
 
 infixr 7 <->
 (<->) :: (a -> b) -> (b -> a) -> a :<->: b
-a <-> b = Lens a b
+(<->) = Lens
 
 instance Category (:<->:) where
   id = Lens id id
