@@ -90,24 +90,24 @@ fmapL l = label (fmap (get l)) (\x f -> set l <$> x <*> f)
 
 class Iso f where
   iso :: a :<->: b -> f a -> f b
-  iso (Lens a b) = osi (b <-> a)
+  iso (Bijection a b) = osi (b <-> a)
   osi :: a :<->: b -> f b -> f a
-  osi (Lens a b) = iso (b <-> a)
+  osi (Bijection a b) = iso (b <-> a)
 
--- | The lens datatype, a function that works in two directions. To bad there
--- is no convenient way to do application for this.
+-- | The Bijections datatype, a function that works in two directions. To bad
+-- there is no convenient way to do application for this.
 
-data a :<->: b = Lens { fw :: a -> b, bw :: b -> a }
+data a :<->: b = Bijection { fw :: a -> b, bw :: b -> a }
 
--- | Constructor for lenses.
+-- | Constructor for bijections.
 
 infixr 7 <->
 (<->) :: (a -> b) -> (b -> a) -> a :<->: b
-(<->) = Lens
+(<->) = Bijection
 
 instance Category (:<->:) where
-  id = Lens id id
-  (Lens a b) . (Lens c d) = Lens (a . c) (d . b)
+  id = Bijection id id
+  (Bijection a b) . (Bijection c d) = Bijection (a . c) (d . b)
 
 instance Iso ((:->) i) where
   iso l (Label a) = Label (Point (fw l . _get a) (_set a . bw l))
@@ -116,7 +116,7 @@ instance Iso ((:<->:) i) where
   iso = (.)
 
 lmap :: Functor f => (a :<->: b) -> f a :<->: f b 
-lmap l = let (Lens a b) = l in fmap a <-> fmap b
+lmap l = let (Bijection a b) = l in fmap a <-> fmap b
 
 dimap :: (o' -> o) -> (i -> i') -> Point f i' o' -> Point f i o
 dimap f g l = Point (f . _get l) (_set l . g)
