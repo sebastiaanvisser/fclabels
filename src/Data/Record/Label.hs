@@ -7,7 +7,7 @@ module Data.Record.Label
   , Modifier
 
   -- * Label type.
-  , Point
+  , Point (..)
   , (:->) (Label)
   , label
   , get, set, mod
