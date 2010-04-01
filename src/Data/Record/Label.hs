@@ -8,7 +8,7 @@ module Data.Record.Label
 
   -- * Label type.
   , Point (..)
-  , (:->) (Label)
+  , (:->) (Lens)
   , label
   , get, set, mod
 
@@ -50,31 +50,31 @@ data Point f i o = Point
 _mod :: Point f i o -> (o -> i) -> f -> f
 _mod l f a = _set l (f (_get l a)) a
 
-newtype (f :-> a) = Label { unLabel :: Point f a a }
+newtype (f :-> a) = Lens { unLens :: Point f a a }
 
 -- Create a label out of a getter and setter.
 
 label :: Getter f a -> Setter f a -> f :-> a
-label g s = Label (Point g s)
+label g s = Lens (Point g s)
 
 -- | Get the getter function from a label.
 
 get :: (f :-> a) -> f -> a
-get = _get . unLabel
+get = _get . unLens
 
 -- | Get the setter function from a label.
 
 set :: (f :-> a) -> a -> f -> f
-set = _set . unLabel
+set = _set . unLens
 
 -- | Get the modifier function from a label.
 
 mod :: (f :-> a) -> (a -> a) -> f -> f
-mod = _mod . unLabel
+mod = _mod . unLens
 
 instance Category (:->) where
-  id = Label (Point id const)
-  (Label a) . (Label b) = Label (Point (_get a . _get b) (_mod b . _set a))
+  id = Lens (Point id const)
+  (Lens a) . (Lens b) = Lens (Point (_get a . _get b) (_mod b . _set a))
 
 instance Functor (Point f i) where
   fmap f x = Point (f . _get x) (_set x)
@@ -89,10 +89,10 @@ fmapL l = label (fmap (get l)) (\x f -> set l <$> x <*> f)
 -- | This isomorphism type class is like a `Functor' but works in two directions.
 
 class Iso f where
-  iso :: a :<->: b -> f a -> f b
-  iso (Bijection a b) = osi (b <-> a)
-  osi :: a :<->: b -> f b -> f a
-  osi (Bijection a b) = iso (b <-> a)
+  (%) :: a :<->: b -> f a -> f b
+  (%) (Bijection a b) = (%*) (b <-> a)
+  (%*) :: a :<->: b -> f b -> f a
+  (%*) (Bijection a b) = (%) (b <-> a)
 
 -- | The Bijections datatype, a function that works in two directions. To bad
 -- there is no convenient way to do application for this.
@@ -110,10 +110,10 @@ instance Category (:<->:) where
   (Bijection a b) . (Bijection c d) = Bijection (a . c) (d . b)
 
 instance Iso ((:->) i) where
-  iso l (Label a) = Label (Point (fw l . _get a) (_set a . bw l))
+  (%) l (Lens a) = Lens (Point (fw l . _get a) (_set a . bw l))
 
 instance Iso ((:<->:) i) where
-  iso = (.)
+  (%) = (.)
 
 lmap :: Functor f => (a :<->: b) -> f a :<->: f b 
 lmap l = let (Bijection a b) = l in fmap a <-> fmap b
@@ -128,7 +128,7 @@ dimap f g l = Point (f . _get l) (_set l . g)
 -- on its own.)
 
 for :: (i -> o) -> (f :-> o) -> Point f i o
-for a b = dimap id a (unLabel b)
+for a b = dimap id a (unLens b)
 
 -- | Get a value out of state pointed to by the specified label.
 
