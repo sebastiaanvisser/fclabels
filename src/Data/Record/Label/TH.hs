@@ -18,10 +18,10 @@ mkLabels1 n = do
                 _ -> []
         -- we're only interested in labels of record constructors
         ls' = [ l | RecC _ ls <- cs', l <- ls ]
-    return (map mkLabel1 ls')
+    return (concatMap (mkLabel1 n) ls')
 
-mkLabel1 :: VarStrictType -> Dec
-mkLabel1 (name, _, _) =
+mkLabel1 :: Name -> VarStrictType -> [Dec]
+mkLabel1 typeName (name, _, t) =
     -- Generate a name for the label:
     -- If the original selector starts with an _, remove it and make the next
     -- character lowercase.  Otherwise, add 'l', and make the next character
@@ -30,9 +30,12 @@ mkLabel1 (name, _, _) =
                 ('_' : c : rest) -> toLower c : rest
                 (f : rest)       -> 'l' : toUpper f : rest
                 _                -> ""
-    in FunD n [Clause [] (NormalB (
+        body = FunD n [Clause [] (NormalB (
            AppE (AppE (VarE (mkName "label")) (VarE name)) -- getter
                 (LamE [VarP (mkName "b"), VarP (mkName "a")] -- setter
                       (RecUpdE (VarE (mkName "a")) [(name, VarE (mkName "b"))]))
                                    )) []]
+        labelType = AppT (AppT (ConT $ mkName ":->") (ConT typeName)) t
+        typeDecl = SigD n labelType
+        in [typeDecl, body]
 
