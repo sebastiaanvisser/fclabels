@@ -1,17 +1,19 @@
 Name:            fclabels
-Version:         0.4.3
+Version:         1.0.0
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
-Synopsis:        First class accessor labels.
+Synopsis:        First class accessor labels implemented as lenses.
 
 Description:     First class labels that act as bidirectional record fields.
-                 The labels are fully composable and can be used to get, set
-                 and modify parts of a datatype in a consistent way. The label
-                 datatype, conveniently called `:->', is an instance of the
-                 `Category' type class: meaning it has a proper identity and
-                 composition. The library has support for automatically
-                 deriving labels from record selectors that start with an
-                 underscore. Labels can be used in a purely functional setting
-                 or be applied to mutable state in some state monad.
+                 .
+                 The labels are implemented as lenses and are fully composable
+                 and can be used to get, set and modify parts of a datatype in
+                 a consistent way. The lens datatype, conveniently called
+                 `:->', is an instance of the `Category' type class: meaning it
+                 has a proper identity and composition. The library has support
+                 for automatically deriving labels from record selectors that
+                 start with an underscore. Labels can be used in a purely
+                 functional setting or be applied to mutable state in some
+                 state monad.
                  .
                  To illustrate this package, let's take the following two example
                  datatypes (somehow Haddock removes the curly braces):
@@ -31,12 +33,12 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  Both are record datatypes with all record labels prefixed by
                  an underscore.  This underscore is an indication for our
-                 Template Haskell code to derive labels for these fields.
-                 Deriving labels can be done with this simple one-liner:
+                 Template Haskell code to derive lenses for these fields.
+                 Deriving lenses can be done with this simple one-liner:
                  .
-                 > $(mkLabels [''Person, ''Place])
+                 > $(mkLenses [''Person, ''Place])
                  .
-                 Label functions will be generated, label type signatures will
+                 Lens functions will be generated, lens type signatures will
                  not be generated. This is actually not that bad, by writing the signatures
                  Let's give the functions a signature by hand:
                  .
@@ -50,7 +52,7 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  These type signatures look very similar to the function types
                  for normal record labels, except that the additional colon
-                 indicates a true first class label.  These labels can be used
+                 indicates a true first class lens.  These lenses can be used
                  to get, set and modify the value and are fully composable.
                  .
                  Now let's look at this example. This 71 year old fellow, called Jan,
@@ -93,15 +95,15 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  Because the applicative type class on its own is not very
                  capable of expressing bidirectional relations, which we need
-                 for our labels, the actual instance is defined for an internal
+                 for our lenses, the actual instance is defined for an internal
                  helper structure called @Point@. Points are a bit more general
-                 than labels. As you can see above, the @Label@ constructor has
+                 than lenses. As you can see above, the @Label@ constructor has
                  to be used to convert a @Point@ back into a @Label@. The @for@
                  function must be used to indicate which partial destructor to
-                 use for which label in the applicative composition.
+                 use for which lens in the applicative composition.
                  .
                  Now that we have an appropriate age+city view on the @Person@
-                 data type (which is itself a label again), we can use the
+                 data type (which is itself a lens again), we can use the
                  @mod@ function to make Jan move to Amsterdam over exactly two
                  years:
                  .
@@ -112,11 +114,11 @@ Description:     First class labels that act as bidirectional record fields.
                  >  Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
                  .
                  This package also contains a lens data type that encodes
-                 bidirectional functions. Just like labels, lenses can be
+                 bidirectional functions. Just like lenses, lenses can be
                  composed with other lenses using the @Control.Category@ type
-                 class. Lenses can be used to change the type of a label. The
+                 class. Lenses can be used to change the type of a lens. The
                  @Iso@ type class, which can be seen as a bidirectional
-                 functor, can be used to apply lenses to labels. For example,
+                 functor, can be used to apply lenses to lenses. For example,
                  when we want to treat the age of a person as a string we can
                  do the following:
                  .
@@ -128,11 +130,12 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  .
                  > CHANGELOG
-                 >   0.4.2 -> 0.4.3
-                 >   - Added askM and locaM for running labels inside MonadReader.
+                 >   0.4.2 -> 1.0.0
+                 >   - Added askM and localM for running lenses inside MonadReader.
                  >   - Minor documentaion update.
                  >   - Exported Point internals.
                  >   - Renamed Lens to Bijection, which is more correct.
+                 >   - Renamed Label to Lens.
 
 Maintainer:      Sebastiaan Visser <sfvisser@cs.uu.nl>
 License:         BSD3

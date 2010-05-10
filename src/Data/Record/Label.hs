@@ -8,20 +8,20 @@ module Data.Record.Label
 
   -- * Label type.
   , Point (..)
+  , _mod
   , (:->) (Lens)
-  , label
+  , lens
   , get, set, mod
 
   , fmapL
 
   -- * Bidirectional functor.
   , (:<->:) (..)
-  , (<->)
   , Iso (..)
   , lmap
   , for
 
-  -- * Monadic label operations.
+  -- * Monadic lens operations.
   , getM, setM, modM, (=:)
   , askM, localM
 
@@ -51,29 +51,29 @@ _mod l f a = _set l (f (_get l a)) a
 
 newtype (f :-> a) = Lens { unLens :: Point f a a }
 
--- Create a label out of a getter and setter.
+-- | Create a lens out of a getter and setter.
 
-label :: Getter f a -> Setter f a -> f :-> a
-label g s = Lens (Point g s)
+lens :: Getter f a -> Setter f a -> f :-> a
+lens g s = Lens (Point g s)
 
--- | Get the getter function from a label.
+-- | Get the getter function from a lens.
 
 get :: (f :-> a) -> f -> a
 get = _get . unLens
 
--- | Get the setter function from a label.
+-- | Get the setter function from a lens.
 
 set :: (f :-> a) -> a -> f -> f
 set = _set . unLens
 
--- | Get the modifier function from a label.
+-- | Get the modifier function from a lens.
 
 mod :: (f :-> a) -> (a -> a) -> f -> f
 mod = _mod . unLens
 
 instance Category (:->) where
-  id = Lens (Point id const)
-  (Lens a) . (Lens b) = Lens (Point (_get a . _get b) (_mod b . _set a))
+  id = lens id const
+  Lens a . Lens b = lens (_get a . _get b) (_mod b . _set a)
 
 instance Functor (Point f i) where
   fmap f x = Point (f . _get x) (_set x)
@@ -83,58 +83,52 @@ instance Applicative (Point f i) where
   a <*> b = Point (_get a <*> _get b) (\r -> _set b r . _set a r)
 
 fmapL :: Applicative f => (a :-> b) -> f a :-> f b
-fmapL l = label (fmap (get l)) (\x f -> set l <$> x <*> f)
+fmapL l = lens (fmap (get l)) (\x f -> set l <$> x <*> f)
 
 -- | This isomorphism type class is like a `Functor' but works in two directions.
 
 class Iso f where
   (%) :: a :<->: b -> f a -> f b
-  (%) (Bijection a b) = (%*) (b <-> a)
-  (%*) :: a :<->: b -> f b -> f a
-  (%*) (Bijection a b) = (%) (b <-> a)
 
 -- | The Bijections datatype, a function that works in two directions. To bad
 -- there is no convenient way to do application for this.
 
-data a :<->: b = Bijection { fw :: a -> b, bw :: b -> a }
+infixr 7 :<->:
+data a :<->: b = (:<->:) { fw :: a -> b, bw :: b -> a }
 
 -- | Constructor for bijections.
 
-infixr 7 <->
-(<->) :: (a -> b) -> (b -> a) -> a :<->: b
-(<->) = Bijection
-
 instance Category (:<->:) where
-  id = Bijection id id
-  (Bijection a b) . (Bijection c d) = Bijection (a . c) (d . b)
+  id = id :<->: id
+  (a :<->: b) . (c :<->: d) = a . c :<->: d . b
 
 instance Iso ((:->) i) where
-  (%) l (Lens a) = Lens (Point (fw l . _get a) (_set a . bw l))
+  l % Lens a = lens (fw l . _get a) (_set a . bw l)
 
 instance Iso ((:<->:) i) where
   (%) = (.)
 
 lmap :: Functor f => (a :<->: b) -> f a :<->: f b 
-lmap l = let (Bijection a b) = l in fmap a <-> fmap b
+lmap l = let a :<->: b = l in fmap a :<->: fmap b
 
 dimap :: (o' -> o) -> (i -> i') -> Point f i' o' -> Point f i o
 dimap f g l = Point (f . _get l) (_set l . g)
 
--- | Combine a partial destructor with a label into something easily used in
--- the applicative instance for the hidden `Point' datatype. Internally uses
--- the covariant in getter, contravariant in setter bi-functioral-map function.
+-- | Combine a partial destructor with a lens into something easily used in the
+-- applicative instance for the hidden `Point' datatype. Internally uses the
+-- covariant in getter, contravariant in setter bi-functioral-map function.
 -- (Please refer to the example because this function is just not explainable
 -- on its own.)
 
 for :: (i -> o) -> (f :-> o) -> Point f i o
 for a b = dimap id a (unLens b)
 
--- | Get a value out of state pointed to by the specified label.
+-- | Get a value out of state pointed to by the specified lens.
 
 getM :: MonadState s m => s :-> b -> m b
 getM = gets . get
 
--- | Set a value somewhere in state pointed to by the specified label.
+-- | Set a value somewhere in state pointed to by the specified lens.
 
 setM :: MonadState s m => s :-> b -> b -> m ()
 setM l = modify . set l
@@ -146,17 +140,17 @@ infixr 7 =:
 (=:) = setM
 
 -- | Modify a value with a function somewhere in state pointed to by the
--- specified label.
+-- specified lens.
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
 modM l = modify . mod l
 
--- | Fetch a value pointed to by a label out of a reader environment.
+-- | Fetch a value pointed to by a lens out of a reader environment.
 
 askM :: MonadReader r m => (r :-> b) -> m b
 askM = asks . get
 
--- | Execute a computation in a modified environment. The label is used to
+-- | Execute a computation in a modified environment. The lens is used to
 -- point out the part to modify.
 
 localM :: MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
