@@ -22,7 +22,6 @@ module Data.Record.Label
   , for
 
   -- * Monadic label operations.
-
   , getM, setM, modM, (=:)
   , askM, localM
 
