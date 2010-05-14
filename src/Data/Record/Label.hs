@@ -5,7 +5,7 @@ module Data.Record.Label
     Point (Point)
   , (:->) (Lens)
   , lens
-  , get, set, mod
+  , getL, setL, modL
 
   , fmapL
 
@@ -24,10 +24,10 @@ module Data.Record.Label
   )
 where
 
-import Prelude hiding ((.), id, mod)
+import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
-import Control.Monad.State hiding (get)
+import Control.Monad.State
 import Control.Monad.Reader
 import Data.Record.Label.TH
 
@@ -48,18 +48,18 @@ lens g s = Lens (Point g s)
 
 -- | Get the getter function from a lens.
 
-get :: (f :-> a) -> f -> a
-get = _get . unLens
+getL :: (f :-> a) -> f -> a
+getL = _get . unLens
 
 -- | Get the setter function from a lens.
 
-set :: (f :-> a) -> a -> f -> f
-set = _set . unLens
+setL :: (f :-> a) -> a -> f -> f
+setL = _set . unLens
 
 -- | Get the modifier function from a lens.
 
-mod :: (f :-> a) -> (a -> a) -> f -> f
-mod = _mod . unLens
+modL :: (f :-> a) -> (a -> a) -> f -> f
+modL = _mod . unLens
 
 instance Category (:->) where
   id = lens id const
@@ -73,7 +73,7 @@ instance Applicative (Point f i) where
   a <*> b = Point (_get a <*> _get b) (\r -> _set b r . _set a r)
 
 fmapL :: Applicative f => (a :-> b) -> f a :-> f b
-fmapL l = lens (fmap (get l)) (\x f -> set l <$> x <*> f)
+fmapL l = lens (fmap (getL l)) (\x f -> setL l <$> x <*> f)
 
 -- | This isomorphism type class is like a `Functor' but works in two directions.
 
@@ -115,12 +115,12 @@ for a b = dimap id a (unLens b)
 -- | Get a value out of state pointed to by the specified lens.
 
 getM :: MonadState s m => s :-> b -> m b
-getM = gets . get
+getM = gets . getL
 
 -- | Set a value somewhere in state pointed to by the specified lens.
 
 setM :: MonadState s m => s :-> b -> b -> m ()
-setM l = modify . set l
+setM l = modify . setL l
 
 -- | Alias for `setM' that reads like an assignment.
 
@@ -132,16 +132,16 @@ infixr 7 =:
 -- specified lens.
 
 modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
-modM l = modify . mod l
+modM l = modify . modL l
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
 
 askM :: MonadReader r m => (r :-> b) -> m b
-askM = asks . get
+askM = asks . getL
 
 -- | Execute a computation in a modified environment. The lens is used to
 -- point out the part to modify.
 
 localM :: MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
-localM l f = local (mod l f)
+localM l f = local (modL l f)
 
