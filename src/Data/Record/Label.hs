@@ -1,11 +1,6 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
 module Data.Record.Label
   (
-  -- * Getter, setter and modifier types.
-    Getter
-  , Setter
-  , Modifier
-
   -- * Label type.
   , Point (..)
   , _mod
@@ -37,13 +32,9 @@ import Control.Monad.State hiding (get)
 import Control.Monad.Reader
 import Data.Record.Label.TH
 
-type Getter   f o   = f -> o
-type Setter   f i   = i -> f -> f
-type Modifier f i o = (o -> i) -> f -> f
-
 data Point f i o = Point
-  { _get :: Getter f o
-  , _set :: Setter f i
+  { _get :: f -> o
+  , _set :: i -> f -> f
   }
 
 _mod :: Point f i o -> (o -> i) -> f -> f
@@ -53,7 +44,7 @@ newtype (f :-> a) = Lens { unLens :: Point f a a }
 
 -- | Create a lens out of a getter and setter.
 
-lens :: Getter f a -> Setter f a -> f :-> a
+lens :: (f -> a) -> (a -> f -> f) -> f :-> a
 lens g s = Lens (Point g s)
 
 -- | Get the getter function from a lens.
