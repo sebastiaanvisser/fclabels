@@ -90,8 +90,7 @@ fmapL l = lens (fmap (get l)) (\x f -> set l <$> x <*> f)
 class Iso f where
   (%) :: a :<->: b -> f a -> f b
 
--- | The Bijections datatype, a function that works in two directions. To bad
--- there is no convenient way to do application for this.
+-- | The bijections datatype, a function that works in two directions. 
 
 infixr 7 :<->:
 data a :<->: b = (:<->:) { fw :: a -> b, bw :: b -> a }
