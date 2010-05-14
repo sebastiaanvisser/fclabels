@@ -1,9 +1,8 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
 module Data.Record.Label
   (
-  -- * Label type.
-  , Point (..)
-  , _mod
+  -- * Lens types.
+    Point (Point)
   , (:->) (Lens)
   , lens
   , get, set, mod
