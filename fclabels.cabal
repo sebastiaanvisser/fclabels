@@ -137,7 +137,7 @@ Description:     First class labels that act as bidirectional record fields.
                  >   - Renamed Lens to Bijection, which is more correct.
                  >   - Renamed Label to Lens.
 
-Maintainer:      Sebastiaan Visser <sfvisser@cs.uu.nl>
+Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
 License:         BSD3
 License-File:    LICENCE
 Category:        Data
