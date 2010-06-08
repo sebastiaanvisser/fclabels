@@ -91,6 +91,8 @@ instance Category (:<->:) where
   id = id :<->: id
   (a :<->: b) . (c :<->: d) = a . c :<->: d . b
 
+infixr 8 %
+
 instance Iso ((:->) i) where
   l % Lens a = lens (fw l . _get a) (_set a . bw l)
 
