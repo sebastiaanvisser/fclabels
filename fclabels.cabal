@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.9.0
+Version:         0.9.1
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels implemented as lenses.
 
@@ -38,22 +38,8 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  > $(mkLenses [''Person, ''Place])
                  .
-                 Lens functions will be generated, lens type signatures will
-                 not be generated. This is actually not that bad, by writing the signatures
-                 Let's give the functions a signature by hand:
-                 .
-                 > name      :: Person :-> String
-                 > age       :: Person :-> Int
-                 > isMale    :: Person :-> Bool
-                 > place     :: Person :-> Place
-                 > city      :: Place :-> String
-                 > country   :: Place :-> String
-                 > continent :: Place :-> String
-                 .
-                 These type signatures look very similar to the function types
-                 for normal record labels, except that the additional colon
-                 indicates a true first class lens.  These lenses can be used
-                 to get, set and modify the value and are fully composable.
+                 These lenses can be used to get, set and modify the value and
+                 are fully composable.
                  .
                  Now let's look at this example. This 71 year old fellow, called Jan,
                  is my neighbour and didn't mind using him as an example:
@@ -62,24 +48,24 @@ Description:     First class labels that act as bidirectional record fields.
                  > jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe")
                  .
                  When we want to be sure Jan is really as old as he claims we
-                 can use the @get@ function to get the age out as an integer:
+                 can use the @getL@ function to get the age out as an integer:
                  .
                  > hisAge :: Int
-                 > hisAge = get age jan
+                 > hisAge = getL age jan
                  .
                  Consider he now wants to move to Amsterdam: what better place
                  to spend your old days. Using composition we can change the
                  city value deep inside the structure:
                  .
                  > moveToAmsterdam :: Person -> Person
-                 > moveToAmsterdam = set (city . place) "Amsterdam"
+                 > moveToAmsterdam = setL (city . place) "Amsterdam"
                  .
                  > moveToAmsterdam jan ==
                  >  Person "Jan" 71 True (Place "Amsterdam" "The Netherlands" "Europe")
                  .
                  Composition is done using the dot operator which is part of
                  the @Control.Category@ module. Make sure to import this module
-                 and hide the default @(.)@, @id@ and @mod@ function from the
+                 and hide the default @(.)@, @id@ and @modL@ function from the
                  Prelude.
                  .
                  Now, because Jan is an old guy, moving to another city is not a
@@ -91,7 +77,7 @@ Description:     First class labels that act as bidirectional record fields.
                  @Applicative@ functor instance:
                  .
                  > ageAndCity :: Person :-> (Int, String)
-                 > ageAndCity = Label $ (,) <$> fst `for` age <*> snd `for` (city . place)
+                 > ageAndCity = Lens $ (,) <$> fst `for` age <*> snd `for` (city . place)
                  .
                  Because the applicative type class on its own is not very
                  capable of expressing bidirectional relations, which we need
@@ -104,11 +90,11 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  Now that we have an appropriate age+city view on the @Person@
                  data type (which is itself a lens again), we can use the
-                 @mod@ function to make Jan move to Amsterdam over exactly two
+                 @modL@ function to make Jan move to Amsterdam over exactly two
                  years:
                  .
                  > moveToAmsterdamOverTwoYears :: Person -> Person
-                 > moveToAmsterdamOverTwoYears = mod ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
+                 > moveToAmsterdamOverTwoYears = modL ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
                  .
                  > moveToAmsterdamOverTwoYears jan ==
                  >  Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
@@ -123,18 +109,17 @@ Description:     First class labels that act as bidirectional record fields.
                  do the following:
                  .
                  > ageAsString :: Person :-> String
-                 > ageAsString :: (show <-> read) `iso` age
+                 > ageAsString :: (show :<->: read) % age
                  .
                  A final note: this library might look cryptic at first sight, but give it a
                  try, it is not that hard.
                  .
                  .
                  > CHANGELOG
-                 >   0.4.2 -> 1.0.0
+                 >   0.4.2 -> 0.9.1
                  >   - Added askM and localM for running lenses inside MonadReader.
                  >   - Minor documentaion update.
                  >   - Exported Point internals.
-                 >   - Renamed Lens to Bijection, which is more correct.
                  >   - Renamed Label to Lens.
 
 Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
