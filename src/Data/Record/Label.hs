@@ -1,27 +1,23 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
 module Data.Record.Label
-  (
-  -- * Lens types.
-    Point (Point)
-  , (:->) (Lens)
-  , lens
-  , getL, setL, modL
+(
+-- * Lens types.
+  Point (Point)
+, (:->) (Lens)
+, lens
+, getL, setL, modL
 
-  , fmapL
+, fmapL
 
-  -- * Bidirectional functor.
-  , (:<->:) (..)
-  , Iso (..)
-  , lmap
-  , for
+-- * Bidirectional functor.
+, (:<->:) (..)
+, Iso (..)
+, lmap
+, for
 
-  -- * Monadic lens operations.
-  , getM, setM, modM, (=:)
-  , askM, localM
-
-  -- * Derive labels using Template Haskell.
-  , module Data.Record.Label.TH
-  )
+-- * Derive labels using Template Haskell.
+, module Data.Record.Label.TH
+)
 where
 
 import Prelude hiding ((.), id)
@@ -113,37 +109,4 @@ dimap f g l = Point (f . _get l) (_set l . g)
 
 for :: (i -> o) -> (f :-> o) -> Point f i o
 for a b = dimap id a (unLens b)
-
--- | Get a value out of state pointed to by the specified lens.
-
-getM :: MonadState s m => s :-> b -> m b
-getM = gets . getL
-
--- | Set a value somewhere in state pointed to by the specified lens.
-
-setM :: MonadState s m => s :-> b -> b -> m ()
-setM l = modify . setL l
-
--- | Alias for `setM' that reads like an assignment.
-
-infixr 7 =:
-(=:) :: MonadState s m => s :-> b -> b -> m ()
-(=:) = setM
-
--- | Modify a value with a function somewhere in state pointed to by the
--- specified lens.
-
-modM :: MonadState s m => s :-> b -> (b -> b) -> m ()
-modM l = modify . modL l
-
--- | Fetch a value pointed to by a lens out of a reader environment.
-
-askM :: MonadReader r m => (r :-> b) -> m b
-askM = asks . getL
-
--- | Execute a computation in a modified environment. The lens is used to
--- point out the part to modify.
-
-localM :: MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
-localM l f = local (modL l f)
 

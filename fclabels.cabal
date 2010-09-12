@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.9.1
+Version:         0.9.2
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels implemented as lenses.
 
@@ -130,6 +130,7 @@ Build-Type:      Simple
 Cabal-Version:   >= 1.6
 HS-Source-Dirs:  src
 Exposed-Modules: Data.Record.Label
+                 Data.Record.Label.Base
 Other-Modules:   Data.Record.Label.TH
 Build-Depends:   base >= 3 && < 5
                , template-haskell >= 2.2 && < 2.5
