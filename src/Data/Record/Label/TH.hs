@@ -1,63 +1,74 @@
-module Data.Record.Label.TH (mkLabels, mkLabelsNoTypes) where
+module Data.Record.Label.TH
+( mkLabels
+, mkLabelsNoTypes
+) where
 
 import Control.Monad
 import Data.Char
 import Language.Haskell.TH.Syntax
 
--- | Derive lenses including type signatures for all the record selectors in a datatype.
+-- | Derive lenses including type signatures for all the record selectors in a
+-- datatype.
+
 mkLabels :: [Name] -> Q [Dec]
-mkLabels = liftM concat . mapM (mkLabels1 True)
+mkLabels = liftM concat . mapM (labels True)
 
--- | Derive lenses without type signatures for all the record selectors in a datatype.
+-- | Derive lenses without type signatures for all the record selectors in a
+-- datatype.
+
 mkLabelsNoTypes :: [Name] -> Q [Dec]
-mkLabelsNoTypes = liftM concat . mapM (mkLabels1 False)
+mkLabelsNoTypes = liftM concat . mapM (labels False)
 
--- Helpers.
+-- Helpers to generate all labels.
 
-mkLabels1 :: Bool -> Name -> Q [Dec]
-mkLabels1 sigs n = do
-    i <- reify n
-    let -- only process data and newtype declarations, filter out all constructors and the type variables
-        (cs',vars) = case i of
-                TyConI (DataD    _ _ vs cs _) -> (cs , vs)
-                TyConI (NewtypeD _ _ vs c  _) -> ([c], vs)
-                _ -> ([], undefined)
-        -- we are only interested in lenses of record constructors
+labels :: Bool -> Name -> Q [Dec]
+labels sigs n =
+ do i <- reify n
+    let -- Only process data and newtype declarations, filter out all
+        -- constructors and the type variables.
+        (cs',vars) =
+          case i of
+            TyConI (DataD    _ _ vs cs _) -> (cs , vs)
+            TyConI (NewtypeD _ _ vs c  _) -> ([c], vs)
+            _                             -> ([], undefined)
+
+        -- We are only interested in lenses of record constructors.
         ls' = [ l | RecC _ ls <- cs', l <- ls ]
-    return (concatMap (mkLabel1 sigs n vars) ls')
 
-mkLabel1 :: Bool -> Name -> [TyVarBndr] -> VarStrictType -> [Dec]
-mkLabel1 sigs typeName binders (name, _, t) =
-    let -- Generate a name for the lens:
-        -- If the original selector starts with an _, remove it and make the next
-        -- character lowercase.  Otherwise, add 'l', and make the next character
-        -- uppercase.
-        lensName = mkName $ case nameBase name of
-                ('_' : c : rest) -> toLower c : rest
-                (f : rest)       -> 'l' : toUpper f : rest
-                _                -> error "Invalid name"
+    return (concatMap (label sigs n vars) ls')
 
-        -- The source type of a lens
-        source    = foldl appTv (ConT typeName) binders
+-- Helpers to generate a single labels.
 
-        -- The type of the lens
-        lensType = ForallT binders [] $ AppT (AppT (ConT $ mkName ":->") source) t
+label :: Bool -> Name -> [TyVarBndr] -> VarStrictType -> [Dec]
+label withType typeName binders (field, _, typ) =
+  if withType
+    then [signature, body]
+    else [body]
 
-        in (if sigs then [SigD lensName lensType] else []) ++ [functionBody lensName name]
+  where
+    appTv w (PlainTV n) = AppT w (VarT n)
+    appTv _ v           = error ("Kinded type variable not supported: " ++ show v)
 
-appTv :: Type -> TyVarBndr -> Type
-appTv t (PlainTV n) = AppT t (VarT n)
-appTv _ v           = error $ "Kinded type variable not supported: " ++ show v
+    -- Generate a name for the lens. If the original selector starts with an _,
+    -- remove it and make the next character lowercase. Otherwise, add 'l', and
+    -- make the next character uppercase.
+    name = mkName $
+            case nameBase field of
+              '_' : c : rest -> toLower c : rest
+              f : rest       -> 'l' : toUpper f : rest
+              _              -> error "Invalid name"
 
+    -- The source type of a lens.
+    source = foldl appTv (ConT typeName) binders
 
-functionBody :: Name -> Name -> Dec
-functionBody lensName fieldName = 
-  FunD lensName      [
-    Clause [] (
-        NormalB  (
-          AppE (AppE (VarE (mkName "lens")) (VarE fieldName)) -- getter
-               (LamE [VarP (mkName "b"), VarP (mkName "a")]    -- setter
-                     (RecUpdE (VarE (mkName "a")) [(fieldName, VarE (mkName "b"))])
-               )
-                 )
-              ) []    ]
+    -- Construct the lens type.
+    signature = SigD name (ForallT binders [] (ConT (mkName ":->") `AppT` source `AppT` typ))
+
+    -- Construct the lens body.
+    body = 
+      let getter = VarE field 
+          setter = [VarP (mkName "b"), VarP (mkName "a")]
+                     `LamE` RecUpdE (VarE (mkName "a")) [(field, VarE (mkName "b"))]
+          lens   = VarE (mkName "lens") `AppE` getter `AppE` setter
+      in FunD name [ Clause [] (NormalB lens) [] ]
+
