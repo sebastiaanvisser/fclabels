@@ -1,18 +1,15 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
-module Data.Record.Label.Base
+module Data.Record.Label.Monadic
 (
 -- * Monadic lens operations.
   getM, setM, modM, (=:)
 , askM, localM
--- * Lenses for some base types.
 )
 where
 
-import Prelude hiding ((.), id)
-import Control.Category
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Record.Label
+import Data.Record.Label.Core
 
 -- | Get a value out of state pointed to by the specified lens.
 

@@ -130,7 +130,8 @@ Build-Type:      Simple
 Cabal-Version:   >= 1.6
 HS-Source-Dirs:  src
 Exposed-Modules: Data.Record.Label
-                 Data.Record.Label.Base
+                 Data.Record.Label.Core
+                 Data.Record.Label.Monadic
 Other-Modules:   Data.Record.Label.TH
 Build-Depends:   base >= 3 && < 5
                , template-haskell >= 2.2 && < 2.5
