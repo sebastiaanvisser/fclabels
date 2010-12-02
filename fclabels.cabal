@@ -126,14 +126,17 @@ Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
 License:         BSD3
 License-File:    LICENCE
 Category:        Data
-Build-Type:      Simple
 Cabal-Version:   >= 1.6
-HS-Source-Dirs:  src
-Exposed-Modules: Data.Record.Label
-                 Data.Record.Label.Core
-                 Data.Record.Label.Monadic
-Other-Modules:   Data.Record.Label.TH
-Build-Depends:   base >= 3 && < 5
-               , template-haskell >= 2.2 && < 2.5
-               , mtl >= 1.1 && <= 2.1
+Build-Type:      Simple
+
+Library
+  HS-Source-Dirs:  src
+  Exposed-Modules: Data.Record.Label
+                   Data.Record.Label.Core
+                   Data.Record.Label.Monadic
+  Other-Modules:   Data.Record.Label.TH
+  Build-Depends:   base >= 3 && < 5
+                 , template-haskell >= 2.2 && < 2.5
+                 , mtl >= 1.1 && <= 2.1
+  GHC-Options:     -Wall
 

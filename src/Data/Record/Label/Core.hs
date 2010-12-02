@@ -1,31 +1,11 @@
-{-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
-module Data.Record.Label.Core
-(
--- * Lens types.
-  Point (Point)
-, (:->) (Lens)
-, lens
-, getL, setL, modL
-
-, fmapL
-
--- * Bidirectional functor.
-, (:<->:) (..)
-, Iso (..)
-, lmap
-, for
-
--- * Derive labels using Template Haskell.
-, module Data.Record.Label.TH
-)
-where
+{-# LANGUAGE TypeOperators #-}
+module Data.Record.Label.Core where
 
 import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Record.Label.TH
 
 data Point f i o = Point
   { _get :: f -> o
