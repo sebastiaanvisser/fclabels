@@ -116,11 +116,10 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  .
                  > CHANGELOG
-                 >   0.4.2 -> 0.9.1
-                 >   - Added askM and localM for running lenses inside MonadReader.
-                 >   - Minor documentaion update.
-                 >   - Exported Point internals.
-                 >   - Renamed Label to Lens.
+                 >   0.9.1 -> 0.11.0
+                 >   - Monadic labels now build against mtl.
+                 >   - Separate module for core/non-core code.
+                 >   - Code cleanups, especially the TH code.
 
 Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
 License:         BSD3
