@@ -36,7 +36,7 @@ Description:     First class labels that act as bidirectional record fields.
                  Template Haskell code to derive lenses for these fields.
                  Deriving lenses can be done with this simple one-liner:
                  .
-                 > $(mkLenses [''Person, ''Place])
+                 > $(mkLabels [''Person, ''Place])
                  .
                  These lenses can be used to get, set and modify the value and
                  are fully composable.
