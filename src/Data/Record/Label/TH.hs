@@ -5,6 +5,7 @@ module Data.Record.Label.TH
 
 import Control.Monad
 import Data.Char
+import Data.List (nub)
 import Language.Haskell.TH.Syntax
 
 -- | Derive lenses including type signatures for all the record selectors in a
@@ -35,7 +36,7 @@ labels sigs n =
         -- We are only interested in lenses of record constructors.
         ls' = [ l | RecC _ ls <- cs', l <- ls ]
 
-    return (concatMap (label sigs n vars) ls')
+    return (concatMap (label sigs n vars) (nub ls'))
 
 -- Helpers to generate a single labels.
 
