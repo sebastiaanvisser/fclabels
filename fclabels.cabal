@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.11.1
+Version:         0.11.1.1
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels implemented as lenses.
 
@@ -116,10 +116,8 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  .
                  > CHANGELOG
-                 >   0.9.1 -> 0.11.0
-                 >   - Monadic labels now build against mtl.
-                 >   - Separate module for core/non-core code.
-                 >   - Code cleanups, especially the TH code.
+                 >   0.11.1 -> 0.11.1.1
+                 >   - Improved TH support for multiple constructor datatypes.
 
 Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
 License:         BSD3
