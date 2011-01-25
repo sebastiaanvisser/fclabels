@@ -2,16 +2,14 @@ module Data.Record.Label
 (
 -- * Lens types.
   Point (Point)
-, (:->) (Lens)
+, Lens (Lens)
+, (:->)
 , lens
 , getL, setL, modL
 
-, fmapL
-
 -- * Bidirectional functor.
-, (:<->:) (..)
+, Bijection (..)
 , Iso (..)
-, lmap
 , for
 
 -- * Monadic lens operations.
@@ -23,6 +21,7 @@ module Data.Record.Label
 )
 where
 
-import Data.Record.Label.Core
+import Data.Record.Label.Pure
 import Data.Record.Label.Monadic
 import Data.Record.Label.TH
+

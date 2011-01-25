@@ -9,7 +9,7 @@ where
 
 import Control.Monad.State
 import Control.Monad.Reader
-import Data.Record.Label.Core
+import Data.Record.Label.Pure
 
 -- | Get a value out of state pointed to by the specified lens.
 
