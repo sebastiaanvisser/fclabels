@@ -1,18 +1,25 @@
 module Data.Record.Label
 (
--- * Lens types.
-  Point (Point)
-, Lens (Lens)
-, (:->)
-, lens
-, getL, setL, modL
 
--- * Bidirectional functor.
+-- * Pure non-failing lenses.
+  (:->)
+, lens
+, getL
+, setL
+, modL
+
+-- * Pure lenses that might fail.
+, LensM
+, getLM
+, setLM
+, modLM
+
+-- * Working with bijections and isomorphisms.
 , Bijection (..)
 , Iso (..)
 , for
 
--- * Monadic lens operations.
+-- * Monadic operations for pure lenses.
 , getM, setM, modM, (=:)
 , askM, localM
 

@@ -13,13 +13,23 @@ import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
 
+-- | Abstract Point datatype. The getter and setter functions may work in
+-- 'some' arrow.
+
 data Point (~>) f i o = Point
   { _get :: f ~> o
   , _set :: (i, f) ~> f
   }
 
+-- | Modification as a compositon of a getter and setter. Unfortunately,
+-- ArrowApply is needed for this composition.
+
 _mod :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
 _mod l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
+
+-- | Abstract Lens datatype. The getter and setter functions may work in
+-- 'some' arrow. Arrows allow for efectful lenses, for example, lenses that
+-- might fail or use state.
 
 newtype Lens (~>) f a = Lens { unLens :: Point (~>) f a a }
 
@@ -72,17 +82,23 @@ instance Category (~>) => Category (Bijection (~>)) where
   id = Bij id id
   Bij a b . Bij c d = Bij (a . c) (d . b)
 
--- | This isomorphism type class is like a `Functor' but works in two directions.
+-- | Lifting 'Bijection's.
+
+liftBij :: Functor f => Bijection (->) a b -> Bijection (->) (f a) (f b)
+liftBij a = Bij (fmap (fw a)) (fmap (bw a))
+
+-- | The isomorphism type class is like a `Functor' but works in two directions.
 
 class Iso (~>) f where
   iso :: Bijection (~>) a b -> f a ~> f b
 
-instance Arrow (~>) => Iso (~>) (Lens (~>) i) where
+-- | We can diverge 'Lens'es using an isomorphism.
+
+instance Arrow (~>) => Iso (~>) (Lens (~>) f) where
   iso bi = arr ((\a -> lens (fw bi . _get a) (_set a . first (bw bi))) . unLens)
+
+-- | We can diverge 'Bijection's using an isomorphism.
 
 instance Arrow (~>) => Iso (~>) (Bijection (~>) a) where
   iso = arr . (.)
-
-liftBij :: Functor f => Bijection (->) a b -> Bijection (->) (f a) (f b)
-liftBij a = Bij (fmap (fw a)) (fmap (bw a))
 
