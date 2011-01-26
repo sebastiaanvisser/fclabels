@@ -14,6 +14,8 @@ import qualified Data.Record.Label.Abstract as Abs
 -------------------------------------------------------------------------------
 -- | Generic Maybe label, embedding in the maybe zero.
 
+-- To be derived using TH:
+
 maybeL :: (ArrowZero (~>), ArrowChoice (~>)) => Lens (~>) (Maybe a) a
 maybeL = Abs.lens getter setter
   where
@@ -30,14 +32,16 @@ maybeL = Abs.lens getter setter
 
 data Twofold a b =
     Person 
-      { name   :: String
-      , email  :: Int
-      , spouse :: Maybe (Twofold b a)
+      { name  :: String
+      , email :: Int
+      , other :: Maybe (Twofold b a)
       }
   | Animal
       { kind   :: String
       , legs   :: Int
       }
+
+-- To be derived using TH:
 
 nameL :: (ArrowZero (~>), ArrowChoice (~>)) => Lens (~>) (Twofold a b) String
 nameL = Abs.lens getter setter
@@ -51,8 +55,8 @@ nameL = Abs.lens getter setter
            Person _ e s -> returnA -< Person v e s
            Animal {}    -> returnA -< p
 
-spouseL :: (ArrowChoice (~>), ArrowZero (~>), ArrowApply (~>)) => Lens (~>) (Twofold a b) (Twofold b a)
-spouseL = maybeL . Abs.lens getter setter
+otherL :: (ArrowChoice (~>), ArrowZero (~>), ArrowApply (~>)) => Lens (~>) (Twofold a b) (Twofold b a)
+otherL = maybeL . Abs.lens getter setter
   where
     getter = proc p ->
       do case p of
@@ -71,6 +75,8 @@ data Single =
       , sEmail :: Integer
       }
 
+-- To be derived using TH:
+
 sNameL :: Arrow (~>) => Lens (~>) Single String
 sNameL = Abs.lens getter setter
   where
@@ -85,15 +91,21 @@ sEmailL = Abs.lens getter setter
 
 -------------------------------------------------------------------------------
 
-nameSpouseSpouse :: Twofold a b -> Maybe String
-nameSpouseSpouse = getLM (nameL . spouseL . spouseL)
-
--- nameSpouseSpouse = getL (nameL . spouseL . spouseL)
--- Produces: No instance for (ArrowZero (->))
+-- Lenses that cannot fail are safely runnable using both the function and the
+-- maybe context.
 
 theName :: Single -> String
 theName = getL sNameL
 
 theNameM :: Single -> Maybe String
 theNameM = getLM sNameL
+
+-- Lenses that might fail are safely runnable in the maybe context, but
+-- produce a type error when used in the pure function context.
+
+nameOtherOther :: Twofold a b -> Maybe String
+nameOtherOther = getLM (nameL . otherL . otherL)
+
+-- nameOtherOther = getL (nameL . otherL . otherL)
+--    Produces: No instance for (ArrowZero (->))
 
