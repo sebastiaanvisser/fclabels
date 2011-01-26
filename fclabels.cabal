@@ -129,13 +129,14 @@ Build-Type:      Simple
 Library
   HS-Source-Dirs:  src
   Exposed-Modules: Data.Record.Label
-                   Data.Record.Label.Monadic
-  Other-Modules:   Data.Record.Label.TH
-                   Data.Record.Label.Core
-                   Data.Record.Label.Pure
                    Data.Record.Label.Abstract
+                   Data.Record.Label.Core
+                   Data.Record.Label.Monadic
+                   Data.Record.Label.Pure
+  Other-Modules:   Data.Record.Label.TH
   Build-Depends:   base >= 3 && < 5
                  , template-haskell >= 2.2 && < 2.6
-                 , mtl >= 1.1 && <= 2.1
+                 , mtl ==2.0.*
+                 , transformers
   GHC-Options:     -Wall
 

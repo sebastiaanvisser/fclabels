@@ -21,7 +21,7 @@ where
 import Control.Arrow
 import Control.Category
 import Control.Monad.Identity
-import Control.Monad.Maybe
+import Control.Monad.Trans.Maybe
 import Data.Maybe
 import Data.Record.Label.Abstract hiding (lens, getL, setL, modL)
 import Prelude hiding ((.), id)
@@ -31,7 +31,7 @@ import qualified Data.Record.Label.Abstract as A
 
 type f :-> a = A.Lens (->) f a
 
--- | Create a pure lens.
+-- | Create a pure lens from a getter and a setter.
 
 lens :: (f -> a) -> (a -> f -> f) -> f :-> a
 lens g s = A.lens g (uncurry s)
