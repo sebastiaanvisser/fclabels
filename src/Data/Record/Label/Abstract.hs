@@ -55,7 +55,8 @@ modL = _mod . unLens
 
 instance ArrowApply (~>) => Category (Lens (~>)) where
   id = lens id (arr snd)
-  Lens a . Lens b = lens (_get a . _get b) (_mod b . first (arr (\i -> _set a . arr (i,))))
+  Lens a . Lens b = lens (_get a . _get b) (_mod b . first (curryA (_set a)))
+    where curryA f = arr (\i -> f . arr (i,))
 
 instance Arrow (~>) => Functor (Point (~>) f i) where
   fmap f x = Point (arr f . _get x) (_set x)
