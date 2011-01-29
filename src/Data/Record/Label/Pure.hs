@@ -3,9 +3,7 @@
   , TupleSections
   #-}
 module Data.Record.Label.Pure
-( module Data.Record.Label.Abstract
-
-, (:->)
+( (:->)
 , lens
 , getL
 , setL
@@ -24,7 +22,6 @@ import Control.Category
 import Control.Monad.Identity
 import Control.Monad.Trans.Maybe
 import Data.Maybe
-import Data.Record.Label.Abstract hiding (lens, getL, setL, modL)
 import Prelude hiding ((.), id)
 import qualified Data.Record.Label.Abstract as A
 

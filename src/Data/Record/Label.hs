@@ -8,8 +8,9 @@ module Data.Record.Label
 , setL
 , modL
 
--- * Pure lenses that might fail.
+-- * Lenses that might fail.
 , LensM
+, lensM
 , getLM
 , setLM
 , modLM
@@ -28,7 +29,8 @@ module Data.Record.Label
 )
 where
 
-import Data.Record.Label.Pure
+import Data.Record.Label.Abstract (Bijection(..), Iso(..), for)
 import Data.Record.Label.Monadic
+import Data.Record.Label.Pure
 import Data.Record.Label.TH
 
