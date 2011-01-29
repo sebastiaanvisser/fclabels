@@ -12,6 +12,7 @@ module Data.Record.Label.Pure
 , modL
 
 , LensM
+, lensM
 , getLM
 , setLM
 , modLM
@@ -59,6 +60,13 @@ type LensM f a = A.Lens (Kleisli (MaybeT Identity)) f a
 
 runForLensM :: Kleisli (MaybeT Identity) f a -> f -> Maybe a
 runForLensM l = runIdentity . runMaybeT . runKleisli l
+
+-- | Create a lens that might fail from a getter and a setter that can
+-- themselves potentially fail.
+
+lensM :: (f -> Maybe a) -> (a -> f -> Maybe f) -> LensM f a
+lensM g s = A.lens (k g) (k (uncurry s))
+  where k a = Kleisli (MaybeT . Identity . a)
 
 -- | Getter for a lens that might fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
