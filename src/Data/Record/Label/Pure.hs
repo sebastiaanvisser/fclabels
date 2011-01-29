@@ -69,12 +69,12 @@ getLM l = runForLensM (A.getL l)
 -- | Setter for a lens that might fail. When the field to which the lens points
 -- is not accessible this function behaves like the identity function.
 
-setLM :: LensM f a -> a -> f -> f
-setLM l v f = fromMaybe f (runForLensM (A.setL l . arr (v,)) f)
+setLM :: LensM f a -> a -> f -> Maybe f
+setLM l v = runForLensM (A.setL l . arr (v,))
 
 -- | Modifier for a lens that might fail. When the field to which the lens
 -- points is not accessible this function behaves like the identity function.
 
-modLM :: LensM f a -> (a -> a) -> f -> f
-modLM l m f = fromMaybe f (runForLensM (A.modL l . arr (arr m,)) f)
+modLM :: LensM f a -> (a -> a) -> f -> Maybe f
+modLM l m = runForLensM (A.modL l . arr (arr m,))
 
