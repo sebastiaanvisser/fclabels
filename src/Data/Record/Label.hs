@@ -9,7 +9,7 @@ module Data.Record.Label
 , modL
 
 -- * Lenses that might fail.
-, LensM
+, (:~>)
 , lensM
 , getLM
 , setLM

@@ -9,7 +9,7 @@ module Data.Record.Label.Pure
 , setL
 , modL
 
-, LensM
+, (:~>)
 , lensM
 , getLM
 , setLM
@@ -53,7 +53,7 @@ modL = curry . A.modL
 -- This can be useful, for example, when accessing fields in datatypes with
 -- multiple constructors.
 
-type LensM f a = A.Lens (Kleisli (MaybeT Identity)) f a
+type f :~> a = A.Lens (Kleisli (MaybeT Identity)) f a
 
 runForLensM :: Kleisli (MaybeT Identity) f a -> f -> Maybe a
 runForLensM l = runIdentity . runMaybeT . runKleisli l
@@ -61,25 +61,25 @@ runForLensM l = runIdentity . runMaybeT . runKleisli l
 -- | Create a lens that might fail from a getter and a setter that can
 -- themselves potentially fail.
 
-lensM :: (f -> Maybe a) -> (a -> f -> Maybe f) -> LensM f a
+lensM :: (f -> Maybe a) -> (a -> f -> Maybe f) -> (f :~> a)
 lensM g s = A.lens (k g) (k (uncurry s))
   where k a = Kleisli (MaybeT . Identity . a)
 
 -- | Getter for a lens that might fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
 
-getLM :: LensM f a -> f -> Maybe a
+getLM :: (f :~> a) -> f -> Maybe a
 getLM l = runForLensM (A.getL l)
 
 -- | Setter for a lens that might fail. When the field to which the lens points
 -- is not accessible this function returns `Nothing`.
 
-setLM :: LensM f a -> a -> f -> Maybe f
+setLM :: (f :~> a) -> a -> f -> Maybe f
 setLM l v = runForLensM (A.setL l . arr (v,))
 
 -- | Modifier for a lens that might fail. When the field to which the lens
 -- points is not accessible this function returns `Nothing`.
 
-modLM :: LensM f a -> (a -> a) -> f -> Maybe f
+modLM :: (f :~> a) -> (a -> a) -> f -> Maybe f
 modLM l m = runForLensM (A.modL l . arr (arr m,))
 
