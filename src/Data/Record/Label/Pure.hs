@@ -49,7 +49,7 @@ setL = curry . A.setL
 modL :: (f :-> a) -> (a -> a) -> f -> f
 modL = curry . A.modL
 
--- | Pure lens the type for situation in which getters and setter might fail.
+-- | Pure lens type for situation in which getters and setter might fail.
 -- This can be useful, for example, when accessing fields in datatypes with
 -- multiple constructors.
 
@@ -72,13 +72,13 @@ getLM :: LensM f a -> f -> Maybe a
 getLM l = runForLensM (A.getL l)
 
 -- | Setter for a lens that might fail. When the field to which the lens points
--- is not accessible this function behaves like the identity function.
+-- is not accessible this function returns `Nothing`.
 
 setLM :: LensM f a -> a -> f -> Maybe f
 setLM l v = runForLensM (A.setL l . arr (v,))
 
 -- | Modifier for a lens that might fail. When the field to which the lens
--- points is not accessible this function behaves like the identity function.
+-- points is not accessible this function returns `Nothing`.
 
 modLM :: LensM f a -> (a -> a) -> f -> Maybe f
 modLM l m = runForLensM (A.modL l . arr (arr m,))
