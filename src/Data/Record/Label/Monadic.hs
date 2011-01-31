@@ -12,12 +12,13 @@ import Control.Monad.Reader
 import Data.Record.Label.Pure
 
 -- | Get a value out of state pointed to by the specified lens. Lenses
--- supporting failure will call `fail` in the inner Monad:
+-- supporting failure will call `fail` in the inner Monad.
 
 getM :: MonadState s m => (s :~> b) -> m b
 getM l = join $ gets (liftMaybe . getLM l)
 
 -- | Set a value somewhere in state pointed to by the specified lens.
+-- Lenses supporting failure will call `fail` in the inner Monad.
 
 setM :: MonadState s m => (s :~> b) -> b -> m ()
 setM l = modM l . const
@@ -29,18 +30,21 @@ infixr 7 =:
 (=:) = setM
 
 -- | Modify a value with a function somewhere in state pointed to by the
--- specified lens.
+-- specified lens. Lenses supporting failure will call `fail` in the inner 
+-- Monad.
 
 modM :: MonadState s m => (s :~> b) -> (b -> b) -> m ()
 modM l f = get >>= liftMaybe . modLM l f >>= put
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
+-- Lenses supporting failure will call `fail` in the inner Monad.
 
 askM :: MonadReader r m => (r :~> b) -> m b
 askM l = join $ asks (liftMaybe . getLM l)
 
 -- | Execute a computation in a modified environment. The lens is used to
--- point out the part to modify.
+-- point out the part to modify. Lenses supporting failure will call `fail` 
+-- in the inner Monad.
 
 localM :: MonadReader r m => (r :~> b) -> (b -> b) -> m a -> m a
 localM l f m = ask >>= liftMaybe . modLM l f >>= \r-> local (const r) m
