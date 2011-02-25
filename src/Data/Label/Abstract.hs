@@ -6,7 +6,7 @@
   , ScopedTypeVariables
   , MultiParamTypeClasses
   #-}
-module Data.Record.Label.Abstract where
+module Data.Label.Abstract where
 
 import Control.Arrow
 import Prelude hiding ((.), id)
@@ -71,7 +71,7 @@ bimap :: Arrow (~>) => (o' ~> o) -> (i ~> i') -> Point (~>) f i' o' -> Point (~>
 bimap f g l = Point (f . _get l) (_set l . first g)
 
 for :: Arrow (~>) => (i ~> o) -> Lens (~>) f o -> Point (~>) f i o
-for a b = bimap id a (unLens b)
+for p = bimap id p . unLens
 
 -- | The bijections datatype, an arrow that works in two directions. 
 

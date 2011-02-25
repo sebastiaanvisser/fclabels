@@ -1,8 +1,5 @@
-{-# LANGUAGE
-    TypeOperators
-  , TupleSections
-  #-}
-module Data.Record.Label.Pure
+{-# LANGUAGE TypeOperators, TupleSections #-}
+module Data.Label.Pure
 ( (:->)
 , lens
 , get
@@ -12,7 +9,7 @@ module Data.Record.Label.Pure
 where
 
 import Prelude hiding (mod)
-import qualified Data.Record.Label.Abstract as A
+import qualified Data.Label.Abstract as A
 
 type L f a = A.Lens (->) f a
 

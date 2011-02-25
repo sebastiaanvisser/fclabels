@@ -2,7 +2,7 @@
     TypeOperators
   , TupleSections
   #-}
-module Data.Record.Label.Maybe
+module Data.Label.Maybe
 ( (:~>)
 , lens
 , get
@@ -17,7 +17,7 @@ import Control.Monad.Identity
 import Control.Monad.Trans.Maybe
 import Data.Maybe
 import Prelude hiding ((.), id, mod)
-import qualified Data.Record.Label.Abstract as A
+import qualified Data.Label.Abstract as A
 
 type L f a = A.Lens (Kleisli (MaybeT Identity)) f a
 

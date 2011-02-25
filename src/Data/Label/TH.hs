@@ -1,4 +1,4 @@
-module Data.Record.Label.TH
+module Data.Label.TH
 ( mkLabels
 , mkLabelsNoTypes
 ) where

@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
-module Data.Record.Label.Monadic.Maybe
+module Data.Label.Monadic.Maybe
 (
 -- * Lens variants of common 'MonadState' operations.
   get
@@ -10,10 +10,10 @@ module Data.Record.Label.Monadic.Maybe
 where
 
 import Control.Monad
-import Data.Record.Label.Maybe ((:~>))
+import Data.Label.Maybe ((:~>))
 import qualified Control.Monad.Reader    as R
 import qualified Control.Monad.State     as S
-import qualified Data.Record.Label.Maybe as L
+import qualified Data.Label.Maybe as L
 
 -- | Get a value out of state pointed to by the specified lens that might fail.
 -- When the lens getter fails this computation will fall back to mzero.

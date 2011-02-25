@@ -128,13 +128,13 @@ Build-Type:      Simple
 
 Library
   HS-Source-Dirs:  src
-  Exposed-Modules: Data.Record.Label
-                   Data.Record.Label.Abstract
-                   Data.Record.Label.Maybe
-                   Data.Record.Label.Monadic
-                   Data.Record.Label.Monadic.Maybe
-                   Data.Record.Label.Pure
-  Other-Modules:   Data.Record.Label.TH
+  Exposed-Modules: Data.Label
+                   Data.Label.Abstract
+                   Data.Label.Maybe
+                   Data.Label.Monadic
+                   Data.Label.Monadic.Maybe
+                   Data.Label.Pure
+  Other-Modules:   Data.Label.TH
   Build-Depends:   base >= 3 && < 5
                  , template-haskell >= 2.2 && < 2.6
                  , mtl ==2.0.*

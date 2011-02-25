@@ -1,4 +1,4 @@
-module Data.Record.Label
+module Data.Label
 (
 
 -- * Pure, non-failing lenses.
@@ -14,14 +14,14 @@ module Data.Record.Label
 , for
 
 -- * Derive labels using Template Haskell.
-, module Data.Record.Label.TH
+, module Data.Label.TH
 )
 where
 
-import Data.Record.Label.Abstract (Bijection(..), Iso(..), for)
--- import Data.Record.Label.Maybe
-import Data.Record.Label.Pure
-import Data.Record.Label.TH
+import Data.Label.Abstract (Bijection(..), Iso(..), for)
+-- import Data.Label.Maybe
+import Data.Label.Pure
+import Data.Label.TH
 import Prelude hiding (mod)
 
 -- Lenses that might fail.

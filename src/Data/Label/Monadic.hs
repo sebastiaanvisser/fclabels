@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
-module Data.Record.Label.Monadic
+module Data.Label.Monadic
 (
 -- * Lens variants of common 'MonadState' operations.
   get
@@ -13,10 +13,10 @@ module Data.Record.Label.Monadic
 )
 where
 
-import Data.Record.Label.Pure ((:->))
+import Data.Label.Pure ((:->))
 import qualified Control.Monad.Reader   as R
 import qualified Control.Monad.State    as S
-import qualified Data.Record.Label.Pure as L
+import qualified Data.Label.Pure as L
 
 -- | Get a value out of state pointed to by the specified lens.
 
@@ -53,7 +53,7 @@ local l f = R.local (L.mod l f)
 
 {-
 
--- import Data.Record.Label.Maybe
+-- import Data.Label.Maybe
 
 -- | Get a value out of state pointed to by the specified lens that might fail.
 -- When the lens getter fails this computation will fall back to mzero.
