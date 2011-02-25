@@ -130,8 +130,9 @@ Library
   HS-Source-Dirs:  src
   Exposed-Modules: Data.Record.Label
                    Data.Record.Label.Abstract
-                   Data.Record.Label.Core
+                   Data.Record.Label.Maybe
                    Data.Record.Label.Monadic
+                   Data.Record.Label.Monadic.Maybe
                    Data.Record.Label.Pure
   Other-Modules:   Data.Record.Label.TH
   Build-Depends:   base >= 3 && < 5

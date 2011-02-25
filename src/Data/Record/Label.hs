@@ -1,28 +1,17 @@
 module Data.Record.Label
 (
 
--- * Pure non-failing lenses.
+-- * Pure, non-failing lenses.
   (:->)
 , lens
-, getL
-, setL
-, modL
-
--- * Lenses that might fail.
-, LensM
-, lensM
-, getLM
-, setLM
-, modLM
+, get
+, set
+, mod
 
 -- * Working with bijections and isomorphisms.
 , Bijection (..)
 , Iso (..)
 , for
-
--- * Monadic operations for pure lenses.
-, getM, setM, modM, (=:)
-, askM, localM
 
 -- * Derive labels using Template Haskell.
 , module Data.Record.Label.TH
@@ -30,7 +19,27 @@ module Data.Record.Label
 where
 
 import Data.Record.Label.Abstract (Bijection(..), Iso(..), for)
-import Data.Record.Label.Monadic
+-- import Data.Record.Label.Maybe
 import Data.Record.Label.Pure
 import Data.Record.Label.TH
+import Prelude hiding (mod)
+
+-- Lenses that might fail.
+-- , (:~>)
+-- , lensM
+-- , getLM
+-- , setLM
+-- , modLM
+
+-- Monadic operations for pure lenses.
+-- , getM
+-- , setM
+-- , modM
+-- , (=:)
+-- , askM
+-- , localM
+
+-- Monadic operations for lenses that might fail.
+-- , getMP
+-- , askMP
 

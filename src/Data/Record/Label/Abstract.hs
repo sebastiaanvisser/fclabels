@@ -40,18 +40,18 @@ lens g s = Lens (Point g s)
 
 -- | Get the getter arrow from a lens.
 
-getL :: Arrow (~>) => Lens (~>) f a -> f ~> a
-getL = _get . unLens
+get :: Arrow (~>) => Lens (~>) f a -> f ~> a
+get = _get . unLens
 
 -- | Get the setter arrow from a lens.
 
-setL :: Arrow (~>) => Lens (~>) f a -> (a, f) ~> f
-setL = _set . unLens
+set :: Arrow (~>) => Lens (~>) f a -> (a, f) ~> f
+set = _set . unLens
 
 -- | Get the modifier arrow from a lens.
 
-modL :: ArrowApply (~>) => Lens (~>) f o -> (o ~> o, f) ~> f
-modL = _mod . unLens
+mod :: ArrowApply (~>) => Lens (~>) f o -> (o ~> o, f) ~> f
+mod = _mod . unLens
 
 instance ArrowApply (~>) => Category (Lens (~>)) where
   id = lens id (arr snd)

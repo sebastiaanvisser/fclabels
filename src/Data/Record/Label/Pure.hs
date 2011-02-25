@@ -5,81 +5,38 @@
 module Data.Record.Label.Pure
 ( (:->)
 , lens
-, getL
-, setL
-, modL
-
-, LensM
-, lensM
-, getLM
-, setLM
-, modLM
+, get
+, set
+, mod
 )
 where
 
-import Control.Arrow
-import Control.Category
-import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
-import Data.Maybe
-import Prelude hiding ((.), id)
+import Prelude hiding (mod)
 import qualified Data.Record.Label.Abstract as A
 
--- | Pure lens type specialized to pure functions.
+type L f a = A.Lens (->) f a
 
-type f :-> a = A.Lens (->) f a
+-- | Pure lens type specialized for pure accessor functions.
+
+type (f :-> a) = L f a
 
 -- | Create a pure lens from a getter and a setter.
 
 lens :: (f -> a) -> (a -> f -> f) -> f :-> a
 lens g s = A.lens g (uncurry s)
 
--- | Getter for a pure lens that cannot fail.
+-- | Getter for a pure lens.
 
-getL :: (f :-> a) -> f -> a
-getL = A.getL
+get :: (f :-> a) -> f -> a
+get = A.get
 
--- | Setter for a pure lens that cannot fail.
+-- | Setter for a pure lens.
 
-setL :: (f :-> a) -> a -> f -> f
-setL = curry . A.setL
+set :: (f :-> a) -> a -> f -> f
+set = curry . A.set
 
--- | Modifier for a pure lens that cannot fail.
+-- | Modifier for a pure lens.
 
-modL :: (f :-> a) -> (a -> a) -> f -> f
-modL = curry . A.modL
-
--- | Pure lens the type for situation in which getters and setter might fail.
--- This can be useful, for example, when accessing fields in datatypes with
--- multiple constructors.
-
-type LensM f a = A.Lens (Kleisli (MaybeT Identity)) f a
-
-runForLensM :: Kleisli (MaybeT Identity) f a -> f -> Maybe a
-runForLensM l = runIdentity . runMaybeT . runKleisli l
-
--- | Create a lens that might fail from a getter and a setter that can
--- themselves potentially fail.
-
-lensM :: (f -> Maybe a) -> (a -> f -> Maybe f) -> LensM f a
-lensM g s = A.lens (k g) (k (uncurry s))
-  where k a = Kleisli (MaybeT . Identity . a)
-
--- | Getter for a lens that might fail. When the field to which the lens points
--- is not accessible the getter returns 'Nothing'.
-
-getLM :: LensM f a -> f -> Maybe a
-getLM l = runForLensM (A.getL l)
-
--- | Setter for a lens that might fail. When the field to which the lens points
--- is not accessible this function behaves like the identity function.
-
-setLM :: LensM f a -> a -> f -> Maybe f
-setLM l v = runForLensM (A.setL l . arr (v,))
-
--- | Modifier for a lens that might fail. When the field to which the lens
--- points is not accessible this function behaves like the identity function.
-
-modLM :: LensM f a -> (a -> a) -> f -> Maybe f
-modLM l m = runForLensM (A.modL l . arr (arr m,))
+mod :: (f :-> a) -> (a -> a) -> f -> f
+mod = curry . A.mod
 
