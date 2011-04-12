@@ -4,7 +4,7 @@ Run this file with 'ghci -ddump-splices TestTH.lhs'
  
 > module TestTH where
   
-> import Data.Record.Label
+> import Data.Label
  
 > data Person a b = Person 
 >     { name   :: String

@@ -7,9 +7,11 @@ module TestArrow where
 
 import Control.Arrow
 import Control.Category
-import Data.Record.Label.Pure
+import Data.Label.Abstract (Lens)
+import Data.Label.Pure
 import Prelude hiding ((.), id)
-import qualified Data.Record.Label.Abstract as Abs
+import qualified Data.Label.Abstract as Abs
+import qualified Data.Label.Maybe as M
 
 -------------------------------------------------------------------------------
 -- | Generic Maybe label, embedding in the maybe zero.
@@ -18,15 +20,14 @@ import qualified Data.Record.Label.Abstract as Abs
 
 maybeL :: (ArrowZero (~>), ArrowChoice (~>)) => Lens (~>) (Maybe a) a
 maybeL = Abs.lens getter setter
-  where
-    getter = proc p ->
-      do case p of
-           Just n  -> returnA   -< n
-           Nothing -> zeroArrow -< p
-    setter = proc (v, p) ->
-      do case p of
-           Just _  -> returnA -< Just v
-           Nothing -> returnA -< p
+  where getter = proc p ->
+          do case p of
+               Just n  -> returnA   -< n
+               Nothing -> zeroArrow -< p
+        setter = proc (v, p) ->
+          do case p of
+               Just _  -> returnA -< Just v
+               Nothing -> returnA -< p
 
 -------------------------------------------------------------------------------
 
@@ -45,49 +46,45 @@ data Twofold a b =
 
 nameL :: (ArrowZero (~>), ArrowChoice (~>)) => Lens (~>) (Twofold a b) String
 nameL = Abs.lens getter setter
-  where
-    getter = proc p ->
-      do case p of
-           Person n _ _ -> returnA   -< n
-           Animal {}    -> zeroArrow -< p
-    setter = proc (v, p) ->
-      do case p of
-           Person _ e s -> returnA -< Person v e s
-           Animal {}    -> returnA -< p
+  where getter = proc p ->
+          do case p of
+               Person n _ _ -> returnA   -< n
+               Animal {}    -> zeroArrow -< p
+        setter = proc (v, p) ->
+          do case p of
+               Person _ e s -> returnA -< Person v e s
+               Animal {}    -> returnA -< p
+
 
 otherL :: (ArrowChoice (~>), ArrowZero (~>), ArrowApply (~>)) => Lens (~>) (Twofold a b) (Twofold b a)
 otherL = maybeL . Abs.lens getter setter
-  where
-    getter = proc p ->
-      do case p of
-           Person _ _ s -> returnA   -< s
-           Animal {}    -> zeroArrow -< p
-    setter = proc (v, p) ->
-      do case p of
-           Person n e _ -> returnA -< Person n e v
-           Animal {}    -> returnA -< p
+  where getter = proc p ->
+          do case p of
+               Person _ _ s -> returnA   -< s
+               Animal {}    -> zeroArrow -< p
+        setter = proc (v, p) ->
+          do case p of
+               Person n e _ -> returnA -< Person n e v
+               Animal {}    -> returnA -< p
 
 -------------------------------------------------------------------------------
 
-data Single =
-    Single 
-      { sName  :: String
-      , sEmail :: Integer
-      }
+data Single = Single 
+  { sName  :: String
+  , sEmail :: Integer
+  }
 
 -- To be derived using TH:
 
 sNameL :: Arrow (~>) => Lens (~>) Single String
 sNameL = Abs.lens getter setter
-  where
-    getter = arr (\(Single n _) -> n)
-    setter = arr (\(v, Single _ e) -> Single v e)
+  where getter = arr (\(Single n _) -> n)
+        setter = arr (\(v, Single _ e) -> Single v e)
 
 sEmailL :: Arrow (~>) => Lens (~>) Single Integer
 sEmailL = Abs.lens getter setter
-  where
-    getter = arr (\(Single _ e) -> e)
-    setter = arr (\(v, Single n _) -> Single n v)
+  where getter = arr (\(Single _ e) -> e)
+        setter = arr (\(v, Single n _) -> Single n v)
 
 -------------------------------------------------------------------------------
 
@@ -95,16 +92,16 @@ sEmailL = Abs.lens getter setter
 -- maybe context.
 
 theName :: Single -> String
-theName = getL sNameL
+theName = get sNameL
 
 theNameM :: Single -> Maybe String
-theNameM = getLM sNameL
+theNameM = M.get sNameL
 
 -- Lenses that might fail are safely runnable in the maybe context, but
 -- produce a type error when used in the pure function context.
 
 nameOtherOther :: Twofold a b -> Maybe String
-nameOtherOther = getLM (nameL . otherL . otherL)
+nameOtherOther = M.get (nameL . otherL . otherL)
 
 -- nameOtherOther = getL (nameL . otherL . otherL)
 --    Produces: No instance for (ArrowZero (->))
