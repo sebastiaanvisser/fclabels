@@ -1,71 +1,53 @@
-{-# LANGUAGE TypeOperators, TypeSynonymInstances, TemplateHaskell #-}
+{-# LANGUAGE TypeOperators  #-}
 module Data.Label.Monadic
 (
--- * Lens variants of common 'MonadState' operations.
+-- * 'MonadState' lens operations.
   get
 , put
 , modify
 , (=:)
 
--- * Lens variants of common 'MonadReader' operations.
+-- * 'MonadReader' lens operations.
 , ask
 , local
 )
 where
 
 import Data.Label.Pure ((:->))
-import qualified Control.Monad.Reader   as R
-import qualified Control.Monad.State    as S
-import qualified Data.Label.Pure as L
+import qualified Control.Monad.Reader as M
+import qualified Control.Monad.State  as M
+import qualified Data.Label.Pure      as L
 
--- | Get a value out of state pointed to by the specified lens.
+-- | Get a value out of the state, pointed to by the specified lens.
 
-get :: S.MonadState s m => s :-> b -> m b
-get = S.gets . L.get
+get :: M.MonadState s m => s :-> b -> m b
+get = M.gets . L.get
 
--- | Set a value somewhere in state pointed to by the specified lens.
+-- | Set a value somewhere in the state, pointed to by the specified lens.
 
-put :: S.MonadState s m => s :-> b -> b -> m ()
-put l = S.modify . L.set l
+put :: M.MonadState s m => s :-> b -> b -> m ()
+put l = M.modify . L.set l
 
 -- | Alias for `put' that reads like an assignment.
 
 infixr 7 =:
-(=:) :: S.MonadState s m => s :-> b -> b -> m ()
+(=:) :: M.MonadState s m => s :-> b -> b -> m ()
 (=:) = put
 
--- | Modify a value with a function somewhere in state pointed to by the
+-- | Modify a value with a function somewhere in the state, pointed to by the
 -- specified lens.
 
-modify :: S.MonadState s m => s :-> b -> (b -> b) -> m ()
-modify l = S.modify . L.mod l
+modify :: M.MonadState s m => s :-> b -> (b -> b) -> m ()
+modify l = M.modify . L.mod l
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
 
-ask :: R.MonadReader r m => (r :-> b) -> m b
-ask = R.asks . L.get
+ask :: M.MonadReader r m => (r :-> b) -> m b
+ask = M.asks . L.get
 
 -- | Execute a computation in a modified environment. The lens is used to
 -- point out the part to modify.
 
-local :: R.MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
-local l f = R.local (L.mod l f)
+local :: M.MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
+local l f = M.local (L.mod l f)
 
-{-
-
--- import Data.Label.Maybe
-
--- | Get a value out of state pointed to by the specified lens that might fail.
--- When the lens getter fails this computation will fall back to mzero.
-
-getMP :: (MonadState f m, MonadPlus m) => (f :~> b) -> m b
-getMP l = (getL l `liftM` get) >>= (mzero `maybe` return)
-
--- | Fetch a value pointed to by a lens that might fail out of a reader
--- environment. When the lens getter fails this computation will fall back to
--- mzero.
-
-askMP :: (MonadReader f m, MonadPlus m) => (f :~> a) -> m a
-askMP l = (getL l `liftM` ask) >>= (mzero `maybe` return)
-
--}

@@ -22,7 +22,7 @@ data Point (~>) f i o = Point
   }
 
 -- | Modification as a compositon of a getter and setter. Unfortunately,
--- ArrowApply is needed for this composition.
+-- `ArrowApply' is needed for this composition.
 
 _mod :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
 _mod l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
