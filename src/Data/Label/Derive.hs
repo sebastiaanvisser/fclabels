@@ -60,7 +60,7 @@ derive1 signatures datatype =
     where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
                       . groupBy ((==) `on` (fst3 . fst))
                       . sortBy (comparing (fst3 . fst))
-          fst3 (a, _, _) = a
+                      where fst3 (a, _, _) = a
 
 -- Generate the code for the labels.
 
@@ -78,34 +78,6 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
        else [body]
 
   where
-
-    -- Generate a name for the label. If the original selector starts with an
-    -- underscore, remove it and make the next character lowercase. Otherwise,
-    -- add 'l', and make the next character uppercase.
-    fieldName = nameBase field
-    labelName = mkName $
-      case nameBase field of
-        '_' : c : rest -> toLower c : rest
-        f : rest       -> 'l' : toUpper f : rest
-        n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
-
-
-    -- Compute the type (including type variables of the record datatype.
-    inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse vars))
-
-    -- Convert a type variable binder to a regular type variable.
-    tvToVarT (PlainTV tv) = VarT tv
-    tvToVarT _            = fclError "No support for special-kinded type variables."
-
-    -- Q style record updating.
-    record rec fld val =
-      do v <- val
-         recUpdE rec [return (mkName fld, v)]
-
-    -- Build a function declaration with both a type-signature and body.
-    function (s, b) = liftM2 (,) 
-        (sigD labelName s)
-        (funD labelName [ clause [] (normalB b) [] ])
 
     -- Build a single record label definition for labels that might fail.
     deriveMaybeLabel = (sign, body)
@@ -128,6 +100,32 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
           where
             getter = [| arr $(fromString fieldName) |]
             setter = [| arr (\(v, p) -> $(record [| p |] fieldName [| v |])) |]
+
+    -- Generate a name for the label. If the original selector starts with an
+    -- underscore, remove it and make the next character lowercase. Otherwise,
+    -- add 'l', and make the next character uppercase.
+    fieldName = nameBase field
+    labelName = mkName $
+      case nameBase field of
+        '_' : c : rest -> toLower c : rest
+        f : rest       -> 'l' : toUpper f : rest
+        n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
+
+
+    -- Compute the type (including type variables of the record datatype.
+    inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse vars))
+
+    -- Convert a type variable binder to a regular type variable.
+    tvToVarT (PlainTV tv) = VarT tv
+    tvToVarT _            = fclError "No support for special-kinded type variables."
+
+    -- Q style record updating.
+    record rec fld val = val >>= \v -> recUpdE rec [return (mkName fld, v)]
+
+    -- Build a function declaration with both a type signature and body.
+    function (s, b) = liftM2 (,) 
+        (sigD labelName s)
+        (funD labelName [ clause [] (normalB b) [] ])
 
 -- IsString instances for TH types.
 
