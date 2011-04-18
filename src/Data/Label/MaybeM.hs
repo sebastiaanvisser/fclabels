@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
-module Data.Label.Monadic.Maybe
+module Data.Label.MaybeM
 (
 -- * 'MonadState' lens operations.
   get

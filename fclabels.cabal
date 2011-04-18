@@ -133,9 +133,9 @@ Library
   Exposed-Modules: Data.Label
                    Data.Label.Abstract
                    Data.Label.Maybe
-                   Data.Label.Monadic
-                   Data.Label.Monadic.Maybe
+                   Data.Label.MaybeM
                    Data.Label.Pure
+                   Data.Label.PureM
 
   GHC-Options:     -Wall
   Build-Depends:   base >= 3 && < 5

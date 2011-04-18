@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators  #-}
-module Data.Label.Monadic
+module Data.Label.PureM
 (
 -- * 'MonadState' lens operations.
   get
