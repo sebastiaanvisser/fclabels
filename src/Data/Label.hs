@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 module Data.Label
 (
 
@@ -6,7 +7,7 @@ module Data.Label
 , lens
 , get
 , set
-, mod
+, Pure.mod
 
 -- * Working with bijections and isomorphisms.
 , Bijection (..)
@@ -14,32 +15,13 @@ module Data.Label
 , for
 
 -- * Derive labels using Template Haskell.
-, module Data.Label.TH
+, mkLabels
+, mkLabelsNoTypes
 )
 where
 
 import Data.Label.Abstract (Bijection(..), Iso(..), for)
--- import Data.Label.Maybe
 import Data.Label.Pure
-import Data.Label.TH
-import Prelude hiding (mod)
-
--- Lenses that might fail.
--- , (:~>)
--- , lensM
--- , getLM
--- , setLM
--- , modLM
-
--- Monadic operations for pure lenses.
--- , getM
--- , setM
--- , modM
--- , (=:)
--- , askM
--- , localM
-
--- Monadic operations for lenses that might fail.
--- , getMP
--- , askMP
+import Data.Label.Derive
+import qualified Data.Label.Pure as Pure
 

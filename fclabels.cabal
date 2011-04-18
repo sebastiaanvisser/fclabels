@@ -128,16 +128,19 @@ Build-Type:      Simple
 
 Library
   HS-Source-Dirs:  src
+
+  Other-Modules:   Data.Label.Derive
   Exposed-Modules: Data.Label
                    Data.Label.Abstract
                    Data.Label.Maybe
                    Data.Label.Monadic
                    Data.Label.Monadic.Maybe
                    Data.Label.Pure
-  Other-Modules:   Data.Label.TH
+
+  GHC-Options:     -Wall
   Build-Depends:   base >= 3 && < 5
                  , template-haskell >= 2.2 && < 2.6
                  , mtl ==2.0.*
                  , transformers
-  GHC-Options:     -Wall
+
 

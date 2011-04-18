@@ -38,22 +38,45 @@ data Twofold a b =
       , other :: Maybe (Twofold b a)
       }
   | Animal
-      { kind   :: String
-      , legs   :: Int
+      { kind  :: String
+      , legs  :: Int
       }
+  | Robot
+      { name  :: String
+      }
+
 
 -- To be derived using TH:
 
+{-
 nameL :: (ArrowZero (~>), ArrowChoice (~>)) => Lens (~>) (Twofold a b) String
 nameL = Abs.lens getter setter
   where getter = proc p ->
           do case p of
                Person n _ _ -> returnA   -< n
-               Animal {}    -> zeroArrow -< p
+               Robot  n     -> returnA   -< n
+               _            -> zeroArrow -< ()
         setter = proc (v, p) ->
           do case p of
-               Person _ e s -> returnA -< Person v e s
-               Animal {}    -> returnA -< p
+               Person {}    -> returnA -< p { name = v }
+               Robot  {}    -> returnA -< p { name = v }
+               _            -> zeroArrow -< ()
+-}
+
+nameL :: (ArrowChoice (~>), ArrowZero (~>)) => Lens (~>) (Twofold a b) String
+nameL =
+  Abs.lens
+    (arr (\p -> case p of
+                   Person {} -> Right (name p)
+                   Robot  {} -> Right (name p)
+                   _         -> Left ()
+         ) >>> (zeroArrow ||| returnA))
+    (arr (\(v, p) ->
+       case p of
+          Person {} -> Right p { name = v }
+          Robot  {} -> Right p { name = v }
+          _         -> Left ()
+    ) >>> (zeroArrow ||| returnA))
 
 
 otherL :: (ArrowChoice (~>), ArrowZero (~>), ArrowApply (~>)) => Lens (~>) (Twofold a b) (Twofold b a)
@@ -61,11 +84,11 @@ otherL = maybeL . Abs.lens getter setter
   where getter = proc p ->
           do case p of
                Person _ _ s -> returnA   -< s
-               Animal {}    -> zeroArrow -< p
+               _            -> zeroArrow -< p
         setter = proc (v, p) ->
           do case p of
                Person n e _ -> returnA -< Person n e v
-               Animal {}    -> returnA -< p
+               _            -> returnA -< p
 
 -------------------------------------------------------------------------------
 
