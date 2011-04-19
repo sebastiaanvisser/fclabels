@@ -90,6 +90,8 @@ liftBij a = Bij (fmap (fw a)) (fmap (bw a))
 
 -- | The isomorphism type class is like a `Functor' but works in two directions.
 
+infixr 8 `iso`
+
 class Iso (~>) f where
   iso :: Bijection (~>) a b -> f a ~> f b
 
