@@ -8,7 +8,7 @@ module Data.Label.PureM
 , (=:)
 
 -- * 'MonadReader' lens operations.
-, ask
+, asks
 , local
 )
 where
@@ -42,8 +42,8 @@ modify l = M.modify . L.mod l
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
 
-ask :: M.MonadReader r m => (r :-> b) -> m b
-ask = M.asks . L.get
+asks :: M.MonadReader r m => (r :-> b) -> m b
+asks = M.asks . L.get
 
 -- | Execute a computation in a modified environment. The lens is used to
 -- point out the part to modify.

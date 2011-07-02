@@ -5,7 +5,7 @@ module Data.Label.MaybeM
   get
 
 -- * 'MonadReader' lens operations.
-, ask
+, asks
 )
 where
 
@@ -26,6 +26,6 @@ get l = (L.get l `liftM` M.get) >>= (mzero `maybe` return)
 -- environment. When the lens getter fails this computation will fall back to
 -- `mzero'.
 
-ask :: (M.MonadReader f m, MonadPlus m) => (f :~> a) -> m a
-ask l = (L.get l `liftM` M.ask) >>= (mzero `maybe` return)
+asks :: (M.MonadReader f m, MonadPlus m) => (f :~> a) -> m a
+asks l = (L.get l `liftM` M.ask) >>= (mzero `maybe` return)
 
