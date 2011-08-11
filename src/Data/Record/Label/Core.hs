@@ -4,8 +4,6 @@ module Data.Record.Label.Core where
 import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
-import Control.Monad.State
-import Control.Monad.Reader
 
 data Point f i o = Point
   { _get :: f -> o
