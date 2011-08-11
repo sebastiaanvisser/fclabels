@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.11.1.1
+Version:         0.11.2
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels implemented as lenses.
 
@@ -116,8 +116,10 @@ Description:     First class labels that act as bidirectional record fields.
                  .
                  .
                  > CHANGELOG
-                 >   0.11.1 -> 0.11.1.1
-                 >   - Improved TH support for multiple constructor datatypes.
+                 >   0.11.1.1 -> 0.11.2
+                 >   - Relaxed template haskell dependency constraint
+                 >     for GHC 7.2
+                 >   - Removed redundant import warnings.
 
 Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
 License:         BSD3
