@@ -139,3 +139,6 @@ Library
                  , mtl >= 1.1 && <= 2.1
   GHC-Options:     -Wall
 
+Source-Repository head
+  Type:            git
+  Location:        git://github.com/sebastiaanvisser/fclabels.git
