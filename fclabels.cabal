@@ -133,7 +133,7 @@ Library
                    Data.Record.Label.Monadic
   Other-Modules:   Data.Record.Label.TH
   Build-Depends:   base >= 3 && < 5
-                 , template-haskell >= 2.2 && < 2.6
+                 , template-haskell >= 2.2 && < 2.7
                  , mtl >= 1.1 && <= 2.1
   GHC-Options:     -Wall
 
