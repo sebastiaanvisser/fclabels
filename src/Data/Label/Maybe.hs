@@ -7,7 +7,7 @@ module Data.Label.Maybe
 , lens
 , get
 , set
-, mod
+, modify
 )
 where
 
@@ -16,7 +16,7 @@ import Control.Category
 import Control.Monad.Identity
 import Control.Monad.Trans.Maybe
 import Data.Maybe
-import Prelude hiding ((.), id, mod)
+import Prelude hiding ((.), id)
 import qualified Data.Label.Abstract as A
 
 type L f a = A.Lens (Kleisli (MaybeT Identity)) f a
@@ -52,6 +52,6 @@ set l v = run (A.set l . arr (v,))
 -- | Modifier for a lens that can fail. When the field to which the lens points
 -- is not accessible this function behaves like the identity function.
 
-mod :: (f :~> a) -> (a -> a) -> f -> Maybe f
-mod l m = run (A.mod l . arr (arr m,))
+modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
+modify l m = run (A.modify l . arr (arr m,))
 

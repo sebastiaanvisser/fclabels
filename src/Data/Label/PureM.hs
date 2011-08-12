@@ -38,7 +38,7 @@ infixr 7 =:
 -- specified lens.
 
 modify :: M.MonadState s m => s :-> b -> (b -> b) -> m ()
-modify l = M.modify . L.mod l
+modify l = M.modify . L.modify l
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
 
@@ -49,5 +49,5 @@ asks = M.asks . L.get
 -- point out the part to modify.
 
 local :: M.MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
-local l f = M.local (L.mod l f)
+local l f = M.local (L.modify l f)
 

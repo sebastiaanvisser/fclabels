@@ -24,8 +24,8 @@ data Point (~>) f i o = Point
 -- | Modification as a compositon of a getter and setter. Unfortunately,
 -- `ArrowApply' is needed for this composition.
 
-_mod :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
-_mod l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
+_modify :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
+_modify l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
 
 -- | Abstract Lens datatype. The getter and setter functions may work in some
 -- arrow. Arrows allow for efectful lenses, for example, lenses that might fail
@@ -50,12 +50,12 @@ set = _set . unLens
 
 -- | Get the modifier arrow from a lens.
 
-mod :: ArrowApply (~>) => Lens (~>) f o -> (o ~> o, f) ~> f
-mod = _mod . unLens
+modify :: ArrowApply (~>) => Lens (~>) f o -> (o ~> o, f) ~> f
+modify = _modify . unLens
 
 instance ArrowApply (~>) => Category (Lens (~>)) where
   id = lens id (arr snd)
-  Lens a . Lens b = lens (_get a . _get b) (_mod b . first (curryA (_set a)))
+  Lens a . Lens b = lens (_get a . _get b) (_modify b . first (curryA (_set a)))
     where curryA f = arr (\i -> f . arr (i,))
 
 instance Arrow (~>) => Functor (Point (~>) f i) where

@@ -80,12 +80,12 @@ used to convert a `Point` back into a `Label`. The `for` function must be used
 to indicate which partial destructor to use for which lens in the applicative
 composition.
 
-mod that we have an appropriate age+city view on the `Person` data type (which
-is itself a lens again), we can use the `mod` function to make Jan move to
+Now that we have an appropriate age+city view on the `Person` data type (which
+is itself a lens again), we can use the `modify` function to make Jan move to
 Amsterdam over exactly two years:
 
 > moveToAmsterdamOverTwoYears :: Person -> Person
-> moveToAmsterdamOverTwoYears = mod ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
+> moveToAmsterdamOverTwoYears = modify ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
 
 > moveToAmsterdamOverTwoYears jan ==
 >  Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
@@ -110,7 +110,7 @@ module Data.Label
 , lens
 , get
 , set
-, Pure.mod
+, modify
 
 -- * Working with bijections and isomorphisms.
 , Bijection (..)
@@ -126,5 +126,4 @@ where
 import Data.Label.Abstract (Bijection(..), Iso(..), for)
 import Data.Label.Pure
 import Data.Label.Derive
-import qualified Data.Label.Pure as Pure
 

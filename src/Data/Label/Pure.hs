@@ -4,11 +4,10 @@ module Data.Label.Pure
 , lens
 , get
 , set
-, mod
+, modify
 )
 where
 
-import Prelude hiding (mod)
 import qualified Data.Label.Abstract as A
 
 type L f a = A.Lens (->) f a
@@ -34,6 +33,6 @@ set = curry . A.set
 
 -- | Modifier for a pure lens.
 
-mod :: (f :-> a) -> (a -> a) -> f -> f
-mod = curry . A.mod
+modify :: (f :-> a) -> (a -> a) -> f -> f
+modify = curry . A.modify
 
