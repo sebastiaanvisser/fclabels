@@ -1,0 +1,57 @@
+CHANGELOG
+
+  0.11.1.1 -> 0.11.2
+
+    - Relaxed template haskell dependency constraint for GHC 7.2
+    - Removed redundant import warnings.
+
+  0.11.1 -> 0.11.1.1
+
+    - Improved TH support for multiple constructor datatypes.
+
+  0.9.1 -> 0.11.0
+
+    - Monadic labels now build against mtl.
+    - Separate module for core/non-core code.
+    - Code cleanups, especially the TH code.
+
+  0.4.2 -> 0.9.1
+
+    - Added askM and localM for running lenses inside MonadReader.
+    - Minor documentaion update.
+    - Exported Point internals.
+    - Renamed Label to Lens.
+
+  0.9.1 -> 0.11.0
+
+    - Monadic labels now build against mtl.
+    - Separate module for core/non-core code.
+    - Code cleanups, especially the TH code.
+
+  0.4.2 -> 0.9.1
+
+    - Added askM and localM for running lenses inside MonadReader.
+    - Minor documentaion update.
+    - Exported Point internals.
+    - Renamed Lens to Bijection, which is more correct.
+    - Renamed Label to Lens.
+
+  0.4.2 -> 0.4.3
+
+    - Added askM and locaM for running labels inside MonadReader.
+
+  0.4.2 -> 1.0.0
+
+    - Added askM and localM for running lenses inside MonadReader.
+    - Minor documentaion update.
+    - Exported Point internals.
+    - Renamed Lens to Bijection, which is more correct.
+    - Renamed Label to Lens.
+
+  0.4.2 -> 0.4.3
+
+    - Added askM and locaM for running labels inside MonadReader.
+    - Minor documentaion update.
+    - Exported Point internals.
+    - Renamed Lens to Bijection, which is more correct.
+
