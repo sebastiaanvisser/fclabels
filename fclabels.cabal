@@ -1,5 +1,5 @@
 Name:            fclabels
-Version:         0.11.2
+Version:         0.15
 Author:          Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:        First class accessor labels implemented as lenses.
 
@@ -130,15 +130,21 @@ Build-Type:      Simple
 
 Library
   HS-Source-Dirs:  src
-  Exposed-Modules: Data.Record.Label
-                   Data.Record.Label.Core
-                   Data.Record.Label.Monadic
-  Other-Modules:   Data.Record.Label.TH
+
+  Other-Modules:   Data.Label.Derive
+  Exposed-Modules: Data.Label
+                   Data.Label.Abstract
+                   Data.Label.Maybe
+                   Data.Label.MaybeM
+                   Data.Label.Pure
+                   Data.Label.PureM
+
+  GHC-Options:     -Wall
   Build-Depends:   base >= 3 && < 5
                  , template-haskell >= 2.2 && < 2.7
                  , mtl >= 1.1 && <= 2.1
-  GHC-Options:     -Wall
 
 Source-Repository head
   Type:            git
   Location:        git://github.com/sebastiaanvisser/fclabels.git
+
