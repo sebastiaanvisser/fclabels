@@ -44,13 +44,13 @@ get :: (f :~> a) -> f -> Maybe a
 get l = run (A.get l)
 
 -- | Setter for a lens that can fail. When the field to which the lens points
--- is not accessible this function behaves like the identity function.
+-- is not accessible this function returns 'Nothing'.
 
 set :: f :~> a -> a -> f -> Maybe f
 set l v = run (A.set l . arr (v,))
 
 -- | Modifier for a lens that can fail. When the field to which the lens points
--- is not accessible this function behaves like the identity function.
+-- is not accessible this function returns 'Nothing'.
 
 modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
 modify l m = run (A.modify l . arr (arr m,))
