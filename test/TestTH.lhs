@@ -1,5 +1,4 @@
-Run this file with 'ghci -ddump-splices TestTH.lhs'
-
+> {-# OPTIONS -ddump-splices #-}
 > {-# LANGUAGE TemplateHaskell #-}
 
 > module TestTH where
@@ -9,16 +8,18 @@ Run this file with 'ghci -ddump-splices TestTH.lhs'
 
 > data Person a b =
 >   Person
->    { _name   :: String
->    , _email  :: Int
->    , _ann    :: [Person b a]
+>    { _name  :: String
+>    , _email :: Int
+>    , _ann   :: [Person b a]
 >    }
->  | NoPerson { _non :: (), _ann :: [Person b a] }
+>  | NoPerson
+>    { _non :: ()
+>    , _ann :: [Person b a]
+>    }
 >  deriving Show
 
 > $(mkLabels [''Person])
 
 > myPerson :: Person b b
 > myPerson = Person "NAME" 3 [myPerson]
-
 
