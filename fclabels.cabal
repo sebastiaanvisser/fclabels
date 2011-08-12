@@ -1,8 +1,8 @@
 Name:          fclabels
 Version:       0.15
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
-Synopsis:      First class accessor labels implemented as lenses.
-Description:   First class labels that act as bidirectional record fields.
+Synopsis:      First class accessor labels.
+Description:   First class labels that act as bidirectional record fields, implemented as lenses.
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
 License-File:  LICENCE
