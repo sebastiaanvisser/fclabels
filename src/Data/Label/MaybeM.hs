@@ -2,7 +2,7 @@
 module Data.Label.MaybeM
 (
 -- * 'MonadState' lens operations.
-  get
+  gets
 
 -- * 'MonadReader' lens operations.
 , asks
@@ -19,8 +19,8 @@ import qualified Data.Label.Maybe     as L
 -- fail.  When the lens getter fails this computation will fall back to
 -- `mzero'.
 
-get :: (M.MonadState f m, MonadPlus m) => (f :~> b) -> m b
-get l = (L.get l `liftM` M.get) >>= (mzero `maybe` return)
+gets :: (M.MonadState f m, MonadPlus m) => (f :~> a) -> m a
+gets l = (L.get l `liftM` M.get) >>= (mzero `maybe` return)
 
 -- | Fetch a value, pointed to by a lens that might fail, out of a reader
 -- environment. When the lens getter fails this computation will fall back to
