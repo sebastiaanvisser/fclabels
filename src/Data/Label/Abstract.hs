@@ -14,7 +14,7 @@ import Control.Applicative
 import Control.Category
 
 -- | Abstract Point datatype. The getter and setter functions may work in
--- 'some' arrow.
+-- some arrow.
 
 data Point (~>) f i o = Point
   { _get :: f ~> o
@@ -27,9 +27,9 @@ data Point (~>) f i o = Point
 _mod :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
 _mod l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
 
--- | Abstract Lens datatype. The getter and setter functions may work in
--- /some/ arrow. Arrows allow for efectful lenses, for example, lenses that
--- might fail or use state.
+-- | Abstract Lens datatype. The getter and setter functions may work in some
+-- arrow. Arrows allow for efectful lenses, for example, lenses that might fail
+-- or use state.
 
 newtype Lens (~>) f a = Lens { unLens :: Point (~>) f a a }
 
