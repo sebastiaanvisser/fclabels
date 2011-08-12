@@ -140,9 +140,11 @@ Library
                    Data.Label.PureM
 
   GHC-Options:     -Wall
-  Build-Depends:   base >= 3 && < 5
-                 , template-haskell >= 2.2 && < 2.7
-                 , mtl >= 1.1 && <= 2.1
+  Build-Depends:
+      base                       < 5
+    , template-haskell >= 2.2 && < 2.7
+    , mtl              >= 2.0 && < 2.2
+    , transformers     >= 0.2 && < 0.3
 
 Source-Repository head
   Type:            git
