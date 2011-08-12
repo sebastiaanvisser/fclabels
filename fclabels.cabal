@@ -121,25 +121,27 @@ Description:     First class labels that act as bidirectional record fields.
                  >     for GHC 7.2
                  >   - Removed redundant import warnings.
 
-Maintainer:      Sebastiaan Visser <haskell@fvisser.nl>
-License:         BSD3
-License-File:    LICENCE
-Category:        Data
-Cabal-Version:   >= 1.6
-Build-Type:      Simple
+Maintainer:    Sebastiaan Visser <code@fvisser.nl>
+License:       BSD3
+License-File:  LICENCE
+Category:      Data
+Cabal-Version: >= 1.6
+Build-Type:    Simple
 
 Library
   HS-Source-Dirs:  src
 
-  Other-Modules:   Data.Label.Derive
-  Exposed-Modules: Data.Label
-                   Data.Label.Abstract
-                   Data.Label.Maybe
-                   Data.Label.MaybeM
-                   Data.Label.Pure
-                   Data.Label.PureM
+  Other-Modules:
+    Data.Label.Derive
+  Exposed-Modules:
+    Data.Label
+    Data.Label.Abstract
+    Data.Label.Maybe
+    Data.Label.MaybeM
+    Data.Label.Pure
+    Data.Label.PureM
 
-  GHC-Options:     -Wall
+  GHC-Options: -Wall
   Build-Depends:
       base                       < 5
     , template-haskell >= 2.2 && < 2.7
@@ -147,6 +149,6 @@ Library
     , transformers     >= 0.2 && < 0.3
 
 Source-Repository head
-  Type:            git
-  Location:        git://github.com/sebastiaanvisser/fclabels.git
+  Type:     git
+  Location: git://github.com/sebastiaanvisser/fclabels.git
 
