@@ -70,6 +70,8 @@ instance Arrow (~>) => Applicative (Point (~>) f i) where
 bimap :: Arrow (~>) => (o' ~> o) -> (i ~> i') -> Point (~>) f i' o' -> Point (~>) f i o
 bimap f g l = Point (f . _get l) (_set l . first g)
 
+infix 8 `for`
+
 for :: Arrow (~>) => (i ~> o) -> Lens (~>) f o -> Point (~>) f i o
 for p = bimap id p . unLens
 
