@@ -143,7 +143,7 @@ Library
   Build-Depends:
       base                       < 5
     , template-haskell >= 2.2 && < 2.7
-    , mtl              >= 2.0 && < 2.2
+    , mtl              >= 1.0 && < 2.2
     , transformers     >= 0.2 && < 0.3
 
 Source-Repository head
