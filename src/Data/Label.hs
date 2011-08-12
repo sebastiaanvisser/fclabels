@@ -1,12 +1,26 @@
 {-# LANGUAGE TypeOperators #-}
 {- |
-
 This package provides first class labels that can act as bidirectional record
 fields. The labels can be derived automatically using Template Haskell which
 means you don't have to write any boilerplate yourself. The labels are
 implemented as lenses and are fully composable. Labels can be used to /get/,
 /set/ and /modify/ parts of a datatype in a consistent way.
+-}
 
+module Data.Label
+(
+
+-- * Pure lenses.
+
+  (:->)
+, lens
+, get
+, set
+, modify
+
+-- * Working with @fclabels@.
+
+{- |
 The lens datatype, conveniently called `:->', is an instance of the
 "Control.Category" type class: meaning it has a proper identity and
 composition. The library has support for automatically deriving labels from
@@ -63,10 +77,16 @@ Composition is done using the @(`.`)@ operator which is part of the
 "Control.Category" module. Make sure to import this module and hide the default
 @(`.`)@, `id` function from the Haskell "Prelude".
 
+-}
+
+-- * Views using @Applicative@.
+
+{- |
+
 Now, because Jan is an old guy, moving to another city is not a very easy task,
 this really takes a while. It will probably take no less than two years before
 he will actually be settled. To reflect this change it might be useful to have
-a first class view on the `Person` data type that only reveals the age and
+a first class view on the `Person` datatype that only reveals the age and
 city.  This can be done by using a neat `Applicative` functor instance:
 
 > ageAndCity :: Person :-> (Int, String)
@@ -80,43 +100,40 @@ used to convert a `Point` back into a `Label`. The `for` function must be used
 to indicate which partial destructor to use for which lens in the applicative
 composition.
 
-Now that we have an appropriate age+city view on the `Person` data type (which
+Now that we have an appropriate age+city view on the `Person` datatype (which
 is itself a lens again), we can use the `modify` function to make Jan move to
 Amsterdam over exactly two years:
 
 > moveToAmsterdamOverTwoYears :: Person -> Person
 > moveToAmsterdamOverTwoYears = modify ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
 
-> moveToAmsterdamOverTwoYears jan ==
->  Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
-
-This package also contains a bijection data type that encodes bidirectional
-functions. Just like lenses, lenses can be composed with other lenses using the
-"Control.Category" type class. Lenses can be used to change the type of a lens.
-The `Iso` type class, which can be seen as a bidirectional functor, can be
-used to apply lenses to lenses. For example, when we want to treat the age of
-a person as a string we can do the following:
-
-> ageAsString :: Person :-> String
-> ageAsString :: (show :<->: read) % age
+> ghci> moveToAmsterdamOverTwoYears jan
+> Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
 
 -}
-module Data.Label
-(
-
--- * Pure lenses.
-  (:->)
-, lens
-, get
-, set
-, modify
 
 -- * Working with bijections and isomorphisms.
+-- 
+-- | This package contains a bijection datatype that encodes bidirectional
+-- functions. Just like lenses, bijections can be composed using the
+-- "Control.Category" type class. Bijections can be used to change the type of
+-- a lens. The `Iso` type class, which can be seen as a bidirectional functor,
+-- can be used to apply lenses to lenses.
+-- 
+-- For example, when we want to treat the age of a person as a string we can do
+-- the following:
+-- 
+-- > ageAsString :: Person :-> String
+-- > ageAsString :: Bij show read % age
+
 , Bijection (..)
 , Iso (..)
 , for
 
 -- * Derive labels using Template Haskell.
+--
+-- | We can either derive labels with or without type signatures.
+
 , mkLabels
 , mkLabelsNoTypes
 )
