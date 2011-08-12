@@ -4,8 +4,8 @@
 This package provides first class labels that can act as bidirectional record
 fields. The labels can be derived automatically using Template Haskell which
 means you don't have to write any boilerplate yourself. The labels are
-implemented as lenses and are fully composable and can be used to /get/, /set/
-and /modify/ parts of a datatype in a consistent way. 
+implemented as lenses and are fully composable. Labels can be used to /get/,
+/set/ and /modify/ parts of a datatype in a consistent way.
 
 The lens datatype, conveniently called `:->', is an instance of the
 "Control.Category" type class: meaning it has a proper identity and
@@ -101,11 +101,10 @@ a person as a string we can do the following:
 > ageAsString :: (show :<->: read) % age
 
 -}
-
 module Data.Label
 (
 
--- * Pure, non-failing lenses.
+-- * Pure lenses.
   (:->)
 , lens
 , get
