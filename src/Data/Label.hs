@@ -10,14 +10,6 @@ implemented as lenses and are fully composable. Labels can be used to /get/,
 module Data.Label
 (
 
--- * Pure lenses.
-
-  (:->)
-, lens
-, get
-, set
-, modify
-
 -- * Working with @fclabels@.
 
 {- |
@@ -81,6 +73,14 @@ Composition is done using the @(`.`)@ operator which is part of the
 @(`.`)@, `id` function from the Haskell "Prelude".
 
 -}
+
+-- * Pure lenses.
+
+  (:->)
+, lens
+, get
+, set
+, modify
 
 -- * Views using @Applicative@.
 
