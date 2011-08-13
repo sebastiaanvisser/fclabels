@@ -132,7 +132,11 @@ Amsterdam over exactly two years:
 
 -- * Derive labels using Template Haskell.
 --
--- | We can either derive labels with or without type signatures.
+-- | We can either derive labels with or without type signatures. In the case
+-- of multi-constructor datatypes some fields might not always be available and
+-- the derived labels will be partial. Partial labels are provided with an
+-- additional type context that forces them to be only usable using the
+-- functions from "Data.Label.Maybe".
 
 , mkLabels
 , mkLabelsNoTypes

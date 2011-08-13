@@ -5,3 +5,11 @@ implemented as lenses and are fully composable. Labels can be used to /get/,
 /set/ and /modify/ parts of a datatype in a consistent way.
 
 See "Data.Label" for an introductory explanation.
+
+Internally lenses are not tied to Haskell functions directly, but are
+implemented as arrows. Arrows allow the lenses to be run in custom
+computational contexts. This approach allows us to make partial lenses that
+point to fields of multi-constructor datatypes in an elegant way.
+
+See the "Data.Label.Maybe" module for the use of partial labels.
+
