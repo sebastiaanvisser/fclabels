@@ -18,6 +18,12 @@ Description:   This package provides first class labels that can act as
                datatypes in an elegant way.
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
+               .
+               > 0.11.2 -> 1.0
+               >   - Added abstract arrow based core module.
+               >   - Allow both pure and failing labels to be derived.
+               >   - Major API and documentation cleanup.
+               >   - Renamed lots of exposed function names.
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
 License-File:  LICENCE
