@@ -17,6 +17,10 @@ type L f a = A.Lens (->) f a
 type (f :-> a) = L f a
 
 -- | Create a pure lens from a getter and a setter.
+--
+-- We expect the following law to hold:
+--
+-- > get l . set l a == const a
 
 lens :: (f -> a) -> (a -> f -> f) -> f :-> a
 lens g s = A.lens g (uncurry s)
