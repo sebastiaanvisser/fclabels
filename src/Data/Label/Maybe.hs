@@ -5,6 +5,7 @@ module Data.Label.Maybe
 , get
 , set
 , modify
+, embed
 )
 where
 
@@ -51,4 +52,10 @@ set l v = run (A.set l . arr (v,))
 
 modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
 modify l m = run (A.modify l . arr (arr m,))
+
+-- | Embed a pure lens that points to a Maybe field into a lens that might
+-- fail.
+
+embed :: A.Lens (->) f (Maybe a) -> f :~> a
+embed l = lens (A.get l) (\a f -> Just (A.set l (Just a, f)))
 

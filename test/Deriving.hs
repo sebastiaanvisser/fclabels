@@ -13,8 +13,8 @@ data Pet = Cat | Dog
   deriving Show
 
 data Family a = Family
-  { _father :: Member a
-  , _mother :: Member a
+  { _father :: Maybe (Member a)
+  , _mother :: Maybe (Member a)
   }
  deriving Show
 
@@ -34,13 +34,13 @@ data Member a =
 $(mkLabels [''Family, ''Member])
 
 myself :: Member Int
-myself = Person "Me" 28 (Family myDad myMum)
+myself = Person "Me" 28 (Family (Just myDad) (Just myMum))
 
 myMum :: Member Int
-myMum = Person "Mum" 53 (error "no information")
+myMum = Person "Mum" 53 (Family Nothing Nothing)
 
 myDad :: Member Int
-myDad = Person "Dad" 55 (error "no information")
+myDad = Person "Dad" 55 (Family Nothing Nothing)
 
 cat :: Member Int
 cat = Pet Cat "Puss" 8
@@ -53,6 +53,6 @@ howOldIsMum = get age myMum
 animalKind :: Maybe Pet
 animalKind = M.get kind cat
 
-myFathersBirthdata :: Maybe (Member Int)
-myFathersBirthdata = M.modify (age . father . family) (+ 1) myself
+myFathersBirthday :: Maybe (Member Int)
+myFathersBirthday = M.modify (age . M.embed father . family) (+ 1) myself
 
