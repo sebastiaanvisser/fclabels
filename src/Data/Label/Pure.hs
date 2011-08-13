@@ -10,11 +10,11 @@ where
 
 import qualified Data.Label.Abstract as A
 
-type L f a = A.Lens (->) f a
+type PureLens f a = A.Lens (->) f a
 
 -- | Pure lens type specialized for pure accessor functions.
 
-type (f :-> a) = L f a
+type (f :-> a) = PureLens f a
 
 -- | Create a pure lens from a getter and a setter.
 --

@@ -17,13 +17,13 @@ import Data.Maybe
 import Prelude hiding ((.), id)
 import qualified Data.Label.Abstract as A
 
-type L f a = A.Lens (Kleisli (MaybeT Identity)) f a
+type MaybeLens f a = A.Lens (Kleisli (MaybeT Identity)) f a
 
 -- | Lens type for situations in which the accessor functions can fail. This is
 -- useful, for example, when accessing fields in datatypes with multiple
 -- constructors.
 
-type f :~> a = L f a
+type f :~> a = MaybeLens f a
 
 run :: Kleisli (MaybeT Identity) f a -> f -> Maybe a
 run l = runIdentity . runMaybeT . runKleisli l
@@ -53,8 +53,8 @@ set l v = run (A.set l . arr (v,))
 modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
 modify l m = run (A.modify l . arr (arr m,))
 
--- | Embed a pure lens that points to a Maybe field into a lens that might
--- fail.
+-- | Embed a pure lens that points to a `Maybe` field into
+-- a lens that might fail.
 
 embed :: A.Lens (->) f (Maybe a) -> f :~> a
 embed l = lens (A.get l) (\a f -> Just (A.set l (Just a, f)))
