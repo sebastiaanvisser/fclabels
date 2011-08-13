@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TupleSections #-}
+{-# LANGUAGE TypeOperators #-}
 module Data.Label.Pure
 ( (:->)
 , lens

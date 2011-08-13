@@ -1,7 +1,4 @@
-{-# LANGUAGE
-    TypeOperators
-  , TupleSections
-  #-}
+{-# LANGUAGE TypeOperators, TupleSections #-}
 module Data.Label.Maybe
 ( (:~>)
 , lens

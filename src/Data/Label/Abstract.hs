@@ -3,7 +3,6 @@
   , Arrows
   , TupleSections
   , FlexibleInstances
-  , ScopedTypeVariables
   , MultiParamTypeClasses
   #-}
 module Data.Label.Abstract where
