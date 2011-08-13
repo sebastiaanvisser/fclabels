@@ -12,8 +12,8 @@ import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
 
--- | Abstract Point datatype. The getter and setter functions may work in
--- some arrow.
+-- | Abstract Point datatype. The getter and setter functions work in some
+-- arrow.
 
 data Point (~>) f i o = Point
   { _get :: f ~> o
@@ -26,9 +26,9 @@ data Point (~>) f i o = Point
 _modify :: ArrowApply (~>) => Point (~>) f i o -> (o ~> i, f) ~> f
 _modify l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
 
--- | Abstract Lens datatype. The getter and setter functions may work in some
--- arrow. Arrows allow for efectful lenses, for example, lenses that might fail
--- or use state.
+-- | Abstract Lens datatype. The getter and setter functions work in some
+-- arrow. Arrows allow for effectful lenses, for example, lenses that might
+-- fail or use state.
 
 newtype Lens (~>) f a = Lens { unLens :: Point (~>) f a a }
 
@@ -64,7 +64,7 @@ instance Arrow (~>) => Applicative (Point (~>) f i) where
   pure a  = Point (arr (const a)) (arr snd)
   a <*> b = Point (arr app . (_get a &&& _get b)) (_set b . (arr fst &&& _set a))
 
--- | Make a 'Point' divergence in two directions.
+-- | Make a 'Point' diverge in two directions.
 
 bimap :: Arrow (~>) => (o' ~> o) -> (i ~> i') -> Point (~>) f i' o' -> Point (~>) f i o
 bimap f g l = Point (f . _get l) (_set l . first g)
