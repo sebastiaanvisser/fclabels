@@ -28,13 +28,16 @@ record selectors that start with an underscore.
 
 To illustrate this package, let's take the following two example datatypes.
 
+> import Data.Label
+> import Prelude hiding ((.), id)
+>
 > data Person = Person
 >   { _name   :: String
 >   , _age    :: Int
 >   , _isMale :: Bool
 >   , _place  :: Place
 >   }
-
+>
 > data Place = Place
 >   { _city
 >   , _country
