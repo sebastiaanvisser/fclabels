@@ -20,7 +20,11 @@ type (f :-> a) = L f a
 --
 -- We expect the following law to hold:
 --
--- > get l . set l a == const a
+-- > get l (set l a f) == a
+--
+-- Or, equivalently:
+--
+-- > set l (get l f) f == f
 
 lens :: (f -> a) -> (a -> f -> f) -> f :-> a
 lens g s = A.lens g (uncurry s)
