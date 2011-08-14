@@ -12,6 +12,15 @@ import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
 
+{-# INLINE _modify #-}
+{-# INLINE lens    #-}
+{-# INLINE get     #-}
+{-# INLINE set     #-}
+{-# INLINE modify  #-}
+{-# INLINE bimap   #-}
+{-# INLINE for     #-}
+{-# INLINE liftBij #-}
+
 -- | Abstract Point datatype. The getter and setter functions work in some
 -- arrow.
 
@@ -56,13 +65,18 @@ instance ArrowApply (~>) => Category (Lens (~>)) where
   id = lens id (arr snd)
   Lens a . Lens b = lens (_get a . _get b) (_modify b . first (curryA (_set a)))
     where curryA f = arr (\i -> f . arr (i,))
+  {-# INLINE id #-}
+  {-# INLINE (.) #-}
 
 instance Arrow (~>) => Functor (Point (~>) f i) where
   fmap f x = Point (arr f . _get x) (_set x)
+  {-# INLINE fmap #-}
 
 instance Arrow (~>) => Applicative (Point (~>) f i) where
   pure a  = Point (arr (const a)) (arr snd)
   a <*> b = Point (arr app . (_get a &&& _get b)) (_set b . (arr fst &&& _set a))
+  {-# INLINE pure #-}
+  {-# INLINE (<*>) #-}
 
 -- | Make a 'Point' diverge in two directions.
 
@@ -83,6 +97,8 @@ data Bijection (~>) a b = Bij { fw :: a ~> b, bw :: b ~> a }
 instance Category (~>) => Category (Bijection (~>)) where
   id = Bij id id
   Bij a b . Bij c d = Bij (a . c) (d . b)
+  {-# INLINE id #-}
+  {-# INLINE (.) #-}
 
 -- | Lifting 'Bijection's.
 
@@ -100,9 +116,11 @@ class Iso (~>) f where
 
 instance Arrow (~>) => Iso (~>) (Lens (~>) f) where
   iso bi = arr ((\a -> lens (fw bi . _get a) (_set a . first (bw bi))) . unLens)
+  {-# INLINE iso #-}
 
 -- | We can diverge 'Bijection's using an isomorphism.
 
 instance Arrow (~>) => Iso (~>) (Bijection (~>) a) where
   iso = arr . (.)
+  {-# INLINE iso #-}
 
