@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.0
+Version:       1.0.1
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:      First class accessor labels.
 Description:   This package provides first class labels that can act as
