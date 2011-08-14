@@ -19,25 +19,28 @@ composition. The library has support for automatically deriving labels from
 record selectors that start with an underscore.
 
 To illustrate this package, let's take the following two example datatypes.
+-}
 
->{-# LANGUAGE TemplateHaskell, TypeOperators #-}
->import Control.Category
->import Data.Label
->import Prelude hiding ((.), id)
->
->data Person = Person
->  { _name   :: String
->  , _age    :: Int
->  , _isMale :: Bool
->  , _place  :: Place
->  } deriving Show
->
->data Place = Place
->  { _city
->  , _country
->  , _continent :: String
->  } deriving Show
+-- |
+-- >{-# LANGUAGE TemplateHaskell, TypeOperators #-}
+-- >import Control.Category
+-- >import Data.Label
+-- >import Prelude hiding ((.), id)
+-- >
+-- >data Person = Person
+-- >  { _name   :: String
+-- >  , _age    :: Int
+-- >  , _isMale :: Bool
+-- >  , _place  :: Place
+-- >  } deriving Show
+-- >
+-- >data Place = Place
+-- >  { _city
+-- >  , _country
+-- >  , _continent :: String
+-- >  } deriving Show
 
+{- |
 Both datatypes are record types with all the labels prefixed with an
 underscore. This underscore is an indication for our Template Haskell code to
 derive lenses for these fields. Deriving lenses can be done with this simple
