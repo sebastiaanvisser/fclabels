@@ -1,5 +1,11 @@
 CHANGELOG
 
+  1.0 -> 1.0.1
+
+    - Some documentation cleanups.
+    - Major performance improvements in setting and modifying values by
+      inlining most label functions.
+
   0.11.2 -> 1.0
     - Added abstract arrow based core module.
     - Allow both pure and failing labels to be derived.

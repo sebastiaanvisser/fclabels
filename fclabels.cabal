@@ -19,11 +19,10 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 0.11.2 -> 1.0
-               >   - Added abstract arrow based core module.
-               >   - Allow both pure and failing labels to be derived.
-               >   - Major API and documentation cleanup.
-               >   - Renamed lots of exposed function names.
+               > 1.0 -> 1.0.1
+               >   - Some documentation cleanups.
+               >   - Major performance improvements in setting and modifying
+               >     values by inlining most label functions.
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
 License-File:  LICENCE
