@@ -20,53 +20,55 @@ record selectors that start with an underscore.
 
 To illustrate this package, let's take the following two example datatypes.
 
-> import Data.Label
-> import Prelude hiding ((.), id)
+>{-# LANGUAGE TemplateHaskell, TypeOperators #-}
+>import Control.Category
+>import Data.Label
+>import Prelude hiding ((.), id)
 >
-> data Person = Person
->   { _name   :: String
->   , _age    :: Int
->   , _isMale :: Bool
->   , _place  :: Place
->   }
+>data Person = Person
+>  { _name   :: String
+>  , _age    :: Int
+>  , _isMale :: Bool
+>  , _place  :: Place
+>  } deriving Show
 >
-> data Place = Place
->   { _city
->   , _country
->   , _continent :: String
->   }
+>data Place = Place
+>  { _city
+>  , _country
+>  , _continent :: String
+>  } deriving Show
 
 Both datatypes are record types with all the labels prefixed with an
 underscore. This underscore is an indication for our Template Haskell code to
 derive lenses for these fields. Deriving lenses can be done with this simple
 one-liner:
 
-> $(mkLabels [''Person, ''Place])
+>$(mkLabels [''Person, ''Place])
 
 For all labels a lens will created.
 
 Now let's look at this example. This 71 year old fellow, my neighbour called
 Jan, didn't mind using him as an example:
 
-> jan :: Person
-> jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe")
+>jan :: Person
+>jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe")
 
 When we want to be sure Jan is really as old as he claims we can use the `get`
 function to get the age out as an integer:
 
-> hisAge :: Int
-> hisAge = get age jan
+>hisAge :: Int
+>hisAge = get age jan
 
 Consider he now wants to move to Amsterdam: what better place to spend your old
 days. Using composition we can change the city value deep inside the structure:
 
-> moveToAmsterdam :: Person -> Person
-> moveToAmsterdam = set (city . place) "Amsterdam"
+>moveToAmsterdam :: Person -> Person
+>moveToAmsterdam = set (city . place) "Amsterdam"
 
 And now:
 
-> ghci> moveToAmsterdam jan
-> Person "Jan" 71 True (Place "Amsterdam" "The Netherlands" "Europe")
+>ghci> moveToAmsterdam jan
+>Person "Jan" 71 True (Place "Amsterdam" "The Netherlands" "Europe")
 
 Composition is done using the @(`.`)@ operator which is part of the
 "Control.Category" module. Make sure to import this module and hide the default
@@ -92,8 +94,8 @@ he will actually be settled. To reflect this change it might be useful to have
 a first class view on the `Person` datatype that only reveals the age and
 city.  This can be done by using a neat `Applicative` functor instance:
 
-> ageAndCity :: Person :-> (Int, String)
-> ageAndCity = Lens $ (,) <$> fst `for` age <*> snd `for` city . place
+>ageAndCity :: Person :-> (Int, String)
+>ageAndCity = Lens $ (,) <$> fst `for` age <*> snd `for` city . place
 
 Because the applicative type class on its own is not very capable of expressing
 bidirectional relations, which we need for our lenses, the actual instance is
@@ -107,11 +109,13 @@ Now that we have an appropriate age+city view on the `Person` datatype (which
 is itself a lens again), we can use the `modify` function to make Jan move to
 Amsterdam over exactly two years:
 
-> moveToAmsterdamOverTwoYears :: Person -> Person
-> moveToAmsterdamOverTwoYears = modify ageAndCity (\(a, b) -> (a+2, "Amsterdam"))
+>import Control.Applicative
 
-> ghci> moveToAmsterdamOverTwoYears jan
-> Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
+>moveToAmsterdamOverTwoYears :: Person -> Person
+>moveToAmsterdamOverTwoYears = modify ageAndCity (\(a, _) -> (a+2, "Amsterdam"))
+
+>ghci> moveToAmsterdamOverTwoYears jan
+>Person "Jan" 73 True (Place "Amsterdam" "The Netherlands" "Europe")
 
 -}
 
@@ -129,7 +133,7 @@ Amsterdam over exactly two years:
 -- the following:
 -- 
 -- > ageAsString :: Person :-> String
--- > ageAsString :: Bij show read % age
+-- > ageAsString = Bij show read `iso` age
 
 , Bijection (..)
 , Iso (..)
