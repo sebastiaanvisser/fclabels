@@ -74,10 +74,14 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
 
      return $
        if signatures
-       then [sign, body]
-       else [body]
+       then [sign, inline, body]
+       else [inline, body]
 
   where
+
+    -- Generate an inline declaration for the label.
+    inline = PragmaD (InlineP labelName (InlineSpec True True (Just (True, 0))))
+
 
     -- Build a single record label definition for labels that might fail.
     deriveMaybeLabel = (sign, body)
