@@ -115,6 +115,8 @@ Amsterdam over exactly two years:
 
 -}
 
+, Lens (Lens)
+
 -- * Working with bijections and isomorphisms.
 -- 
 -- | This package contains a bijection datatype that encodes bidirectional
@@ -146,7 +148,7 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Abstract (Bijection(..), Iso(..), for)
+import Data.Label.Abstract (Bijection(..), Iso(..), for, Lens(..))
 import Data.Label.Pure
 import Data.Label.Derive
 
