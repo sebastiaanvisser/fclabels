@@ -94,6 +94,8 @@ he will actually be settled. To reflect this change it might be useful to have
 a first class view on the `Person` datatype that only reveals the age and
 city.  This can be done by using a neat `Applicative` functor instance:
 
+>import Control.Applicative
+
 >ageAndCity :: Person :-> (Int, String)
 >ageAndCity = Lens $ (,) <$> fst `for` age <*> snd `for` city . place
 
@@ -108,8 +110,6 @@ composition.
 Now that we have an appropriate age+city view on the `Person` datatype (which
 is itself a lens again), we can use the `modify` function to make Jan move to
 Amsterdam over exactly two years:
-
->import Control.Applicative
 
 >moveToAmsterdamOverTwoYears :: Person -> Person
 >moveToAmsterdamOverTwoYears = modify ageAndCity (\(a, _) -> (a+2, "Amsterdam"))
