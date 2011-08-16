@@ -31,7 +31,7 @@ Cabal-Version: >= 1.6
 Build-Type:    Simple
 
 Library
-  HS-Source-Dirs:  src
+  HS-Source-Dirs: src
 
   Other-Modules:
     Data.Label.Derive
