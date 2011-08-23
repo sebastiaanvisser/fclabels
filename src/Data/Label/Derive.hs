@@ -3,9 +3,11 @@
     TemplateHaskell
   , OverloadedStrings
   , FlexibleInstances
+  , TypeOperators
   #-}
 module Data.Label.Derive
 ( mkLabels
+, mkLabelsMono
 , mkLabelsNoTypes
 ) where
 
@@ -15,6 +17,8 @@ import Control.Monad
 import Data.Char
 import Data.Function (on)
 import Data.Label.Abstract
+import Data.Label.Pure ((:->))
+import Data.Label.Maybe ((:~>))
 import Data.List
 import Data.Ord
 import Data.String
@@ -28,21 +32,29 @@ fclError :: String -> a
 fclError err = error ("Data.Label.Derive: " ++ err)
 
 -- | Derive lenses including type signatures for all the record selectors in a
--- datatype.
+-- datatype. The types will be polymorphic and can be used in an arbitrary
+-- context.
 
 mkLabels :: [Name] -> Q [Dec]
-mkLabels = liftM concat . mapM (derive1 True)
+mkLabels = liftM concat . mapM (derive1 True False)
+
+-- | Derive lenses including type signatures for all the record selectors in a
+-- datatype. The signatures will be concrete and can only be used the
+-- appropriate context.
+
+mkLabelsMono :: [Name] -> Q [Dec]
+mkLabelsMono = liftM concat . mapM (derive1 True True)
 
 -- | Derive lenses without type signatures for all the record selectors in a
 -- datatype.
 
 mkLabelsNoTypes :: [Name] -> Q [Dec]
-mkLabelsNoTypes = liftM concat . mapM (derive1 False)
+mkLabelsNoTypes = liftM concat . mapM (derive1 False False)
 
 -- Helpers to generate all labels.
 
-derive1 :: Bool -> Name -> Q [Dec]
-derive1 signatures datatype =
+derive1 :: Bool -> Bool -> Name -> Q [Dec]
+derive1 signatures concrete datatype =
  do i <- reify datatype
     let -- Only process data and newtype declarations, filter out all
         -- constructors and the type variables.
@@ -55,7 +67,7 @@ derive1 signatures datatype =
         -- We are only interested in lenses of record constructors.
         recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
 
-    concat `liftM` mapM (derive signatures tyname vars (length cons)) recordOnly
+    concat `liftM` mapM (derive signatures concrete tyname vars (length cons)) recordOnly
 
     where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
                       . groupBy ((==) `on` (fst3 . fst))
@@ -64,8 +76,8 @@ derive1 signatures datatype =
 
 -- Generate the code for the labels.
 
-derive :: Bool -> Name -> [TyVarBndr] -> Int -> (VarStrictType, [Name]) -> Q [Dec]
-derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
+derive :: Bool -> Bool -> Name -> [TyVarBndr] -> Int -> (VarStrictType, [Name]) -> Q [Dec]
+derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
 
   do (sign, body) <-
        if length ctors == total
@@ -84,9 +96,10 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
 
 
     -- Build a single record label definition for labels that might fail.
-    deriveMaybeLabel = (sign, body)
+    deriveMaybeLabel = (if concrete then mono else poly, body)
       where
-        sign = forallT vars (return []) [t| (ArrowChoice (~>), ArrowZero (~>)) => Lens (~>) $(inputType) $(return fieldtyp) |]
+        poly = forallT forallVars (return []) [t| (ArrowChoice $(arrow), ArrowZero $(arrow)) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        mono = forallT forallVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         body = [| let c = zeroArrow ||| returnA in lens (c . $(getter)) (c . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
@@ -97,9 +110,10 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
             bodyG p   = [| Right $( fromString fieldName `appE` p ) |]
 
     -- Build a single record label definition for labels that cannot fail.
-    derivePureLabel = (sign, body)
+    derivePureLabel = (if concrete then mono else poly, body)
       where
-        sign = forallT vars (return []) [t| Arrow (~>) => Lens (~>) $(inputType) $(return fieldtyp) |]
+        mono = forallT forallVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
+        poly = forallT forallVars (return []) [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(getter) $(setter) |]
           where
             getter = [| arr $(fromString fieldName) |]
@@ -117,11 +131,17 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
 
 
     -- Compute the type (including type variables of the record datatype.
-    inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse vars))
+    inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse prettyVars))
 
     -- Convert a type variable binder to a regular type variable.
     tvToVarT (PlainTV tv) = VarT tv
     tvToVarT _            = fclError "No support for special-kinded type variables."
+
+    -- Prettify type variables.
+    arrow          = varT (mkName "~>")
+    prettyVars     = map prettyTyVar vars
+    forallVars     = PlainTV (mkName "~>") : prettyVars
+    prettyFieldtyp = prettyType fieldtyp
 
     -- Q style record updating.
     record rec fld val = val >>= \v -> recUpdE rec [return (mkName fld, v)]
@@ -132,6 +152,7 @@ derive signatures tyname vars total ((field, _, fieldtyp), ctors) =
         (funD labelName [ clause [] (normalB b) [] ])
 
 -------------------------------------------------------------------------------
+
 -- Helper functions to prettify type variables.
 
 prettyName :: Name -> Name
@@ -151,8 +172,6 @@ prettyType ty                 = ty
 prettyPred :: Pred -> Pred
 prettyPred (ClassP nm tys) = ClassP (prettyName nm) (map prettyType tys)
 prettyPred (EqualP ty tx ) = EqualP (prettyType ty) (prettyType tx)
-
--------------------------------------------------------------------------------
 
 -- IsString instances for TH types.
 
