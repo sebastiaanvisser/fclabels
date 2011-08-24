@@ -98,8 +98,8 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     -- Build a single record label definition for labels that might fail.
     deriveMaybeLabel = (if concrete then mono else poly, body)
       where
+        mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return []) [t| (ArrowChoice $(arrow), ArrowZero $(arrow)) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
-        mono = forallT forallVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         body = [| let c = zeroArrow ||| returnA in lens (c . $(getter)) (c . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
@@ -112,7 +112,7 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     -- Build a single record label definition for labels that cannot fail.
     derivePureLabel = (if concrete then mono else poly, body)
       where
-        mono = forallT forallVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
+        mono = forallT prettyVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return []) [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(getter) $(setter) |]
           where
@@ -128,7 +128,6 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
         '_' : c : rest -> toLower c : rest
         f : rest       -> 'l' : toUpper f : rest
         n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
-
 
     -- Compute the type (including type variables of the record datatype.
     inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse prettyVars))
