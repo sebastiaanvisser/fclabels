@@ -1,5 +1,10 @@
 CHANGELOG
 
+  1.0.2 -> 1.0.3
+
+    - Deriving labels for datatypes from other modules now works also when
+      imported qualified.
+
   1.0.1 -> 1.0.2
 
     - Allow generating monomorphic labels.

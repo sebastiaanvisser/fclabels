@@ -106,8 +106,8 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
             setter    = [| arr (\(v, p) -> $(caseE [|p|] (cases (bodyS [|p|] [|v|]) ++ wild))) |]
             cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
             wild      = [match wildP (normalB [| Left () |]) []]
-            bodyS p v = [| Right $( record p fieldName v ) |]
-            bodyG p   = [| Right $( fromString fieldName `appE` p ) |]
+            bodyS p v = [| Right $( record p field v ) |]
+            bodyG p   = [| Right $( varE field `appE` p ) |]
 
     -- Build a single record label definition for labels that cannot fail.
     derivePureLabel = (if concrete then mono else poly, body)
@@ -116,13 +116,12 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
         poly = forallT forallVars (return []) [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(getter) $(setter) |]
           where
-            getter = [| arr $(fromString fieldName) |]
-            setter = [| arr (\(v, p) -> $(record [| p |] fieldName [| v |])) |]
+            getter = [| arr $(varE field) |]
+            setter = [| arr (\(v, p) -> $(record [| p |] field [| v |])) |]
 
     -- Generate a name for the label. If the original selector starts with an
     -- underscore, remove it and make the next character lowercase. Otherwise,
     -- add 'l', and make the next character uppercase.
-    fieldName = nameBase field
     labelName = mkName $
       case nameBase field of
         '_' : c : rest -> toLower c : rest
@@ -143,7 +142,7 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     prettyFieldtyp = prettyType fieldtyp
 
     -- Q style record updating.
-    record rec fld val = val >>= \v -> recUpdE rec [return (mkName fld, v)]
+    record rec fld val = val >>= \v -> recUpdE rec [return (fld, v)]
 
     -- Build a function declaration with both a type signature and body.
     function (s, b) = liftM2 (,) 
