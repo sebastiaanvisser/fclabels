@@ -2,6 +2,7 @@
 {-# LANGUAGE
     TemplateHaskell
   , OverloadedStrings
+  , FlexibleContexts
   , FlexibleInstances
   , TypeOperators
   #-}

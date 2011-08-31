@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.0.3
+Version:       1.0.4
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:      First class accessor labels.
 Description:   This package provides first class labels that can act as
@@ -19,9 +19,8 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 1.0.2 -> 1.0.3
-               >   - Deriving labels for datatypes from other modules now works
-               >     also when imported qualified.
+               > 1.0.3 -> 1.0.4
+               >   - Bugfix to compile on GHC 6.12 again.
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
 License-File:  LICENCE
