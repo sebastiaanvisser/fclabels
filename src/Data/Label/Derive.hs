@@ -5,6 +5,7 @@
   , FlexibleContexts
   , FlexibleInstances
   , TypeOperators
+  , RankNTypes
   #-}
 module Data.Label.Derive
 ( mkLabels
@@ -101,7 +102,7 @@ derive signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return []) [t| (ArrowChoice $(arrow), ArrowZero $(arrow)) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
-        body = [| let c = zeroArrow ||| returnA in lens (c . $(getter)) (c . $(setter)) |]
+        body = [| let c :: forall b d (~>). (ArrowChoice (~>), ArrowZero (~>)) => Either b d ~> d; c = zeroArrow ||| returnA in lens (c . $(getter)) (c . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
             setter    = [| arr (\(v, p) -> $(caseE [|p|] (cases (bodyS [|p|] [|v|]) ++ wild))) |]
