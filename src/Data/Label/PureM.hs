@@ -30,7 +30,7 @@ puts l = M.modify . L.set l
 
 -- | Alias for `puts' that reads like an assignment.
 
-infixr 7 =:
+infixr 2 =:
 (=:) :: M.MonadState s m => s :-> a -> a -> m ()
 (=:) = puts
 
