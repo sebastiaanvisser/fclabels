@@ -6,6 +6,7 @@ module Data.Label.PureM
 , puts
 , modify
 , (=:)
+, (=.)
 
 -- * 'MonadReader' lens operations.
 , asks
@@ -28,17 +29,23 @@ gets = M.gets . L.get
 puts :: M.MonadState s m => s :-> a -> a -> m ()
 puts l = M.modify . L.set l
 
+-- | Modify a value with a function somewhere in the state, pointed to by the
+-- specified lens.
+
+modify :: M.MonadState s m => s :-> a -> (a -> a) -> m ()
+modify l = M.modify . L.modify l
+
 -- | Alias for `puts' that reads like an assignment.
 
 infixr 2 =:
 (=:) :: M.MonadState s m => s :-> a -> a -> m ()
 (=:) = puts
 
--- | Modify a value with a function somewhere in the state, pointed to by the
--- specified lens.
+-- | Alias for `modify' that reads more or less like an assignment.
 
-modify :: M.MonadState s m => s :-> a -> (a -> a) -> m ()
-modify l = M.modify . L.modify l
+infixr 2 =.
+(=.) :: M.MonadState s m => s :-> a -> (a -> a) -> m ()
+(=.) = modify
 
 -- | Fetch a value pointed to by a lens out of a reader environment.
 
