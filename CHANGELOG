@@ -1,5 +1,10 @@
 CHANGELOG
 
+  1.0.4 -> 1.1.0
+    - Fixed error in derived code in combination with -XMonoLocalBinds.
+    - Lowered the priority of =: operator.
+    - Added the =. operator for modification in state monads.
+
   1.0.3 -> 1.0.4
     - Bugfix to compile on GHC 6.12 again.
 
