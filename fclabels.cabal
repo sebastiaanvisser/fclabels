@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.1.0
+Version:       1.1.0.1
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:      First class accessor labels.
 Description:   This package provides first class labels that can act as
@@ -47,7 +47,7 @@ Library
   GHC-Options: -Wall
   Build-Depends:
       base                       < 5
-    , template-haskell >= 2.2 && < 2.7
+    , template-haskell >= 2.2 && < 2.8
     , mtl              >= 1.0 && < 2.2
     , transformers     >= 0.2 && < 0.3
 
