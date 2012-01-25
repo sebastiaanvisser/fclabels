@@ -62,7 +62,7 @@ modify :: ArrowApply (~>) => Lens (~>) f o -> (o ~> o, f) ~> f
 modify = _modify . unLens
 
 instance ArrowApply (~>) => Category (Lens (~>)) where
-  id = lens id (arr snd)
+  id = lens id (arr fst)
   Lens a . Lens b = lens (_get a . _get b) (_modify b . first (curryA (_set a)))
     where curryA f = arr (\i -> f . arr (i,))
   {-# INLINE id #-}
