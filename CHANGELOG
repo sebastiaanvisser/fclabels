@@ -1,5 +1,8 @@
 CHANGELOG
 
+  1.1.0.1 -> 1.1.0.2
+    - Fixed bug in `id` definition for `Lens (~>)`.
+
   1.1.0 -> 1.1.0.1
     - Relax constraint on template-haskell for GHC 7.4.
 

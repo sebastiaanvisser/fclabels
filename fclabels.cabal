@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.1.0.1
+Version:       1.1.0.2
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher.
 Synopsis:      First class accessor labels.
 Description:   This package provides first class labels that can act as
@@ -19,10 +19,8 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 1.0.4 -> 1.1.0
-               >   - Fixed error in derived code in combination with -XMonoLocalBinds.
-               >   - Lowered the priority of =: operator.
-               >   - Added the =. operator for modification in state monads.
+               > 1.1.0.1 -> 1.1.0.2
+               >   - Fixed bug in `id` definition for `Lens (~>)`.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
