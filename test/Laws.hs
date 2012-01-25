@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeOperators, GeneralizedNewtypeDeriving #-}
 module Laws where
 
+import Prelude hiding ((.), id)
+import Control.Category
 import Data.Label
 import Test.QuickCheck
 
@@ -10,10 +12,15 @@ newtype K = K { x :: Int }
 myLens :: K :-> Int
 myLens = lens x (\y f -> f { x = y })
 
+myId :: K :-> K
+myId = id
+
 main :: IO ()
 main =
   do quickCheck (getSet myLens)
      quickCheck (setGet myLens)
+     quickCheck (getSet myId)
+     quickCheck (setGet myId)
 
 -- The get after set law:
 
