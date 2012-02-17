@@ -151,6 +151,7 @@ Amsterdam over exactly two years:
 -- functions from "Data.Label.Maybe".
 
 , mkLabels
+, mkLabelsWith
 , mkLabelsMono
 , mkLabelsNoTypes
 )
