@@ -40,11 +40,15 @@ fclError err = error ("Data.Label.Derive: " ++ err)
 mkLabels :: [Name] -> Q [Dec]
 mkLabels = mkLabelsWith defaultMakeLabel
 
-mkLabelsWith :: MakeLabel -> [Name] -> Q [Dec]
+-- | Generate the label name from the record field name.
+-- For instance, @drop 1 . dropWhile (/='_')@ creates a label @val@ from a
+-- record @Rec { rec_val :: X }@.
+
+mkLabelsWith :: (String -> String) -> [Name] -> Q [Dec]
 mkLabelsWith makeLabel = liftM concat . mapM (derive1 makeLabel True False)
 
 -- | Derive lenses including type signatures for all the record selectors in a
--- datatype. The signatures will be concrete and can only be used the
+-- datatype. The signatures will be concrete and can only be used in the
 -- appropriate context.
 
 mkLabelsMono :: [Name] -> Q [Dec]
@@ -56,9 +60,9 @@ mkLabelsMono = liftM concat . mapM (derive1 defaultMakeLabel True True)
 mkLabelsNoTypes :: [Name] -> Q [Dec]
 mkLabelsNoTypes = liftM concat . mapM (derive1 defaultMakeLabel False False)
 
--- Helpers to generate all labels.
+-- Helpers to generate all labels for one datatype.
 
-derive1 :: MakeLabel -> Bool -> Bool -> Name -> Q [Dec]
+derive1 :: (String -> String) -> Bool -> Bool -> Name -> Q [Dec]
 derive1 makeLabel signatures concrete datatype =
  do i <- reify datatype
     let -- Only process data and newtype declarations, filter out all
@@ -83,32 +87,26 @@ derive1 makeLabel signatures concrete datatype =
 
 -- Generate the code for the labels.
 
--- | Generate the label name from the record field name.  For instance,
--- @drop 1 . dropWhile (/='_')@ creates a label @val@ from a record
--- @Rec { rec_val :: X }@.
-type MakeLabel = String -> String
-
 -- | Generate a name for the label. If the original selector starts with an
 -- underscore, remove it and make the next character lowercase. Otherwise,
 -- add 'l', and make the next character uppercase.
-defaultMakeLabel :: MakeLabel
-defaultMakeLabel field = case field of
+defaultMakeLabel :: String -> String
+defaultMakeLabel field =
+  case field of
     '_' : c : rest -> toLower c : rest
     f : rest       -> 'l' : toUpper f : rest
-    n              -> fclError $
-        "Cannot derive label for record selector with name: " ++ n
+    n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
 
-derive :: MakeLabel
-    -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
-    -> (VarStrictType, [Name]) -> Q [Dec]
-derive makeLabel signatures concrete tyname vars total
-        ((field, _, fieldtyp), ctors) = do
-    (sign, body) <-
+derive :: (String -> String)
+       -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
+       -> (VarStrictType, [Name]) -> Q [Dec]
+derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
+  do (sign, body) <-
        if length ctors == total
        then function derivePureLabel
        else function deriveMaybeLabel
 
-    return $
+     return $
        if signatures
        then [sign, inline, body]
        else [inline, body]
@@ -119,12 +117,13 @@ derive makeLabel signatures concrete tyname vars total
     inline = PragmaD (InlineP labelName (InlineSpec True True (Just (True, 0))))
     labelName = mkName (makeLabel (nameBase field))
 
-
     -- Build a single record label definition for labels that might fail.
     deriveMaybeLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return []) [t| (ArrowChoice $(arrow), ArrowZero $(arrow)) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        poly = forallT forallVars (return [])
+          [t| (ArrowChoice $(arrow), ArrowZero $(arrow))
+              => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens (fromRight . $(getter)) (fromRight . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
@@ -138,7 +137,8 @@ derive makeLabel signatures concrete tyname vars total
     derivePureLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return []) [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        poly = forallT forallVars (return [])
+          [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(getter) $(setter) |]
           where
             getter = [| arr $(varE field) |]
