@@ -20,8 +20,8 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 1.1.0.1 -> 1.1.0.2
-               >   - Fixed bug in `id` definition for `Lens (~>)`.
+               > 1.1.0.2 -> 1.1.1.0
+               >   - Added mkLabelsWith function to derive labels with custom names.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3

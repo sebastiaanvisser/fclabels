@@ -1,10 +1,15 @@
 CHANGELOG
 
+  1.1.0.2 -> 1.1.1.0
+    - Added mkLabelsWith function to derive labels with custom names.
+      Thanks to Evan Laforge for the patch!
+
   1.1.0.1 -> 1.1.0.2
     - Fixed bug in `id` definition for `Lens (~>)`.
+      Thanks to yczhang89 for reporting!
 
   1.1.0 -> 1.1.0.1
-    - Relax constraint on template-haskell for GHC 7.4.
+    - Relax constraint on template-hask!ll for GHC 7.4.
 
   1.0.4 -> 1.1.0
     - Fixed error in derived code in combination with -XMonoLocalBinds.
@@ -29,6 +34,7 @@ CHANGELOG
     - Some documentation cleanups.
     - Major performance improvements in setting and modifying values by
       inlining most label functions.
+      Thanks to Anpheus for benchmarking!
 
   0.11.2 -> 1.0
     - Added abstract arrow based core module.
