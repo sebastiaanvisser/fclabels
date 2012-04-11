@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.1.1.0
+Version:       1.1.1.1
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels.
@@ -20,8 +20,8 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 1.1.0.2 -> 1.1.1.0
-               >   - Added mkLabelsWith function to derive labels with custom names.
+               > 1.1.1.0 -> 1.1.1.1
+               >   - Relax dependency on transformers to include 0.3.0.0.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
@@ -48,7 +48,7 @@ Library
       base                       < 5
     , template-haskell >= 2.2 && < 2.8
     , mtl              >= 1.0 && < 2.2
-    , transformers     >= 0.2 && < 0.3
+    , transformers     >= 0.2 && < 0.4
 
 Source-Repository head
   Type:     git

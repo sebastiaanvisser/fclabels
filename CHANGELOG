@@ -1,5 +1,8 @@
 CHANGELOG
 
+  1.1.1.0 -> 1.1.1.1
+	  - Relax dependency on transformers to include 0.3.0.0.
+
   1.1.0.2 -> 1.1.1.0
     - Added mkLabelsWith function to derive labels with custom names.
       Thanks to Evan Laforge for the patch!
