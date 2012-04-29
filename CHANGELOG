@@ -1,5 +1,9 @@
 CHANGELOG
 
+  1.1.1.0 -> 1.1.2
+    - Added partial set/modify versions that act as identity when the
+      constructor field is not available.
+
   1.1.1.0 -> 1.1.1.1
 	  - Relax dependency on transformers to include 0.3.0.0.
 

@@ -4,7 +4,9 @@ module Data.Label.Maybe
 , lens
 , get
 , set
+, set'
 , modify
+, modify'
 , embed
 )
 where
@@ -47,11 +49,23 @@ get l = run (A.get l)
 set :: f :~> a -> a -> f -> Maybe f
 set l v = run (A.set l . arr (v,))
 
+-- | Like 'set' but return behaves like the identity function when the field
+-- could not be set.
+
+set' :: (f :~> a) -> a -> f -> f
+set' l v f = f `fromMaybe` set l v f
+
 -- | Modifier for a lens that can fail. When the field to which the lens points
 -- is not accessible this function returns 'Nothing'.
 
 modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
 modify l m = run (A.modify l . arr (arr m,))
+
+-- | Like 'modify' but return behaves like the identity function when the field
+-- could not be set.
+
+modify' :: (f :~> a) -> (a -> a) -> f -> f
+modify' l m f = f `fromMaybe` modify l m f
 
 -- | Embed a pure lens that points to a `Maybe` field into a lens that might
 -- fail.
