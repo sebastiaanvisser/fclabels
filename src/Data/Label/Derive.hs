@@ -121,9 +121,8 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     deriveMaybeLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return [])
-          [t| (ArrowChoice $(arrow), ArrowZero $(arrow))
-              => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        poly = forallT forallVars (cxt [classP ''ArrowChoice [arrow], classP ''ArrowZero [arrow]])
+          [t| Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens (fromRight . $(getter)) (fromRight . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
@@ -137,8 +136,8 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     derivePureLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return [])
-          [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        poly = forallT forallVars (cxt [classP ''Arrow [arrow]])
+          [t| Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(getter) $(setter) |]
           where
             getter = [| arr $(varE field) |]
@@ -152,16 +151,16 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     tvToVarT _            = fclError "No support for special-kinded type variables."
 
     -- Prettify type variables.
-    arrow          = varT (mkName "~>")
+    arrow          = varT (mkName "arr")
     prettyVars     = map prettyTyVar vars
-    forallVars     = PlainTV (mkName "~>") : prettyVars
+    forallVars     = PlainTV (mkName "arr") : prettyVars
     prettyFieldtyp = prettyType fieldtyp
 
     -- Q style record updating.
     record rec fld val = val >>= \v -> recUpdE rec [return (fld, v)]
 
     -- Build a function declaration with both a type signature and body.
-    function (s, b) = liftM2 (,) 
+    function (s, b) = liftM2 (,)
         (sigD labelName s)
         (funD labelName [ clause [] (normalB b) [] ])
 
