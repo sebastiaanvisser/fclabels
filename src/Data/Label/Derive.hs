@@ -8,6 +8,7 @@
   #-}
 module Data.Label.Derive
 ( mkLabels
+, mkLabel
 , mkLabelsWith
 , mkLabelsMono
 , mkLabelsNoTypes
@@ -33,12 +34,19 @@ import Prelude hiding ((.), id)
 fclError :: String -> a
 fclError err = error ("Data.Label.Derive: " ++ err)
 
--- | Derive lenses including type signatures for all the record selectors in a
--- datatype. The types will be polymorphic and can be used in an arbitrary
--- context.
+-- | Derive lenses including type signatures for all the record selectors for a
+-- collection of datatypes. The types will be polymorphic and can be used in an
+-- arbitrary context.
 
 mkLabels :: [Name] -> Q [Dec]
 mkLabels = mkLabelsWith defaultMakeLabel
+
+-- | Derive lenses including type signatures for all the record selectors in a
+-- single datatype. The types will be polymorphic and can be used in an
+-- arbitrary context.
+
+mkLabel :: Name -> Q [Dec]
+mkLabel = mkLabels . return
 
 -- | Generate the label name from the record field name.
 -- For instance, @drop 1 . dropWhile (/='_')@ creates a label @val@ from a
