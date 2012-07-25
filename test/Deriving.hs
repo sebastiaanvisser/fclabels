@@ -31,7 +31,7 @@ data Member a =
    }
  deriving Show
 
-$(mkLabels [''Family, ''Member])
+mkLabels [''Family, ''Member]
 
 myself :: Member Int
 myself = Person "Me" 28 (Family (Just myDad) (Just myMum))

@@ -46,7 +46,7 @@ underscore. This underscore is an indication for our Template Haskell code to
 derive lenses for these fields. Deriving lenses can be done with this simple
 one-liner:
 
->$(mkLabels [''Person, ''Place])
+>mkLabels [''Person, ''Place]
 
 For all labels a lens will created.
 

@@ -19,7 +19,7 @@ data Place = Place
   , _continent :: String
   } deriving (Show, Eq)
 
-$(mkLabels [''Person, ''Place])
+mkLabels [''Person, ''Place]
 
 jan :: Person
 jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe") Nothing
