@@ -160,9 +160,9 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     tvToVarT _            = fclError "No support for special-kinded type variables."
 
     -- Prettify type variables.
-    arrow          = varT (mkName "~>")
+    arrow          = varT (mkName "arr")
     prettyVars     = map prettyTyVar vars
-    forallVars     = PlainTV (mkName "~>") : prettyVars
+    forallVars     = PlainTV (mkName "arr") : prettyVars
     prettyFieldtyp = prettyType fieldtyp
 
     -- Q style record updating.
