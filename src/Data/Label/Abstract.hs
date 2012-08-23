@@ -114,6 +114,11 @@ infixr 8 `iso`
 class Iso arr f where
   iso :: Bijection arr a b -> f a `arr` f b
 
+-- | Flipped isomorphism.
+
+osi :: Iso arr f => Bijection arr b a -> f a `arr` f b
+osi (Bij a b) = iso (Bij b a)
+
 -- | We can diverge 'Lens'es using an isomorphism.
 
 instance Arrow arr => Iso arr (Lens arr f) where
