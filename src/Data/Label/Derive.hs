@@ -5,6 +5,7 @@
   , FlexibleContexts
   , FlexibleInstances
   , TypeOperators
+  , CPP
   #-}
 module Data.Label.Derive
 ( mkLabels
@@ -122,7 +123,14 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
   where
 
     -- Generate an inline declaration for the label.
-    inline = PragmaD (InlineP labelName (InlineSpec True True (Just (True, 0))))
+    --
+    -- Type of InlineSpec changed in TH-2.8.0 (GHC 7.6)
+#if MIN_VERSION_template_haskell(2,8,0)
+    doInline = Inline
+#else
+    doInline = True
+#endif
+    inline = PragmaD (InlineP labelName (InlineSpec doInline True (Just (True, 0))))
     labelName = mkName (makeLabel (nameBase field))
 
     -- Build a single record label definition for labels that might fail.

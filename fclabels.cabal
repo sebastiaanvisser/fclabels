@@ -49,7 +49,7 @@ Library
   GHC-Options: -Wall
   Build-Depends:
       base                       < 5
-    , template-haskell >= 2.2 && < 2.8
+    , template-haskell >= 2.2 && < 2.9
     , mtl              >= 1.0 && < 2.2
     , transformers     >= 0.2 && < 0.4
 
