@@ -1,5 +1,9 @@
 CHANGELOG
 
+  1.1.4 -> 1.1.4.2
+    - Make compilable against template haskell 2.8.
+      Thanks to Shimuuar for the pull request.
+
   1.1.4 -> 1.1.4.1
     - Changed infix type variables to named type variables.
       This makes fclabels compile with GHC > 7.6.
