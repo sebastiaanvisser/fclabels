@@ -1,46 +1,57 @@
 CHANGELOG
 
   1.1.4 -> 1.1.4.2
-    - Make compilable against template haskell 2.8.
+
+    - Make compilable against Template Haskell 2.8.
       Thanks to Shimuuar for the pull request.
 
   1.1.4 -> 1.1.4.1
+
     - Changed infix type variables to named type variables.
       This makes fclabels compile with GHC > 7.6.
     - Added the `osi` (flipped iso) again.
 
   1.1.3 -> 1.1.4
+
     - Added function to derive labels for a single datatype.
 
   1.1.1.0 -> 1.1.2
+
     - Added partial set/modify versions that act as identity when the
       constructor field is not available.
 
   1.1.1.0 -> 1.1.1.1
-	  - Relax dependency on transformers to include 0.3.0.0.
+
+     - Relax dependency on transformers to include 0.3.0.0.
 
   1.1.0.2 -> 1.1.1.0
+
     - Added mkLabelsWith function to derive labels with custom names.
       Thanks to Evan Laforge for the patch!
 
   1.1.0.1 -> 1.1.0.2
+
     - Fixed bug in `id` definition for `Lens (~>)`.
       Thanks to yczhang89 for reporting!
 
   1.1.0 -> 1.1.0.1
-    - Relax constraint on template-hask!ll for GHC 7.4.
+
+    - Relax constraint on Template Haskell for GHC 7.4.
 
   1.0.4 -> 1.1.0
+
     - Fixed error in derived code in combination with -XMonoLocalBinds.
     - Lowered the priority of =: operator.
     - Added the =. operator for modification in state monads.
 
   1.0.4 -> 1.0.5
-    - Relaxed template-haskell dependency constraint for GHC 7.4
+
+    - Relaxed Template Haskell dependency constraint for GHC 7.4
     - Relaxed transformers dependency constraint
-    (thanks to Claude Heiland-Allen)
+      Thanks to Claude Heiland-Allen
 
   1.0.3 -> 1.0.4
+
     - Bugfix to compile on GHC 6.12 again.
 
   1.0.2 -> 1.0.3
@@ -68,7 +79,7 @@ CHANGELOG
 
   0.11.1.1 -> 0.11.2
 
-    - Relaxed template haskell dependency constraint for GHC 7.2
+    - Relaxed Template Haskell dependency constraint for GHC 7.2
     - Removed redundant import warnings.
 
   0.11.1 -> 0.11.1.1
