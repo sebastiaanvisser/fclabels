@@ -124,13 +124,12 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
 
     -- Generate an inline declaration for the label.
     --
-    -- Type of InlineSpec changed in TH-2.8.0 (GHC 7.6)
+    -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
 #if MIN_VERSION_template_haskell(2,8,0)
-    doInline = Inline
+    inline = PragmaD (InlineP labelName Inline FunLike (FromPhase 0))
 #else
-    doInline = True
+    inline = PragmaD (InlineP labelName (InlineSpec True True (Just (True, 0))))
 #endif
-    inline = PragmaD (InlineP labelName (InlineSpec doInline True (Just (True, 0))))
     labelName = mkName (makeLabel (nameBase field))
 
     -- Build a single record label definition for labels that might fail.
