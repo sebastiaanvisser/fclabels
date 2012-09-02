@@ -164,8 +164,8 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse prettyVars))
 
     -- Convert a type variable binder to a regular type variable.
-    tvToVarT (PlainTV tv) = VarT tv
-    tvToVarT _            = fclError "No support for special-kinded type variables."
+    tvToVarT (PlainTV  tv     ) = VarT tv
+    tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
 
     -- Prettify type variables.
     arrow          = varT (mkName "arr")
