@@ -1,5 +1,10 @@
 CHANGELOG
 
+  1.1.4.2 -> 1.1.4.3
+
+    - Make compilable against Template Haskell 2.8.
+      Thanks to mgsloan for the pull request.
+
   1.1.4 -> 1.1.4.2
 
     - Make compilable against Template Haskell 2.8.
