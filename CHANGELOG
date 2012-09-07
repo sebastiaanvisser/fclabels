@@ -4,6 +4,7 @@ CHANGELOG
 
     - Make compilable against Template Haskell 2.8.
       Thanks to mgsloan for the pull request.
+    - Added TH derivation support for special kinded type variables.
 
   1.1.4 -> 1.1.4.2
 
