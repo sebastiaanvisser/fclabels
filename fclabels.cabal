@@ -27,7 +27,7 @@ Description:   This package provides first class labels that can act as
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 License:       BSD3
 License-File:  LICENSE
-Category:      Data
+Category:      Data, Lenses
 Cabal-Version: >= 1.6
 Build-Type:    Simple
 
