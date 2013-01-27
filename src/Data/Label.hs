@@ -100,7 +100,9 @@ city.  This can be done by using a neat `Applicative` functor instance:
 >import Control.Applicative
 
 >ageAndCity :: Person :-> (Int, String)
->ageAndCity = Lens $ (,) <$> fst `for` age <*> snd `for` city . place
+>ageAndCity = Lens $
+>  (,) <$> fst `for` age
+>      <*> snd `for` city . place
 
 Because the applicative type class on its own is not very capable of expressing
 bidirectional relations, which we need for our lenses, the actual instance is
