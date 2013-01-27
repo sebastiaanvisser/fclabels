@@ -2,7 +2,6 @@
 {-# LANGUAGE
     TypeOperators
   , Arrows
-  , TupleSections
   , FlexibleInstances
   , MultiParamTypeClasses #-}
 module Data.Label.Abstract where
@@ -12,27 +11,27 @@ import Control.Applicative
 import Control.Category
 import Prelude hiding ((.), id)
 
-{-# INLINE _modify #-}
+{-# INLINE _set    #-}
 {-# INLINE lens    #-}
 {-# INLINE get     #-}
 {-# INLINE set     #-}
 {-# INLINE modify  #-}
+{-# INLINE compose #-}
 {-# INLINE for     #-}
 {-# INLINE liftBij #-}
 
--- | Abstract Point datatype. The getter and setter functions work in some
--- arrow.
+-- | Abstract Point datatype. The getter and modifier functions work in some
+-- category.
 
 data Point arr f i o = Point
-  { _get :: f `arr` o
-  , _set :: (i, f) `arr` f
+  { _get    :: f `arr` o
+  , _modify :: (o `arr` i, f) `arr` f
   }
 
--- | Modification as a compositon of a getter and setter. Unfortunately,
--- `ArrowApply' is needed for this composition.
+-- | Setting a value in terms of modification with the constant function.
 
-_modify :: ArrowApply arr => Point arr f i o -> (o `arr` i, f) `arr` f
-_modify l = proc (m, f) -> do i <- m . _get l -<< f; _set l -< (i, f)
+_set :: Arrow arr => Point arr f i o -> arr (i, f) f
+_set p = _modify p . first (arr (arr . const))
 
 -- | Abstract Lens datatype. The getter and setter functions work in some
 -- arrow. Arrows allow for effectful lenses, for example, lenses that might
@@ -42,7 +41,7 @@ newtype Lens arr f a = Lens { unLens :: Point arr f a a }
 
 -- | Create a lens out of a getter and setter.
 
-lens :: (f `arr` a) -> ((a, f) `arr` f) -> Lens arr f a
+lens :: (f `arr` a) -> ((a `arr` a, f) `arr` f) -> Lens arr f a
 lens g s = Lens (Point g s)
 
 -- | Get the getter arrow from a lens.
@@ -60,31 +59,38 @@ set = _set . unLens
 modify :: ArrowApply arr => Lens arr f o -> (o `arr` o, f) `arr` f
 modify = _modify . unLens
 
+compose :: ArrowApply arr => Point arr f i o -> Point arr g f f -> Point arr g i o
+compose (Point gi mi) (Point go mo) =
+  Point (gi . go) (app . arr (first (\oi -> mo . pack (mi . pack oi))))
+  where pack i = arr (const i) &&& id
+
 -------------------------------------------------------------------------------
 
 instance ArrowApply arr => Category (Lens arr) where
-  id = lens id (arr fst)
-  Lens a . Lens b = lens (_get a . _get b) (_modify b . first (curryA (_set a)))
-    where curryA f = arr (\i -> f . arr (i,))
-  {-# INLINE id #-}
+  id = lens id (arr snd)
+  Lens a . Lens b = Lens (compose a b)
+  {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
 instance Arrow arr => Functor (Point arr f i) where
-  fmap f x = Point (arr f . _get x) (_set x)
+  fmap f x = Point (arr f . _get x) (_modify x . first (arr ((\a -> a . arr f))))
   {-# INLINE fmap #-}
 
 instance Arrow arr => Applicative (Point arr f i) where
   pure a  = Point (arr (const a)) (arr snd)
-  a <*> b = Point (arr app . (_get a &&& _get b)) (_set b . (arr fst &&& _set a))
-  {-# INLINE pure #-}
+  a <*> b = Point (arr app . (_get a &&& _get b)) $
+    proc (t, p) -> do (f, v) <- (_get a &&& _get b) -< p
+                      q <- _modify a -< (t . arr ($ v), p)
+                      _modify b -< (t . arr f, q)
+  {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
 
 infix 8 `for`
 
 -- | Make a Lens output diverge by modification of the setter input.
 
-for :: Arrow arr => (i `arr` o) -> Lens arr f o -> Point arr f i o
-for p (Lens l) = Point (_get l) (_set l . first p)
+for :: Arrow arr => arr i o -> Lens arr f o -> Point arr f i o
+for f (Lens l) = Point (_get l) (_modify l . first (arr (f .)))
 
 -------------------------------------------------------------------------------
 
@@ -99,7 +105,7 @@ data Bijection arr a b = Bij { fw :: a `arr` b, bw :: b `arr` a }
 instance Category arr => Category (Bijection arr) where
   id = Bij id id
   Bij a b . Bij c d = a . c `Bij` d . b
-  {-# INLINE id #-}
+  {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
 -- | Lifting 'Bijection's.
@@ -122,7 +128,9 @@ inv (Bij a b) = (Bij b a)
 -- | We can diverge 'Lens'es using an isomorphism.
 
 instance Arrow arr => Iso arr (Lens arr f) where
-  iso bi (Lens l) = lens (fw bi . _get l) (_set l . first (bw bi))
+  iso bi = arr $ \(Lens (Point g m)) ->
+             lens (fw bi . g)
+                  (m . first (arr (\a -> bw bi . a . fw bi)))
   {-# INLINE iso #-}
 
 -- | We can diverge 'Bijection's using an isomorphism.
