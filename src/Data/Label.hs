@@ -130,7 +130,7 @@ Amsterdam over exactly two years:
 -- functions. Just like lenses, bijections can be composed using the
 -- "Control.Category" type class. Bijections can be used to change the type of
 -- a lens. The `Iso` type class, which can be seen as a bidirectional functor,
--- can be used to apply lenses to lenses.
+-- can be used to apply bijections to lenses.
 -- 
 -- For example, when we want to treat the age of a person as a string we can do
 -- the following:
