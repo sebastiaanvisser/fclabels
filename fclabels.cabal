@@ -34,11 +34,10 @@ Build-Type:    Simple
 Library
   HS-Source-Dirs: src
 
-  Other-Modules:
-    Data.Label.Derive
   Exposed-Modules:
     Data.Label
     Data.Label.Abstract
+    Data.Label.Derive
     Data.Label.Maybe
     Data.Label.MaybeM
     Data.Label.Pure
