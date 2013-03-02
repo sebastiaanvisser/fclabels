@@ -5,6 +5,7 @@ module Data.Label.PureM
   gets
 , puts
 , modify
+, modifyAndGet
 , (=:)
 , (=.)
 
@@ -34,6 +35,25 @@ puts l = M.modify . L.set l
 
 modify :: M.MonadState s m => s :-> a -> (a -> a) -> m ()
 modify l = M.modify . L.modify l
+
+-- | Modify a value with a state-function and get the result of this function.
+-- Can be conveniently used with a `State` monad with help of a `runState` 
+-- function:
+-- 
+-- @
+-- modifyAndGet lens $ runState $ do
+--   currentValue <- get
+--   let newValue = computeNewValueBasedOnCurrentValue currentValue
+--   put $ newValue
+--   return newValue
+-- @
+
+modifyAndGet :: M.MonadState s m => s :-> a -> (a -> (b, a)) -> m b
+modifyAndGet l f = do
+  a <- gets l
+  let (b, a') = f a
+  puts l a'
+  return b
 
 -- | Alias for `puts' that reads like an assignment.
 
