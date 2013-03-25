@@ -13,3 +13,4 @@ point to fields of multi-constructor datatypes in an elegant way.
 
 See the Data.Label.Maybe module for the use of partial labels.
 
+On Hackage: http://hackage.haskell.org/package/fclabels

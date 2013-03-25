@@ -25,6 +25,9 @@ Description:   This package provides first class labels that can act as
                >     Thanks to Nikita Volkov.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
+Homepage:      https://github.com/sebastiaanvisser/fclabels
+Bug-Reports:   http://github.com/sebastiaanvisser/fclabels/issues
+
 License:       BSD3
 License-File:  LICENSE
 Category:      Data, Lenses
