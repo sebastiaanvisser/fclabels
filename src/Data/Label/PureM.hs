@@ -5,6 +5,7 @@ module Data.Label.PureM
   gets
 , puts
 , modify
+, modifyAndGet
 , (=:)
 , (=.)
 
@@ -14,6 +15,7 @@ module Data.Label.PureM
 )
 where
 
+import Control.Monad
 import Data.Label.Pure ((:->))
 import qualified Control.Monad.Reader as M
 import qualified Control.Monad.State  as M
@@ -57,4 +59,14 @@ asks = M.asks . L.get
 
 local :: M.MonadReader r m => (r :-> b) -> (b -> b) -> m a -> m a
 local l f = M.local (L.modify l f)
+
+-- | Modify a value with a function somewhere in the state, pointed to by the
+-- specified lens. Additionally return a separate value based on the
+-- modification.
+
+modifyAndGet :: M.MonadState s m => (s :-> a) -> (a -> (b, a)) -> m b
+modifyAndGet l f =
+  do (b, a) <- f `liftM` gets l
+     puts l a
+     return b
 
