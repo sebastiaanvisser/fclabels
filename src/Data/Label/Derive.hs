@@ -14,7 +14,7 @@ module Data.Label.Derive
 , mkLabelsMono
 , mkLabelsNoTypes
 , defaultMakeLabel
-, derive1'
+, gDerive
 ) where
 
 import Control.Arrow
@@ -74,10 +74,10 @@ mkLabelsNoTypes = liftM concat . mapM (derive1 defaultMakeLabel False False)
 -- Helpers to generate all labels for one datatype.
 
 derive1 :: (String -> String) -> Bool -> Bool -> Name -> Q [Dec]
-derive1 makeLabel signatures concrete = reify >=> derive1' makeLabel signatures concrete
+derive1 makeLabel signatures concrete = reify >=> gDerive makeLabel signatures concrete
 
-derive1' :: (String -> String) -> Bool -> Bool -> Info -> Q [Dec]
-derive1' makeLabel signatures concrete i =
+gDerive :: (String -> String) -> Bool -> Bool -> Info -> Q [Dec]
+gDerive makeLabel signatures concrete i =
  do let -- Only process data and newtype declarations, filter out all
         -- constructors and the type variables.
         (tyname, cons, vars) =
