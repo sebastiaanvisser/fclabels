@@ -107,8 +107,8 @@ city.  This can be done by using a neat `Applicative` functor instance:
 Because the applicative type class on its own is not very capable of expressing
 bidirectional relations, which we need for our lenses, the actual instance is
 defined for an internal helper structure called `Point`. Points are a bit more
-general than lenses. As you can see above, the `Label` constructor has to be
-used to convert a `Point` back into a `Label`. The `for` function must be used
+general than lenses. As you can see above, the `Lens` constructor has to be
+used to convert a `Point` back into a `Lens`. The `for` function must be used
 to indicate which partial destructor to use for which lens in the applicative
 composition.
 
