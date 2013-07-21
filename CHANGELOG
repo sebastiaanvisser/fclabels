@@ -1,5 +1,9 @@
 CHANGELOG
 
+1.1.6 -> 1.1.7
+  - Fixed compilation issue on newer GHC using clang.
+    Thanks to 唐鳳.
+
 1.1.5 -> 1.1.6
   - Exposed generic TH derive function.
     Thanks to Bram Schuur.

@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.1.6
+Version:       1.1.7
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels.
@@ -20,9 +20,9 @@ Description:   This package provides first class labels that can act as
                .
                See the "Data.Label.Maybe" module for the use of partial labels.
                .
-               > 1.1.5 -> 1.1.6
-               >   - Exposed generic TH derive function.
-               >     Thanks to Bram Schuur.
+               > 1.1.6 -> 1.1.7
+               >   - Fixed compilation issue on newer GHC using clang.
+               >     Thanks to 唐鳳.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 Homepage:      https://github.com/sebastiaanvisser/fclabels
