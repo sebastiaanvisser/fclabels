@@ -5,8 +5,7 @@
   , FlexibleContexts
   , FlexibleInstances
   , TypeOperators
-  , CPP
-  #-}
+  , CPP #-}
 module Data.Label.Derive
 ( mkLabels
 , mkLabel
