@@ -3,8 +3,7 @@
   , Arrows
   , TupleSections
   , FlexibleInstances
-  , MultiParamTypeClasses
-  #-}
+  , MultiParamTypeClasses #-}
 module Data.Label.Abstract where
 
 import Control.Arrow
