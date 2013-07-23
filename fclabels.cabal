@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       1.1.7
+Version:       1.1.7.1
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels.
@@ -22,7 +22,7 @@ Description:   This package provides first class labels that can act as
                .
                > 1.1.6 -> 1.1.7
                >   - Fixed compilation issue on newer GHC using clang.
-               >     Thanks to 唐鳳.
+               >     Thanks to Audrey Tang.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 Homepage:      https://github.com/sebastiaanvisser/fclabels
