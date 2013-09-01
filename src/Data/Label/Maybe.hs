@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeOperators, TupleSections #-}
 module Data.Label.Maybe
 ( (:~>)
+, Partial
 , lens
 , get
 , set
@@ -13,41 +14,37 @@ where
 
 import Control.Arrow
 import Control.Category
-import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
 import Data.Maybe
 import Prelude hiding ((.), id)
 import qualified Data.Label.Abstract as A
-
-type MaybeLens f a = A.Lens (Kleisli (MaybeT Identity)) f a
 
 -- | Lens type for situations in which the accessor functions can fail. This is
 -- useful, for example, when accessing fields in datatypes with multiple
 -- constructors.
 
-type f :~> a = MaybeLens f a
+type f :~> a = A.Lens Partial f a
 
-run :: Kleisli (MaybeT Identity) f a -> f -> Maybe a
-run l = runIdentity . runMaybeT . runKleisli l
+-- | Context that represents computations that might fail.
+
+type Partial = Kleisli Maybe
 
 -- | Create a lens that can fail from a getter and a setter that can themselves
 -- potentially fail.
 
 lens :: (f -> Maybe a) -> (a -> f -> Maybe f) -> f :~> a
-lens g s = A.lens (kl g) (kl (uncurry s))
-  where kl a = Kleisli (MaybeT . Identity . a)
+lens g s = A.lens (Kleisli g) (Kleisli (uncurry s))
 
 -- | Getter for a lens that can fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
 
 get :: (f :~> a) -> f -> Maybe a
-get l = run (A.get l)
+get l = runKleisli (A.get l)
 
 -- | Setter for a lens that can fail. When the field to which the lens points
 -- is not accessible this function returns 'Nothing'.
 
 set :: f :~> a -> a -> f -> Maybe f
-set l v = run (A.set l . arr (v,))
+set l v = runKleisli (A.set l . arr (v,))
 
 -- | Like 'set' but return behaves like the identity function when the field
 -- could not be set.
@@ -59,7 +56,7 @@ set' l v f = f `fromMaybe` set l v f
 -- is not accessible this function returns 'Nothing'.
 
 modify :: (f :~> a) -> (a -> a) -> f -> Maybe f
-modify l m = run (A.modify l . arr (arr m,))
+modify l m = runKleisli (A.modify l . arr (arr m,))
 
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
