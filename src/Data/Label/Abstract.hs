@@ -106,27 +106,28 @@ instance Category arr => Category (Bijection arr) where
 liftBij :: Functor f => Bijection (->) a b -> Bijection (->) (f a) (f b)
 liftBij a = fmap (fw a) `Bij` fmap (bw a)
 
--- | The isomorphism type class is like a `Functor' but works in two directions.
+-- | The isomorphism type class is like a `Functor' can work in two directions.
 
 infixr 8 `iso`
+infixr 8 `osi`
 
 class Iso arr f where
-  iso :: Bijection arr a b -> f a `arr` f b
+  iso :: Bijection arr a b -> f a -> f b
 
 -- | Flipped isomorphism.
 
-osi :: Iso arr f => Bijection arr b a -> f a `arr` f b
+osi :: Iso arr f => Bijection arr b a -> f a -> f b
 osi (Bij a b) = iso (Bij b a)
 
 -- | We can diverge 'Lens'es using an isomorphism.
 
 instance Arrow arr => Iso arr (Lens arr f) where
-  iso bi = arr ((\a -> lens (fw bi . _get a) (_set a . first (bw bi))) . unLens)
+  iso bi (Lens l) = lens (fw bi . _get l) (_set l . first (bw bi))
   {-# INLINE iso #-}
 
 -- | We can diverge 'Bijection's using an isomorphism.
 
 instance Arrow arr => Iso arr (Bijection arr a) where
-  iso = arr . (.)
+  iso = (.)
   {-# INLINE iso #-}
 
