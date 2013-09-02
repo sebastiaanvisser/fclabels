@@ -149,7 +149,7 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
             setter    = [| arr (\(v, p) -> $(caseE [|p|] (cases (bodyS [|p|] [|v|]) ++ wild))) |]
             cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
             wild      = [match wildP (normalB failure) []]
-            failure   = [| Left $(litE (stringL name)) |]
+            failure   = [| Left $(litE (stringL name) `sigE` [t| String |] ) |]
             bodyS p v = [| Right $( record p field v ) |]
             bodyG p   = [| Right $( varE field `appE` p ) |]
 
