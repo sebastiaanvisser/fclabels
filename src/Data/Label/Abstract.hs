@@ -77,15 +77,12 @@ instance Arrow arr => Applicative (Point arr f i) where
   {-# INLINE pure #-}
   {-# INLINE (<*>) #-}
 
--- | Make a 'Point' diverge in two directions.
-
-bimap :: Arrow arr => (o' `arr` o) -> (i `arr` i') -> Point arr f i' o' -> Point arr f i o
-bimap f g l = Point (f . _get l) (_set l . first g)
-
 infix 8 `for`
 
+-- | Make a Lens output diverge by modification of the setter input.
+
 for :: Arrow arr => (i `arr` o) -> Lens arr f o -> Point arr f i o
-for p = bimap id p . unLens
+for p (Lens l) = Point (_get l) (_set l . first p)
 
 -- | The bijections datatype, an arrow that works in two directions. 
 
