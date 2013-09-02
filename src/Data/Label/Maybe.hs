@@ -16,13 +16,15 @@ import Control.Arrow
 import Control.Category
 import Data.Maybe
 import Prelude hiding ((.), id)
+import Data.Label.Abstract (Lens)
+
 import qualified Data.Label.Abstract as A
 
 -- | Lens type for situations in which the accessor functions can fail. This is
 -- useful, for example, when accessing fields in datatypes with multiple
 -- constructors.
 
-type f :~> a = A.Lens Partial f a
+type f :~> a = Lens Partial f a
 
 -- | Context that represents computations that might fail.
 
@@ -67,6 +69,6 @@ modify' l m f = f `fromMaybe` modify l m f
 -- | Embed a pure lens that points to a `Maybe` field into a lens that might
 -- fail.
 
-embed :: A.Lens (->) f (Maybe a) -> f :~> a
+embed :: Lens (->) f (Maybe a) -> f :~> a
 embed l = lens (A.get l) (\a f -> Just (A.set l (Just a, f)))
 
