@@ -109,15 +109,14 @@ liftBij a = fmap (fw a) `Bij` fmap (bw a)
 -- | The isomorphism type class is like a `Functor' can work in two directions.
 
 infixr 8 `iso`
-infixr 8 `osi`
 
 class Iso arr f where
   iso :: Bijection arr a b -> f a -> f b
 
--- | Flipped isomorphism.
+-- | Flip an isomorphism.
 
-osi :: Iso arr f => Bijection arr b a -> f a -> f b
-osi (Bij a b) = iso (Bij b a)
+inv :: Bijection arr b a -> Bijection arr a b
+inv (Bij a b) = (Bij b a)
 
 -- | We can diverge 'Lens'es using an isomorphism.
 

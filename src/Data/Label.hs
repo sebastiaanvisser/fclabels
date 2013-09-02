@@ -142,6 +142,7 @@ Amsterdam over exactly two years:
 
 , Bijection (..)
 , Iso (..)
+, inv
 , for
 
 -- * Derive labels using Template Haskell.
@@ -160,7 +161,7 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Abstract (Bijection(..), Iso(..), for, Lens(..))
+import Data.Label.Abstract (Bijection(..), Iso(..), for, Lens(..), inv)
 import Data.Label.Pure
 import Data.Label.Derive
 
