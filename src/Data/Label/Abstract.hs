@@ -1,3 +1,4 @@
+{- | Lens internals. -}
 {-# LANGUAGE
     TypeOperators
   , Arrows
@@ -7,16 +8,15 @@
 module Data.Label.Abstract where
 
 import Control.Arrow
-import Prelude hiding ((.), id)
 import Control.Applicative
 import Control.Category
+import Prelude hiding ((.), id)
 
 {-# INLINE _modify #-}
 {-# INLINE lens    #-}
 {-# INLINE get     #-}
 {-# INLINE set     #-}
 {-# INLINE modify  #-}
-{-# INLINE bimap   #-}
 {-# INLINE for     #-}
 {-# INLINE liftBij #-}
 
@@ -60,6 +60,8 @@ set = _set . unLens
 modify :: ArrowApply arr => Lens arr f o -> (o `arr` o, f) `arr` f
 modify = _modify . unLens
 
+-------------------------------------------------------------------------------
+
 instance ArrowApply arr => Category (Lens arr) where
   id = lens id (arr fst)
   Lens a . Lens b = lens (_get a . _get b) (_modify b . first (curryA (_set a)))
@@ -84,9 +86,11 @@ infix 8 `for`
 for :: Arrow arr => (i `arr` o) -> Lens arr f o -> Point arr f i o
 for p (Lens l) = Point (_get l) (_set l . first p)
 
--- | The bijections datatype, an arrow that works in two directions. 
+-------------------------------------------------------------------------------
 
 infix 8 `Bij`
+
+-- | The bijections datatype, an arrow that works in two directions. 
 
 data Bijection arr a b = Bij { fw :: a `arr` b, bw :: b `arr` a }
 
@@ -103,9 +107,9 @@ instance Category arr => Category (Bijection arr) where
 liftBij :: Functor f => Bijection (->) a b -> Bijection (->) (f a) (f b)
 liftBij a = fmap (fw a) `Bij` fmap (bw a)
 
--- | The isomorphism type class is like a `Functor' can work in two directions.
-
 infixr 8 `iso`
+
+-- | The isomorphism type class is like a `Functor' can work in two directions.
 
 class Iso arr f where
   iso :: Bijection arr a b -> f a -> f b
