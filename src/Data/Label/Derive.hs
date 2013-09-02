@@ -86,7 +86,8 @@ gDerive makeLabel signatures concrete i =
             _                             -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
-        recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
+        deepCons = [ con | ForallC _ _ con <- cons ]
+        recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons ++ deepCons, f <- fs ]
 
     concat `liftM`
         mapM (derive makeLabel signatures concrete tyname vars (length cons))
