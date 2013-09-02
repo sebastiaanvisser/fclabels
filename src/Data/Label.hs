@@ -79,7 +79,7 @@ Composition is done using the @(`.`)@ operator which is part of the
 
 -}
 
--- * Pure lenses.
+-- * Total lenses.
 
   (:->)
 , lens
@@ -162,6 +162,6 @@ Amsterdam over exactly two years:
 where
 
 import Data.Label.Abstract (Bijection(..), Iso(..), for, Lens(..), inv)
-import Data.Label.Pure
+import Data.Label.Total
 import Data.Label.Derive
 

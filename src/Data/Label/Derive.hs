@@ -22,7 +22,7 @@ import Control.Monad
 import Data.Char
 import Data.Function (on)
 import Data.Label.Abstract
-import Data.Label.Pure ((:->))
+import Data.Label.Total ((:->))
 import Data.Label.Maybe ((:~>))
 import Data.List
 import Data.Ord
@@ -115,8 +115,8 @@ derive :: (String -> String)
 derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
   do (sign, body) <-
        if length ctors == total
-       then function derivePureLabel
-       else function deriveMaybeLabel
+       then function deriveTotalLabel
+       else function derivePartialLabel
 
      return $
        if signatures
@@ -137,7 +137,7 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     label = mkName name
 
     -- Build a single record label definition for labels that might fail.
-    deriveMaybeLabel = (if concrete then mono else poly, body)
+    derivePartialLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return [])
@@ -154,7 +154,7 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
             bodyG p   = [| Right $( varE field `appE` p ) |]
 
     -- Build a single record label definition for labels that cannot fail.
-    derivePureLabel = (if concrete then mono else poly, body)
+    deriveTotalLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return [])

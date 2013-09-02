@@ -41,11 +41,11 @@ Library
     Data.Label
     Data.Label.Abstract
     Data.Label.Derive
+    Data.Label.Total
+    Data.Label.TotalM
     Data.Label.Either
     Data.Label.Maybe
     Data.Label.MaybeM
-    Data.Label.Pure
-    Data.Label.PureM
 
   GHC-Options: -Wall
   Build-Depends:

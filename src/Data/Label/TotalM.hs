@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators  #-}
-module Data.Label.PureM
+module Data.Label.TotalM
 (
 -- * 'MonadState' lens operations.
   gets
@@ -16,10 +16,10 @@ module Data.Label.PureM
 where
 
 import Control.Monad
-import Data.Label.Pure ((:->))
+import Data.Label.Total ((:->))
 import qualified Control.Monad.Reader as M
 import qualified Control.Monad.State  as M
-import qualified Data.Label.Pure      as L
+import qualified Data.Label.Total      as L
 
 -- | Get a value out of the state, pointed to by the specified lens.
 

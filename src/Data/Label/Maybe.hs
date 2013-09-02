@@ -62,7 +62,7 @@ modify l m = runKleisli (A.modify l . arr (arr m,))
 modify' :: (f :~> a) -> (a -> a) -> f -> f
 modify' l m f = f `fromMaybe` modify l m f
 
--- | Embed a pure lens that points to a `Maybe` field into a lens that might
+-- | Embed a total lens that points to a `Maybe` field into a lens that might
 -- fail.
 
 embed :: Lens (->) f (Maybe a) -> f :~> a

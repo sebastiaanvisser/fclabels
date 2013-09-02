@@ -60,8 +60,8 @@ modify l m = runKleisli (A.modify l . arr (arr m,))
 modify' :: LensF a f a -> (a -> a) -> f -> f
 modify' l m f = either (const f) id (modify l m f)
 
--- | Embed a pure lens that points to an `Either` field into a lens that
--- might fail.
+-- | Embed a total lens that points to an `Either` field into a lens that might
+-- fail.
 
 embed :: Lens (->) f (Either e a) -> LensF e f a
 embed l = lens (A.get l) (\a f -> Right (A.set l (Right a, f)))
