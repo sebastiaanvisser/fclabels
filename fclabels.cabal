@@ -41,6 +41,7 @@ Library
     Data.Label
     Data.Label.Abstract
     Data.Label.Derive
+    Data.Label.Either
     Data.Label.Maybe
     Data.Label.MaybeM
     Data.Label.Pure
