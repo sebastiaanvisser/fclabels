@@ -130,3 +130,30 @@ instance Arrow arr => Iso arr (Bijection arr a) where
   iso = (.)
   {-# INLINE iso #-}
 
+-------------------------------------------------------------------------------
+
+-- | Context that represents computations that always produce an output.
+
+type Total = (->)
+
+-- | Context that represents computations that might fail.
+
+type Partial = Kleisli Maybe
+
+-- | Context that represents computations that might fail.
+
+type Failure e = Kleisli (Either e)
+
+-- | The ArrowFail class embed some error in a failing computation.
+
+class ArrowFail e a where
+  failArrow :: a e c
+
+instance ArrowFail e Partial where
+  failArrow = Kleisli (const Nothing)
+  {-# INLINE failArrow #-}
+
+instance ArrowFail e (Failure e) where
+  failArrow = Kleisli Left
+  {-# INLINE failArrow #-}
+
