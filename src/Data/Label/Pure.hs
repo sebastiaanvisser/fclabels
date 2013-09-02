@@ -8,13 +8,13 @@ module Data.Label.Pure
 )
 where
 
+import Data.Label.Abstract (Lens, Total)
+
 import qualified Data.Label.Abstract as A
 
-type PureLens f a = A.Lens (->) f a
+-- | Total lens type specialized for pure accessor functions.
 
--- | Pure lens type specialized for pure accessor functions.
-
-type (f :-> a) = PureLens f a
+type f :-> a = Lens Total f a
 
 -- | Create a pure lens from a getter and a setter.
 --

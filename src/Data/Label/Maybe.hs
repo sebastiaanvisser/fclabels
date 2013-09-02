@@ -16,7 +16,7 @@ import Control.Arrow
 import Control.Category
 import Data.Maybe
 import Prelude hiding ((.), id)
-import Data.Label.Abstract (Lens)
+import Data.Label.Abstract (Lens, Partial)
 
 import qualified Data.Label.Abstract as A
 
@@ -25,10 +25,6 @@ import qualified Data.Label.Abstract as A
 -- constructors.
 
 type f :~> a = Lens Partial f a
-
--- | Context that represents computations that might fail.
-
-type Partial = Kleisli Maybe
 
 -- | Create a lens that can fail from a getter and a setter that can themselves
 -- potentially fail.

@@ -15,7 +15,7 @@ where
 import Control.Arrow
 import Control.Category
 import Prelude hiding ((.), id)
-import Data.Label.Abstract (Lens)
+import Data.Label.Abstract (Lens, Failure)
 
 import qualified Data.Label.Abstract as A
 
@@ -23,10 +23,6 @@ import qualified Data.Label.Abstract as A
 -- some error information.
 
 type LensF e f a = Lens (Failure e) f a
-
--- | Context that represents computations that might fail.
-
-type Failure e = Kleisli (Either e)
 
 -- | Create a lens that can fail from a getter and a setter that can themselves
 -- potentially fail.
