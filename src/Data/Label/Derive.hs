@@ -55,7 +55,7 @@ mkLabel = mkLabels . return
 -- record @Rec { rec_val :: X }@.
 
 mkLabelsWith :: (String -> String) -> [Name] -> Q [Dec]
-mkLabelsWith makeLabel = liftM concat . mapM (derive1 makeLabel True False)
+mkLabelsWith mk = liftM concat . mapM (derive1 mk True False)
 
 -- | Derive lenses including type signatures for all the record selectors in a
 -- datatype. The signatures will be concrete and can only be used in the
@@ -73,10 +73,10 @@ mkLabelsNoTypes = liftM concat . mapM (derive1 defaultMakeLabel False False)
 -- Helpers to generate all labels for one datatype.
 
 derive1 :: (String -> String) -> Bool -> Bool -> Name -> Q [Dec]
-derive1 makeLabel signatures concrete = reify >=> gDerive makeLabel signatures concrete
+derive1 mk signatures concrete = reify >=> gDerive mk signatures concrete
 
 gDerive :: (String -> String) -> Bool -> Bool -> Info -> Q [Dec]
-gDerive makeLabel signatures concrete i =
+gDerive mk signatures concrete i =
  do let -- Only process data and newtype declarations, filter out all
         -- constructors and the type variables.
         (tyname, cons, vars) =
@@ -89,7 +89,7 @@ gDerive makeLabel signatures concrete i =
         recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
 
     concat `liftM`
-        mapM (derive makeLabel signatures concrete tyname vars (length cons))
+        mapM (derive mk signatures concrete tyname vars (length cons))
             recordOnly
 
     where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
@@ -112,7 +112,7 @@ defaultMakeLabel field =
 derive :: (String -> String)
        -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
        -> (VarStrictType, [Name]) -> Q [Dec]
-derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
+derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
   do (sign, body) <-
        if length ctors == total
        then function derivePureLabel
@@ -129,25 +129,27 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
     --
     -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
 #if MIN_VERSION_template_haskell(2,8,0)
-    inline = PragmaD (InlineP labelName Inline FunLike (FromPhase 0))
+    inline = PragmaD (InlineP label Inline FunLike (FromPhase 0))
 #else
-    inline = PragmaD (InlineP labelName (InlineSpec True True (Just (True, 0))))
+    inline = PragmaD (InlineP label (InlineSpec True True (Just (True, 0))))
 #endif
-    labelName = mkName (makeLabel (nameBase field))
+    name  = mk (nameBase field)
+    label = mkName name
 
     -- Build a single record label definition for labels that might fail.
     deriveMaybeLabel = (if concrete then mono else poly, body)
       where
         mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return [])
-          [t| (ArrowChoice $(arrow), ArrowZero $(arrow))
+          [t| (ArrowChoice $(arrow), ArrowFail String $(arrow))
               => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens (fromRight . $(getter)) (fromRight . $(setter)) |]
           where
             getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
             setter    = [| arr (\(v, p) -> $(caseE [|p|] (cases (bodyS [|p|] [|v|]) ++ wild))) |]
             cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
-            wild      = [match wildP (normalB [| Left () |]) []]
+            wild      = [match wildP (normalB failure) []]
+            failure   = [| Left $(litE (stringL name)) |]
             bodyS p v = [| Right $( record p field v ) |]
             bodyG p   = [| Right $( varE field `appE` p ) |]
 
@@ -180,11 +182,11 @@ derive makeLabel signatures concrete tyname vars total ((field, _, fieldtyp), ct
 
     -- Build a function declaration with both a type signature and body.
     function (s, b) = liftM2 (,) 
-        (sigD labelName s)
-        (funD labelName [ clause [] (normalB b) [] ])
+        (sigD label s)
+        (funD label [ clause [] (normalB b) [] ])
 
-fromRight :: (ArrowChoice a, ArrowZero a) => a (Either b d) d
-fromRight = zeroArrow ||| returnA
+fromRight :: (ArrowChoice a, ArrowFail e a) => a (Either e d) d
+fromRight = failArrow ||| returnA
 
 -------------------------------------------------------------------------------
 
