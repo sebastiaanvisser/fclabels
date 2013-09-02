@@ -8,7 +8,6 @@ import Criterion.Main
 data Person = Person
   { _name   :: String
   , _age    :: Int
-  , _isMale :: Bool
   , _place  :: Place
   , _birthplace :: Maybe Place
   } deriving (Show, Eq)
@@ -22,7 +21,7 @@ data Place = Place
 mkLabels [''Person, ''Place]
 
 jan :: Person
-jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe") Nothing
+jan = Person "Jan" 71 (Place "Utrecht" "The Netherlands" "Europe") Nothing
 
 getAge :: Int
 getAge = get age jan
