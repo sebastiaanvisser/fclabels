@@ -13,7 +13,7 @@ rm -Rf $OUT
 mkdir -p $OUT
 
 echo "Generating HPC report"
-hpc markup --exclude=Main --destdir=$OUT suite >/dev/null 2>&1
+hpc markup --exclude=Main --exclude=Data.Label.Derive --destdir=$OUT suite >/dev/null 2>&1
 
 rm -f suite.tix
 
