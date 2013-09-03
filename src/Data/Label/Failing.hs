@@ -69,7 +69,7 @@ modify l m = runKleisli (A.modify l . arr (arr m,))
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
 
-modify' :: LensF a f a -> (a -> a) -> f -> f
+modify' :: LensF e f a -> (a -> a) -> f -> f
 modify' l m f = either (const f) id (modify l m f)
 
 -- | Embed a total lens that points to an `Either` field into a lens that might
