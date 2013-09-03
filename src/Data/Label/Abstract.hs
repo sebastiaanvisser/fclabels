@@ -203,7 +203,7 @@ type Failing e = Kleisli (Either e)
 
 -- | The ArrowFail class embed some error in a failing arrow computation.
 
-class ArrowFail e a where
+class Arrow a => ArrowFail e a where
   failArrow :: a e c
 
 instance ArrowFail e Partial where
