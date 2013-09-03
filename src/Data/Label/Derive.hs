@@ -147,10 +147,12 @@ derive mk sigs conc tyname vars total ((field, _, fieldtyp), ctors) =
       where
         mono = forallT prettyVars (return [])
                  [t| $(inputType) :~> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return [])
-          [t| (ArrowChoice $(arrow), ArrowFail String $(arrow))
-              => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
-        body = [| lens (fromRight . $(getter)) (fromRight . $(setter)) |]
+        poly = forallT foralls (return [])
+                 [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
+                   => Lens $(cat) $(inputType) $(return prettyFieldtyp) |]
+        body = [| lens (failArrow ||| $(totalG) <<< $(caseG))
+                       (failArrow ||| $(totalM) <<< $(caseM))
+                |]
           where
             bodyG f   = [| Right $(f) |]
             cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
