@@ -29,8 +29,8 @@ type f :~> a = Lens Partial f a
 -- | Create a lens that can fail from a getter and a setter that can themselves
 -- potentially fail.
 
-lens :: (f -> Maybe a) -> (a -> f -> Maybe f) -> f :~> a
-lens g s = A.lens (Kleisli g) (Kleisli (uncurry s))
+lens :: (f -> Maybe a) -> ((a -> Maybe a) -> f -> Maybe f) -> f :~> a
+lens g s = A.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
 
 -- | Getter for a lens that can fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
@@ -65,6 +65,6 @@ modify' l m f = f `fromMaybe` modify l m f
 -- | Embed a total lens that points to a `Maybe` field into a lens that might
 -- fail.
 
-embed :: Lens (->) f (Maybe a) -> f :~> a
-embed l = lens (A.get l) (\a f -> Just (A.set l (Just a, f)))
+embed :: A.Lens (->) f (Maybe a) -> f :~> a
+embed l = lens (A.get l) (\m f -> Just (A.modify l ((>>= m), f)))
 

@@ -26,7 +26,7 @@ type f :-> a = Lens Total f a
 --
 -- > set l (get l f) f == f
 
-lens :: (f -> a) -> (a -> f -> f) -> f :-> a
+lens :: (f -> a) -> ((a -> a) -> f -> f) -> f :-> a
 lens g s = A.lens g (uncurry s)
 
 -- | Getter for a total lens.
