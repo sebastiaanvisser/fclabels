@@ -1,3 +1,7 @@
+{- | Template Haskell functions for automatically generating labels for
+algebraic datatypes, newtypes and GADTs.
+-}
+
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE
     TemplateHaskell
@@ -6,14 +10,15 @@
   , FlexibleInstances
   , TypeOperators
   , CPP #-}
+
 module Data.Label.Derive
-( mkLabels
-, mkLabel
+( mkLabel
+, mkLabels
 , mkLabelsWith
 , mkLabelsMono
 , mkLabelsNoTypes
 , defaultMakeLabel
-, gDerive
+, deriveWith
 ) where
 
 import Control.Arrow
@@ -31,11 +36,6 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Prelude hiding ((.), id)
 
--- Throw a fclabels specific error.
-
-fclError :: String -> a
-fclError err = error ("Data.Label.Derive: " ++ err)
-
 -- | Derive lenses including type signatures for all the record selectors for a
 -- collection of datatypes. The types will be polymorphic and can be used in an
 -- arbitrary context.
@@ -50,58 +50,62 @@ mkLabels = mkLabelsWith defaultMakeLabel
 mkLabel :: Name -> Q [Dec]
 mkLabel = mkLabels . return
 
--- | Generate the label name from the record field name.
--- For instance, @drop 1 . dropWhile (/='_')@ creates a label @val@ from a
--- record @Rec { rec_val :: X }@.
+-- | Like `mkLabels`, but uses the specified function to produce custom names
+-- for the labels.
+--
+-- For instance, @(drop 1 . dropWhile (/='_'))@ creates a label
+-- @val@ from a record @Rec { rec_val :: X }@.
 
 mkLabelsWith :: (String -> String) -> [Name] -> Q [Dec]
-mkLabelsWith mk = liftM concat . mapM (derive1 mk True False)
+mkLabelsWith mk = liftM concat . mapM (reify >=> deriveWith mk True False)
 
 -- | Derive lenses including type signatures for all the record selectors in a
 -- datatype. The signatures will be concrete and can only be used in the
 -- appropriate context.
 
 mkLabelsMono :: [Name] -> Q [Dec]
-mkLabelsMono = liftM concat . mapM (derive1 defaultMakeLabel True True)
+mkLabelsMono = liftM concat . mapM (reify >=> deriveWith defaultMakeLabel True True)
 
 -- | Derive lenses without type signatures for all the record selectors in a
 -- datatype.
 
 mkLabelsNoTypes :: [Name] -> Q [Dec]
-mkLabelsNoTypes = liftM concat . mapM (derive1 defaultMakeLabel False False)
+mkLabelsNoTypes = liftM concat . mapM (reify >=> deriveWith defaultMakeLabel False False)
 
--- Helpers to generate all labels for one datatype.
+-- | Low level label generation function.
 
-derive1 :: (String -> String) -> Bool -> Bool -> Name -> Q [Dec]
-derive1 mk signatures concrete = reify >=> gDerive mk signatures concrete
+deriveWith :: (String -> String) -- ^ Supply a function to perform custom label naming.
+           -> Bool               -- ^ Generate type signatures or not.
+           -> Bool               -- ^ Generate concrete type or abstract type.
+           -> Info               -- ^ The type to derive labels for.
+           -> Q [Dec]
+deriveWith mk sigs conc info =
 
-gDerive :: (String -> String) -> Bool -> Bool -> Info -> Q [Dec]
-gDerive mk signatures concrete i =
- do let -- Only process data and newtype declarations, filter out all
-        -- constructors and the type variables.
-        (tyname, cons, vars) =
-          case i of
+ do -- Only process data and newtype declarations, filter out all
+    -- constructors and the type variables.
+    let (tyname, cons, vars) =
+          case info of
             TyConI (DataD    _ n vs cs _) -> (n, cs,  vs)
             TyConI (NewtypeD _ n vs c  _) -> (n, [c], vs)
-            _                             -> fclError "Can only derive labels for datatypes and newtypes."
+            _ -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
         recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
 
-    concat `liftM`
-        mapM (derive mk signatures concrete tyname vars (length cons))
-            recordOnly
+    concat `liftM` mapM (derive mk sigs conc tyname vars (length cons)) recordOnly
 
     where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
                       . groupBy ((==) `on` (fst3 . fst))
                       . sortBy (comparing (fst3 . fst))
                       where fst3 (a, _, _) = a
 
+-------------------------------------------------------------------------------
 -- Generate the code for the labels.
 
 -- | Generate a name for the label. If the original selector starts with an
--- underscore, remove it and make the next character lowercase. Otherwise,
--- add 'l', and make the next character uppercase.
+-- underscore, remove it and make the next character lowercase. Otherwise, add
+-- 'l', and make the next character uppercase.
+
 defaultMakeLabel :: String -> String
 defaultMakeLabel field =
   case field of
@@ -112,15 +116,15 @@ defaultMakeLabel field =
 derive :: (String -> String)
        -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
        -> (VarStrictType, [Name]) -> Q [Dec]
-derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
+derive mk sigs conc tyname vars total ((field, _, fieldtyp), ctors) =
 
   do (sign, body) <-
        if length ctors == total
-       then function deriveTotalLabel
-       else function derivePartialLabel
+       then function mkTotal
+       else function mkPartial
 
      return $
-       if signatures
+       if sigs
        then [sign, inline, body]
        else [inline, body]
 
@@ -137,8 +141,9 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     name  = mk (nameBase field)
     label = mkName name
 
+    ---------------------------------------------------------------------------
     -- Build a single record label definition for labels that might fail.
-    derivePartialLabel = (if concrete then mono else poly, body)
+    mkPartial = (if conc then mono else poly, body)
       where
         mono = forallT prettyVars (return [])
                  [t| $(inputType) :~> $(return prettyFieldtyp) |]
@@ -154,31 +159,35 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
             caseG     = [| arr (\f      -> $(caseE [|f|] (cases (bodyG [|f     |]) ++ wild))) |]
             caseM     = [| arr (\(m, f) -> $(caseE [|f|] (cases (bodyG [|(m, f)|]) ++ wild))) |]
 
+    ---------------------------------------------------------------------------
     -- Build a single record label definition for labels that cannot fail.
-    deriveTotalLabel = (if concrete then mono else poly, body)
+    mkTotal = (if conc then mono else poly, body)
       where
         mono = forallT prettyVars (return [])
                  [t| $(inputType) :-> $(return prettyFieldtyp) |]
-        poly = forallT forallVars (return [])
-                 [t| ArrowApply $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        poly = forallT foralls (return [])
+                 [t| ArrowApply $(cat) => Lens $(cat) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens $(totalG) $(totalM) |]
 
-    -- The total getter and setter arrow. Directly used by total lenses,
+    ---------------------------------------------------------------------------
+    -- The total getter and setter arrows. Directly used by total lenses,
     -- indirectly used by partial lenses.
     totalG = [| arr $(varE field) |]
-    totalM = [| mkTotalModifier $(varE field) (\(v, f) -> $(record [| f |] field [| v |])) |]
+    totalM = [| modifier $(varE field) (\(v, f) -> $(record [| f |] field [| v |])) |]
 
     -- Compute the type (including type variables of the record datatype.
-    inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse prettyVars))
+    inputType = return $ foldr (flip AppT)
+                               (ConT tyname)
+                               (map tvToVarT (reverse prettyVars))
 
     -- Convert a type variable binder to a regular type variable.
     tvToVarT (PlainTV  tv     ) = VarT tv
     tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
 
     -- Prettify type variables.
-    arrow          = varT (mkName "arr")
+    cat            = varT (mkName "cat")
     prettyVars     = map prettyTyVar vars
-    forallVars     = PlainTV (mkName "arr") : prettyVars
+    foralls        = PlainTV (mkName "cat") : prettyVars
     prettyFieldtyp = prettyType fieldtyp
 
     -- Q style record updating.
@@ -189,37 +198,43 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
         (sigD label s)
         (funD label [ clause [] (normalB b) [] ])
 
-fromRight :: (ArrowChoice a, ArrowFail e a) => a (Either e d) d
-fromRight = failArrow ||| returnA
+-- Build a total modification function from a pure getter and setter.
 
-mkTotalModifier :: ArrowApply cat => (f -> a) -> ((a, f) -> f) -> cat (cat a a, f) f
-mkTotalModifier pg pm
+modifier :: ArrowApply cat => (f -> a) -> ((a, f) -> f) -> cat (cat a a, f) f
+modifier pg pm
   = arr pm
   . first app
   . arr (\(m, (f, o)) -> ((m, o), f))
   . second (id &&& arr pg)
 
 -------------------------------------------------------------------------------
+-- Cleaning up names in generated code.
 
--- Helper functions to prettify type variables.
+-- Prettify a TH name.
 
-prettyName :: Name -> Name
-prettyName tv = mkName (takeWhile (/='_') (show tv))
+pretty :: Name -> Name
+pretty tv = mkName (takeWhile (/='_') (show tv))
+
+-- Prettify a type variable by prettyfing all names.
 
 prettyTyVar :: TyVarBndr -> TyVarBndr
-prettyTyVar (PlainTV  tv   ) = PlainTV (prettyName tv)
-prettyTyVar (KindedTV tv ki) = KindedTV (prettyName tv) ki
+prettyTyVar (PlainTV  tv   ) = PlainTV (pretty tv)
+prettyTyVar (KindedTV tv ki) = KindedTV (pretty tv) ki
+
+-- Prettify a type predicate.
+
+prettyPred :: Pred -> Pred
+prettyPred (ClassP nm tys) = ClassP (pretty nm) (map prettyType tys)
+prettyPred (EqualP ty tx ) = EqualP (prettyType ty) (prettyType tx)
+
+-- Prettify a type.
 
 prettyType :: Type -> Type
 prettyType (ForallT xs cx ty) = ForallT (map prettyTyVar xs) (map prettyPred cx) (prettyType ty)
-prettyType (VarT nm         ) = VarT (prettyName nm)
+prettyType (VarT nm         ) = VarT (pretty nm)
 prettyType (AppT ty tx      ) = AppT (prettyType ty) (prettyType tx)
 prettyType (SigT ty ki      ) = SigT (prettyType ty) ki
 prettyType ty                 = ty
-
-prettyPred :: Pred -> Pred
-prettyPred (ClassP nm tys) = ClassP (prettyName nm) (map prettyType tys)
-prettyPred (EqualP ty tx ) = EqualP (prettyType ty) (prettyType tx)
 
 -- IsString instances for TH types.
 
@@ -231,4 +246,9 @@ instance IsString (Q Pat) where
 
 instance IsString (Q Exp) where
   fromString = varE . mkName
+
+-- Throw a fclabels specific error.
+
+fclError :: String -> a
+fclError err = error ("Data.Label.Derive: " ++ err)
 
