@@ -22,8 +22,6 @@ type f :-> a = Lens Total f a
 --
 -- > get l (set l a f) == a
 --
--- Or, equivalently:
---
 -- > set l (get l f) f == f
 
 lens :: (f -> a) -> ((a -> a) -> f -> f) -> f :-> a
