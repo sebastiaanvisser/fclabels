@@ -113,6 +113,7 @@ derive :: (String -> String)
        -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
        -> (VarStrictType, [Name]) -> Q [Dec]
 derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
+
   do (sign, body) <-
        if length ctors == total
        then function deriveTotalLabel
@@ -139,30 +140,33 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
     -- Build a single record label definition for labels that might fail.
     derivePartialLabel = (if concrete then mono else poly, body)
       where
-        mono = forallT prettyVars (return []) [t| $(inputType) :~> $(return prettyFieldtyp) |]
+        mono = forallT prettyVars (return [])
+                 [t| $(inputType) :~> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return [])
           [t| (ArrowChoice $(arrow), ArrowFail String $(arrow))
               => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
         body = [| lens (fromRight . $(getter)) (fromRight . $(setter)) |]
           where
-            getter    = [| arr (\    p  -> $(caseE [|p|] (cases (bodyG [|p|]      ) ++ wild))) |]
-            setter    = [| arr (\(v, p) -> $(caseE [|p|] (cases (bodyS [|p|] [|v|]) ++ wild))) |]
+            bodyG f   = [| Right $(f) |]
             cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
             wild      = [match wildP (normalB failure) []]
             failure   = [| Left $(litE (stringL name) `sigE` [t| String |] ) |]
-            bodyS p v = [| Right $( record p field v ) |]
-            bodyG p   = [| Right $( varE field `appE` p ) |]
+            caseG     = [| arr (\f      -> $(caseE [|f|] (cases (bodyG [|f     |]) ++ wild))) |]
+            caseM     = [| arr (\(m, f) -> $(caseE [|f|] (cases (bodyG [|(m, f)|]) ++ wild))) |]
 
     -- Build a single record label definition for labels that cannot fail.
     deriveTotalLabel = (if concrete then mono else poly, body)
       where
-        mono = forallT prettyVars (return []) [t| $(inputType) :-> $(return prettyFieldtyp) |]
+        mono = forallT prettyVars (return [])
+                 [t| $(inputType) :-> $(return prettyFieldtyp) |]
         poly = forallT forallVars (return [])
-          [t| Arrow $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
-        body = [| lens $(getter) $(setter) |]
-          where
-            getter = [| arr $(varE field) |]
-            setter = [| arr (\(v, p) -> $(record [| p |] field [| v |])) |]
+                 [t| ArrowApply $(arrow) => Lens $(arrow) $(inputType) $(return prettyFieldtyp) |]
+        body = [| lens $(totalG) $(totalM) |]
+
+    -- The total getter and setter arrow. Directly used by total lenses,
+    -- indirectly used by partial lenses.
+    totalG = [| arr $(varE field) |]
+    totalM = [| mkTotalModifier $(varE field) (\(v, f) -> $(record [| f |] field [| v |])) |]
 
     -- Compute the type (including type variables of the record datatype.
     inputType = return $ foldr (flip AppT) (ConT tyname) (map tvToVarT (reverse prettyVars))
@@ -187,6 +191,13 @@ derive mk signatures concrete tyname vars total ((field, _, fieldtyp), ctors) =
 
 fromRight :: (ArrowChoice a, ArrowFail e a) => a (Either e d) d
 fromRight = failArrow ||| returnA
+
+mkTotalModifier :: ArrowApply cat => (f -> a) -> ((a, f) -> f) -> cat (cat a a, f) f
+mkTotalModifier pg pm
+  = arr pm
+  . first app
+  . arr (\(m, (f, o)) -> ((m, o), f))
+  . second (id &&& arr pg)
 
 -------------------------------------------------------------------------------
 
