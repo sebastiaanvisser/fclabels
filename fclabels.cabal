@@ -43,9 +43,9 @@ Library
     Data.Label.Derive
     Data.Label.Total
     Data.Label.TotalM
-    Data.Label.Either
-    Data.Label.Maybe
-    Data.Label.MaybeM
+    Data.Label.Partial
+    Data.Label.PartialM
+    Data.Label.Failing
 
   GHC-Options: -Wall
   Build-Depends:

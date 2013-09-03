@@ -1,14 +1,24 @@
+{-| Lenses for getters and updates that can potentially fail with some error
+value. Like partial lenses, failing lenses are useful for creating accessor
+labels for multi constructor data types where projection and modification of
+fields will not always succeed. The error value can be used to report what
+caused the failure.
+-}
+
 {-# LANGUAGE TypeOperators, TupleSections #-}
-module Data.Label.Either
+
+module Data.Label.Failing
 ( LensF
 , Failing
 , lens
 , get
 , set
-, set'
 , modify
-, modify'
 , embed
+
+-- * Seemingly total modifications.
+, set'
+, modify'
 )
 where
 
@@ -24,10 +34,12 @@ import qualified Data.Label.Abstract as A
 
 type LensF e f a = Lens (Failing e) f a
 
--- | Create a lens that can fail from a getter and a setter that can themselves
--- potentially fail.
+-- | Create a lens that can fail from a getter and a modifier that can
+-- themselves potentially fail.
 
-lens :: (f -> Either e a) -> ((a -> Either e a) -> f -> Either e f) -> LensF e f a
+lens :: (f -> Either e a)                       -- ^ Getter.
+     -> ((a -> Either e a) -> f -> Either e f)  -- ^ Modifier.
+     -> LensF e f a
 lens g s = A.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
 
 -- | Getter for a lens that can fail. When the field to which the lens points

@@ -1,4 +1,10 @@
+{-| Default lenses for simple total getters and updates. Useful for creating
+accessor labels for single constructor datatypes. Also useful field labels that
+are shared between all the constructors of a multi constructor datatypes.
+-}
+
 {-# LANGUAGE TypeOperators #-}
+
 module Data.Label.Total
 ( (:->)
 , lens
@@ -16,7 +22,7 @@ import qualified Data.Label.Abstract as A
 
 type f :-> a = Lens Total f a
 
--- | Create a total lens from a getter and a setter.
+-- | Create a total lens from a getter and a modifier.
 --
 -- We expect the following law to hold:
 --
@@ -24,7 +30,9 @@ type f :-> a = Lens Total f a
 --
 -- > set l (get l f) f == f
 
-lens :: (f -> a) -> ((a -> a) -> f -> f) -> f :-> a
+lens :: (f -> a)              -- ^ Getter.
+     -> ((a -> a) -> f -> f)  -- ^ Modifier.
+     -> f :-> a
 lens g s = A.lens g (uncurry s)
 
 -- | Getter for a total lens.

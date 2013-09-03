@@ -17,8 +17,8 @@ module Data.Label.Derive
 , mkLabelsWith
 , mkLabelsMono
 , mkLabelsNoTypes
-, defaultMakeLabel
 , deriveWith
+, defaultMakeLabel
 ) where
 
 import Control.Arrow
@@ -28,7 +28,7 @@ import Data.Char
 import Data.Function (on)
 import Data.Label.Abstract
 import Data.Label.Total ((:->))
-import Data.Label.Maybe ((:~>))
+import Data.Label.Partial ((:~>))
 import Data.List
 import Data.Ord
 import Data.String
