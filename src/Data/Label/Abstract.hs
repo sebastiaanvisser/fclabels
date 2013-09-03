@@ -115,7 +115,7 @@ compose (Point gi mi) (Point go mo) =
 -------------------------------------------------------------------------------
 
 instance ArrowApply arr => Category (Lens arr) where
-  id = lens id (arr snd)
+  id = lens id app
   Lens (Point gi mi) . Lens (Point go mo) = Lens $
     Point (gi . go) (app . arr (first (\a -> mo . pack (mi . pack a))))
   {-# INLINE id  #-}
