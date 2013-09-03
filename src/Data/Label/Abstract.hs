@@ -83,8 +83,8 @@ _set p = _modify p . first (arr const)
 -------------------------------------------------------------------------------
 
 -- | Abstract Lens datatype. The getter and setter functions work in some
--- arrow. Arrows allow for effectful lenses, for example, lenses that might
--- fail or use state.
+-- category. Categories allow for effectful lenses, for example, lenses that
+-- might fail or use state.
 
 newtype Lens cat f a = Lens { unLens :: Point cat f a a }
 
@@ -145,7 +145,7 @@ for f (Lens l) = Point (_get l) (_modify l . first (arr (f .)))
 
 infix 8 `Bij`
 
--- | The bijections datatype, an arrow that works in two directions. 
+-- | The bijections datatype, a category that works in two directions.
 
 data Bijection cat a b = Bij { fw :: cat a b, bw :: cat b a }
 
