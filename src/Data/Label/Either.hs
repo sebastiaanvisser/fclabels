@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators, TupleSections #-}
 module Data.Label.Either
 ( LensF
-, Failure
+, Failing
 , lens
 , get
 , set
@@ -15,20 +15,20 @@ where
 import Control.Arrow
 import Control.Category
 import Prelude hiding ((.), id)
-import Data.Label.Abstract (Lens, Failure)
+import Data.Label.Abstract (Lens, Failing)
 
 import qualified Data.Label.Abstract as A
 
 -- | Lens type for situations in which the accessor functions can fail with
 -- some error information.
 
-type LensF e f a = Lens (Failure e) f a
+type LensF e f a = Lens (Failing e) f a
 
 -- | Create a lens that can fail from a getter and a setter that can themselves
 -- potentially fail.
 
-lens :: (f -> Either e a) -> (a -> f -> Either e f) -> LensF e f a
-lens g s = A.lens (Kleisli g) (Kleisli (uncurry s))
+lens :: (f -> Either e a) -> ((a -> Either e a) -> f -> Either e f) -> LensF e f a
+lens g s = A.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
 
 -- | Getter for a lens that can fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
@@ -64,5 +64,5 @@ modify' l m f = either (const f) id (modify l m f)
 -- fail.
 
 embed :: Lens (->) f (Either e a) -> LensF e f a
-embed l = lens (A.get l) (\a f -> Right (A.set l (Right a, f)))
+embed l = lens (A.get l) (\m f -> Right (A.modify l ((>>= m), f)))
 
