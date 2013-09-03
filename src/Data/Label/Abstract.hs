@@ -151,7 +151,7 @@ type Partial = Kleisli Maybe
 
 -- | Context that represents computations that might fail.
 
-type Failure e = Kleisli (Either e)
+type Failing e = Kleisli (Either e)
 
 -- | The ArrowFail class embed some error in a failing computation.
 
@@ -162,7 +162,7 @@ instance ArrowFail e Partial where
   failArrow = Kleisli (const Nothing)
   {-# INLINE failArrow #-}
 
-instance ArrowFail e (Failure e) where
+instance ArrowFail e (Failing e) where
   failArrow = Kleisli Left
   {-# INLINE failArrow #-}
 
