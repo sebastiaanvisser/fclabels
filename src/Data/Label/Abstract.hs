@@ -193,11 +193,11 @@ instance Arrow arr => Iso arr (Bijection arr a) where
 
 type Total = (->)
 
--- | Context that represents computations that might fail.
+-- | Context that represents computations that might silently fail.
 
 type Partial = Kleisli Maybe
 
--- | Context that represents computations that might fail.
+-- | Context that represents computations that might fail with some error.
 
 type Failing e = Kleisli (Either e)
 
