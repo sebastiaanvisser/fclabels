@@ -122,7 +122,7 @@ instance ArrowApply arr => Category (Lens arr) where
   {-# INLINE (.) #-}
 
 instance Arrow arr => Functor (Point arr f i) where
-  fmap f x = Point (arr f . _get x) (_modify x . first (arr (. arr f)))
+  fmap f x = pure f <*> x
   {-# INLINE fmap #-}
 
 instance Arrow arr => Applicative (Point arr f i) where
