@@ -9,7 +9,7 @@
 module Data.Label.Abstract
 (
 -- * The point data type that generalizes lens.
-   Point
+   Point (Point)
 , _modify
 , _get
 , _set
@@ -36,6 +36,9 @@ module Data.Label.Abstract
 
 -- * Missing Arrow type class for failing with some error.
 , ArrowFail (..)
+
+-- * Helpers
+, pack
 )
 where
 
@@ -63,21 +66,21 @@ import Prelude hiding ((.), id, const)
 -- | Abstract Point datatype. The getter and modifier functions work in some
 -- category.
 
-data Point cat f i o = Point (cat f o) (cat (cat o i, f) f)
+data Point cat g i f o = Point (cat f o) (cat (cat o i, f) g)
 
 -- | Get a value.
 
-_get :: Point cat f i o -> cat f o
+_get :: Point cat g i f o -> cat f o
 _get (Point g _) = g
 
 -- | Modify a value.
 
-_modify :: Point cat f i o -> cat (cat o i, f) f
+_modify :: Point cat g i f o -> cat (cat o i, f) g
 _modify (Point _ m) = m
 
 -- | Setting a value in terms of modification with the constant function.
 
-_set :: Arrow arr => Point arr f i o -> arr (i, f) f
+_set :: Arrow arr => Point arr g i f o -> arr (i, f) g
 _set p = _modify p . first (arr const)
 
 -------------------------------------------------------------------------------
@@ -86,7 +89,7 @@ _set p = _modify p . first (arr const)
 -- category. Categories allow for effectful lenses, for example, lenses that
 -- might fail or use state.
 
-newtype Lens cat f a = Lens { unLens :: Point cat f a a }
+newtype Lens cat f a = Lens { unLens :: Point cat f a f a }
 
 -- | Create a lens out of a getter and setter.
 
@@ -121,11 +124,11 @@ instance ArrowApply arr => Category (Lens arr) where
   {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
-instance Arrow arr => Functor (Point arr f i) where
+instance Arrow arr => Functor (Point arr f i f) where
   fmap f x = pure f <*> x
   {-# INLINE fmap #-}
 
-instance Arrow arr => Applicative (Point arr f i) where
+instance Arrow arr => Applicative (Point arr f i f) where
   pure a  = Point (const a) (arr snd)
   a <*> b = Point (arr app . (_get a &&& _get b)) $
     proc (t, p) -> do (f, v) <- _get a &&& _get b -< p
@@ -138,7 +141,7 @@ infix 8 `for`
 
 -- | Make a Lens output diverge by modification of the setter input.
 
-for :: Arrow arr => arr i o -> Lens arr f o -> Point arr f i o
+for :: Arrow arr => arr i o -> Lens arr f o -> Point arr f i f o
 for f (Lens l) = Point (_get l) (_modify l . first (arr (f .)))
 
 -------------------------------------------------------------------------------
