@@ -6,47 +6,63 @@ module Data.Label.Poly where
 
 import Control.Category
 import Control.Arrow
-import Data.Label.Abstract (Point (Point))
-import Prelude hiding ((.), id, const)
+import Data.Label.Abstract (Point (Point), _compose, _id, _get, _set, _modify)
+import Prelude hiding ((.), id)
 
 import qualified Data.Label.Abstract as A
 
--- Pair-wise composition.
+-- | Polymorphic lens type.
 
 data Lens cat p q where
-  Lens :: A.Point cat g i f o
-       -> Lens cat (f -> g) (o -> i)
-  Id   :: Lens cat  f        f
+  Lens :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
+  Id   :: Lens cat f f
+
+-- | Polymorphic lenses form a `Category`.
 
 instance ArrowApply arr => Category (Lens arr) where
   id              = Id
   Id     . u      = u
   u      . Id     = u
-  Lens f . Lens g = Lens (A._compose f g)
+  Lens f . Lens g = Lens (_compose f g)
 
-point :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> A.Point arr g i f o
-point Id       = A._id
+point :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> Point arr g i f o
+point Id       = _id
 point (Lens p) = p
+
+-- | Convert a monomorphic lens into a polymorphic lens.
 
 poly :: A.Lens cat f a -> Lens cat (f -> f) (a -> a)
 poly = Lens . A.unLens
 
+-- | Convert a polymorphic lens into a monomorphic lens.
+
 mono :: ArrowApply arr => Lens arr (f -> f) (a -> a) -> A.Lens arr f a
 mono = A.Lens . point
 
+-- | Operator for total polymorphic lenses.
+
 type f :-> a = Lens (->) f a
+
+-- | Operator for partial polymorphic lenses.
+
+type f :~> a = Lens A.Partial f a
 
 -------------------------------------------------------------------------------
 
+-- | Getter for a polymorphic lens.
+
 get :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr f o
-get = A._get . point
+get = _get . point
+
+-- | Setter for a polymorphic lens.
 
 set :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
-set = A._set . point
+set = _set . point
+
+-- | Modifier for a polymorphic lens.
 
 modify :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (arr o i, f) g
-modify = A._modify . point
-
+modify = _modify . point
 
 
 
@@ -79,6 +95,12 @@ fstSnd = fstL . sndL
 
 sndFst :: Lens (->) (((a, o), c) -> ((a, i), c)) (o -> i)
 sndFst = sndL . fstL
+
+
+
+
+
+
 
 data Triple a b c = Triple a b c
 
