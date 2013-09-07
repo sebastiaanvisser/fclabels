@@ -46,6 +46,7 @@ Library
     Data.Label.Partial
     Data.Label.PartialM
     Data.Label.Failing
+    Data.Label.Poly
 
   GHC-Options: -Wall
   Build-Depends:

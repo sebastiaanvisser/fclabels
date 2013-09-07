@@ -23,6 +23,7 @@ import qualified Data.Label.Partial  as Partial
 import qualified Data.Label.Failing  as Failing
 import qualified Data.Label.TotalM   as TotalM
 import qualified Data.Label.PartialM as PartialM
+import qualified Data.Label.Poly     as Poly ()
 
 -------------------------------------------------------------------------------
 
