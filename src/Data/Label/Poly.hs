@@ -1,127 +1,96 @@
 {- | Lenses that allow polymorphic updates. -}
 
-{-# LANGUAGE
-    ConstraintKinds
-  , GADTs
-  , FlexibleInstances
-  , FunctionalDependencies
-  , KindSignatures
-  , MultiParamTypeClasses
-  , RankNTypes
-  , TypeOperators
-  , TypeFamilies
-  , ViewPatterns
-  #-}
+{-# LANGUAGE GADTs, TypeOperators #-}
 
 module Data.Label.Poly where
 
-import Control.Arrow
 import Control.Category
+import Control.Arrow
 import Data.Label.Abstract (Point (Point))
 import Prelude hiding ((.), id, const)
-import GHC.Exts (Constraint)
 
 import qualified Data.Label.Abstract as A
 
-
-
-
 -- Pair-wise composition.
 
-infixr 9 !
+data Lens cat p q where
+  Lens :: A.Point cat g i f o
+       -> Lens cat (f -> g) (o -> i)
+  Id   :: Lens cat  f        f
 
-class CategoryC cat where
-  type C cat a b c :: Constraint
-  ci  :: C cat a b c => cat a a
-  (!) :: C cat a b c
-      => cat b c
-      -> cat a b
-      -> cat a c
+instance ArrowApply arr => Category (Lens arr) where
+  id              = Id
+  Id     . u      = u
+  u      . Id     = u
+  Lens f . Lens g = Lens (A._compose f g)
 
-instance ArrowApply arr => CategoryC (A.Lens arr) where
-  type C (A.Lens arr) a b c = ()
-  ci = id
-  (!) = (.)
+point :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> A.Point arr g i f o
+point Id       = A._id
+point (Lens p) = p
 
--- instance ArrowApply cat => Bicategory (Point cat) where
---   (!) (Point gi mi) (Point go mo)
---     = Point (gi . go) (app . arr (first (\a -> mo . A.pack (mi . A.pack a))))
+poly :: A.Lens cat f a -> Lens cat (f -> f) (a -> a)
+poly = Lens . A.unLens
 
--- data a <> b = In a b
+mono :: ArrowApply arr => Lens arr (f -> f) (a -> a) -> A.Lens arr f a
+mono = A.Lens . point
 
-data Poly cat f o where
-  Poly :: Point cat g i f o -> Poly cat (f -> g) (o -> i)
-
-comp :: (a ~ (f -> g), b ~ (p -> j), c ~ (o -> i), ArrowApply cat)
-     => Poly cat b c
-     -> Poly cat a b
-     -> Poly cat a c
-comp (Poly (Point gi mi)) (Poly (Point go mo)) = Poly $
-  Point (gi . go) (app . arr (first (\a -> mo . A.pack (mi . A.pack a))))
-
-{-
-
--- Needs closed type families.
-
-data Void2 a b
-type family Bla a :: * -> * -> * where
-  type instance Bla (a -> b) = (->)
-  type instance Bla a        = Void2
-
-instance ArrowApply cat => CategoryC (Poly cat) where
-   type C (Poly cat) a b c = (Bla a ~ (->), Bla b ~ (->), Bla c ~ (->))
-   (!) = comp
-
--}
+type f :-> a = Lens (->) f a
 
 -------------------------------------------------------------------------------
 
--- get :: Point cat g i f o -> cat f o
--- get = A._get
+get :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr f o
+get = A._get . point
 
--- set :: Arrow arr => Point arr g i f o -> arr (i, f) g
--- set = A._set
+set :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
+set = A._set . point
 
--- modify :: Point cat g i f o -> cat (cat o i, f) g
--- modify = A._modify
+modify :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (arr o i, f) g
+modify = A._modify . point
+
+
+
+
+
+
+
+
+
+
+
+
 
 -------------------------------------------------------------------------------
+-- Some example:
 
-{-
-ccc :: A.Lens (->) ((a, (b, (c, d))), e) d
-ccc = A.Lens (sndL ! sndL ! sndL ! fstL)
+fstL :: ((o, b) -> (i, b)) :-> (o -> i)
+fstL = Lens $ Point fst (\(f, (a, b)) -> (f a, b))
 
-aaa :: Point (->) (a, (b, c)) c (a, (b, o)) o
-aaa = sndL ! sndL
+sndL :: ((a, o) -> (a, i)) :-> (o -> i)
+sndL = Lens $ Point snd (\(f, (a, b)) -> (a, f b))
 
-bbb :: Point (->) ((i, b), c) i ((o, b), c) o
-bbb = fstL ! fstL
+sndSnd :: ((a, (b, o)) -> (a, (b, i))) :-> (o -> i)
+sndSnd = sndL . sndL
 
-xxx :: Point (->) (a, (i, b)) i (a, (o, b)) o
-xxx = fstL ! sndL
+fstFst :: Lens (->) (((o, b), c) -> ((i, b), c)) (o -> i)
+fstFst = fstL . fstL
 
-yyy :: Point (->) ((a, i), b) i ((a, o), b) o
-yyy = sndL ! fstL
+fstSnd :: Lens (->) ((a, (o, c)) -> (a, (i, c))) (o -> i)
+fstSnd = fstL . sndL
 
--}
-
-fstL :: Point (->) (a, b) a (d, b) d
-fstL = Point fst (\(f, (a, b)) -> (f a, b))
-
-sndL :: Point (->) (a, b) b (a, c) c
-sndL = Point snd (\(f, (a, b)) -> (a, f b))
-
-sndL_ :: Poly (->) ((a, o) -> (a, i)) (o -> i)
-sndL_ = Poly sndL
+sndFst :: Lens (->) (((a, o), c) -> ((a, i), c)) (o -> i)
+sndFst = sndL . fstL
 
 data Triple a b c = Triple a b c
 
-t0 :: Poly (->) (Triple o b c -> Triple i b c) (o -> i)
-t0 = Poly $ Point (\(Triple a _ _) -> a) (\(f, (Triple a b c)) -> (Triple (f a) b c))
+tripleA :: (Triple o b c -> Triple i b c) :-> (o -> i)
+tripleA = Lens $ Point (\(Triple a _ _) -> a) (\(f, (Triple a b c)) -> (Triple (f a) b c))
 
-t1 :: Point (->) (Triple a b c) b (Triple a o c) o
-t1 = Point (\(Triple _ b _) -> b) (\(f, (Triple a b c)) -> (Triple a (f b) c))
+tripleB :: (Triple a o c -> Triple a i c) :-> (o -> i)
+tripleB = Lens $ Point (\(Triple _ b _) -> b) (\(f, (Triple a b c)) -> (Triple a (f b) c))
 
-t2 :: Point (->) (Triple a b c) c (Triple a b o) o
-t2 = Point (\(Triple _ _ c) -> c) (\(f, (Triple a b c)) -> (Triple a b (f c)))
+tripleC :: (Triple a b i -> Triple a b o) :-> (i -> o)
+tripleC = Lens $ Point (\(Triple _ _ c) -> c) (\(f, (Triple a b c)) -> (Triple a b (f c)))
+
+monofied2 :: A.Lens (->) (a, (b, Triple c d (e, f))) e
+monofied2 = mono (fstL . tripleC . sndSnd)
 
