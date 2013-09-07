@@ -13,6 +13,8 @@ module Data.Label.Abstract
 , _modify
 , _get
 , _set
+, _id
+, _compose
 
 -- * A lens working in some abstract context.
 , Lens (..)
@@ -38,28 +40,29 @@ module Data.Label.Abstract
 , ArrowFail (..)
 
 -- * Helpers
-, pack
+, curry
 )
 where
 
 import Control.Arrow
 import Control.Applicative
 import Control.Category
-import Prelude hiding ((.), id, const)
+import Prelude hiding ((.), id, const, curry)
 
-{-# INLINE _get    #-}
-{-# INLINE _modify #-}
-{-# INLINE _set    #-}
-{-# INLINE lens    #-}
-{-# INLINE get     #-}
-{-# INLINE set     #-}
-{-# INLINE modify  #-}
-{-# INLINE compose #-}
-{-# INLINE for     #-}
-{-# INLINE liftBij #-}
-{-# INLINE inv     #-}
-{-# INLINE pack    #-}
-{-# INLINE const   #-}
+{-# INLINE _get     #-}
+{-# INLINE _modify  #-}
+{-# INLINE _set     #-}
+{-# INLINE _id      #-}
+{-# INLINE _compose #-}
+{-# INLINE lens     #-}
+{-# INLINE get      #-}
+{-# INLINE set      #-}
+{-# INLINE modify   #-}
+{-# INLINE for      #-}
+{-# INLINE liftBij  #-}
+{-# INLINE inv      #-}
+{-# INLINE curry    #-}
+{-# INLINE const    #-}
 
 -------------------------------------------------------------------------------
 
@@ -82,6 +85,16 @@ _modify (Point _ m) = m
 
 _set :: Arrow arr => Point arr g i f o -> arr (i, f) g
 _set p = _modify p . first (arr const)
+
+_id :: ArrowApply arr => Point arr f f o o
+_id = Point id app
+
+_compose :: ArrowApply cat
+         => Point cat t i b o
+         -> Point cat g t f b
+         -> Point cat g i f o
+_compose (Point gi mi) (Point go mo)
+  = Point (gi <<< go) (app <<< arr (first (curry mo <<< curry mi)))
 
 -------------------------------------------------------------------------------
 
@@ -111,16 +124,11 @@ set = _set . unLens
 modify :: ArrowApply arr => Lens arr f a -> arr (arr a a, f) f
 modify = _modify . unLens
 
-compose :: ArrowApply arr => Point arr f i o -> Point arr g f f -> Point arr g i o
-compose (Point gi mi) (Point go mo) =
-  Point (gi . go) (app . arr (first (\oi -> mo . pack (mi . pack oi))))
-
 -------------------------------------------------------------------------------
 
 instance ArrowApply arr => Category (Lens arr) where
-  id = lens id app
-  Lens (Point gi mi) . Lens (Point go mo) = Lens $
-    Point (gi . go) (app . arr (first (\a -> mo . pack (mi . pack a))))
+  id              = Lens _id
+  Lens a . Lens b = Lens (_compose a b)
   {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
@@ -222,6 +230,6 @@ instance ArrowFail e (Failing e) where
 const :: Arrow arr => c -> arr b c
 const a = arr (\_ -> a)
 
-pack :: Arrow arr => a -> arr b (a, b)
-pack i = const i &&& id
+curry :: Arrow cat => cat (a, b) c -> a -> cat b c
+curry m i = m . (const i &&& id)
 
