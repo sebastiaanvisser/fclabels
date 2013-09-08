@@ -106,7 +106,7 @@ infix 8 `Bij`
 
 -- | The bijections datatype, a category that works in two directions.
 
-data Bijection cat a b = Bij { fw :: cat a b, bw :: cat b a }
+data Bijection cat i o = Bij { fw :: cat i o, bw :: cat o i }
 
 -- | Bijections as categories.
 
@@ -118,7 +118,7 @@ instance Category cat => Category (Bijection cat) where
 
 -- | Lifting 'Bijection's.
 
-liftBij :: Functor f => Bijection (->) a b -> Bijection (->) (f a) (f b)
+liftBij :: Functor f => Bijection (->) i o -> Bijection (->) (f i) (f o)
 liftBij (Bij f b) = fmap f `Bij` fmap b
 
 infixr 8 `iso`
@@ -126,16 +126,16 @@ infixr 8 `iso`
 -- | The isomorphism type class is like a `Functor' can work in two directions.
 
 class Iso cat f where
-  iso :: Bijection cat a b -> f a -> f b
+  iso :: Bijection cat i o -> f i -> f o
 
 -- | Flip an isomorphism.
 
-inv :: Bijection cat b a -> Bijection cat a b
+inv :: Bijection cat i o -> Bijection cat o i
 inv (Bij a b) = (Bij b a)
 
 -- | We can diverge 'Bijection's using an isomorphism.
 
-instance Arrow arr => Iso arr (Bijection arr a) where
+instance Arrow arr => Iso arr (Bijection arr i) where
   iso = (.)
   {-# INLINE iso #-}
 

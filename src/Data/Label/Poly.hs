@@ -48,14 +48,14 @@ import qualified Data.Label.Point as Point
 -- in some category. Categories allow for effectful lenses, for example, lenses
 -- that might fail or use state.
 
-data Lens cat f a where
+data Lens cat f o where
   Lens :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
   Id   :: ArrowApply cat => Lens cat f f
 
 -- | Create a lens out of a getter and setter.
 
-lens :: cat f o                      -- ^ Getter.
-     -> cat (cat o i, f) g           -- ^ Modifier.
+lens :: cat f o             -- ^ Getter.
+     -> cat (cat o i, f) g  -- ^ Modifier.
      -> Lens cat (f -> g) (o -> i)
 lens g m = Lens (Point g m)
 
@@ -108,21 +108,21 @@ point (Lens p) = p
 
 -- | Convert a monomorphic lens into a polymorphic lens.
 
-poly :: Mono.Lens cat f a -> Lens cat (f -> f) (a -> a)
+poly :: Mono.Lens cat f o -> Lens cat (f -> f) (o -> o)
 poly = Lens . Mono.point
 
 -- | Convert a polymorphic lens into a monomorphic lens.
 
-mono :: Lens cat (f -> f) (a -> a) -> Mono.Lens cat f a
+mono :: Lens cat (f -> f) (o -> o) -> Mono.Lens cat f o
 mono = Mono.Lens . point
 
 -------------------------------------------------------------------------------
 
 -- | Operator for total polymorphic lenses.
 
-type f :-> a = Lens (->) f a
+type f :-> o = Lens (->) f o
 
 -- | Operator for partial polymorphic lenses.
 
-type f :~> a = Lens Point.Partial f a
+type f :~> o = Lens Point.Partial f o
 

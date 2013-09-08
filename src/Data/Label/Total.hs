@@ -22,7 +22,7 @@ import qualified Data.Label.Mono as Mono
 
 -- | Total lens type specialized for total accessor functions.
 
-type f :-> a = Lens Total f a
+type f :-> o = Lens Total f o
 
 -- | Create a total lens from a getter and a modifier.
 --
@@ -32,23 +32,23 @@ type f :-> a = Lens Total f a
 --
 -- > set l (get l f) f == f
 
-lens :: (f -> a)              -- ^ Getter.
-     -> ((a -> a) -> f -> f)  -- ^ Modifier.
-     -> f :-> a
+lens :: (f -> o)              -- ^ Getter.
+     -> ((o -> o) -> f -> f)  -- ^ Modifier.
+     -> f :-> o
 lens g s = Mono.lens g (uncurry s)
 
 -- | Getter for a total lens.
 
-get :: (f :-> a) -> f -> a
+get :: (f :-> o) -> f -> o
 get = Mono.get
 
 -- | Setter for a total lens.
 
-set :: (f :-> a) -> a -> f -> f
+set :: (f :-> o) -> o -> f -> f
 set = curry . Mono.set
 
 -- | Modifier for a total lens.
 
-modify :: (f :-> a) -> (a -> a) -> f -> f
+modify :: (f :-> o) -> (o -> o) -> f -> f
 modify = curry . Mono.modify
 

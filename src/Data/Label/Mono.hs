@@ -33,26 +33,26 @@ import qualified Data.Label.Point as Point
 -- in some category. Categories allow for effectful lenses, for example, lenses
 -- that might fail or use state.
 
-newtype Lens cat f a = Lens { point :: Point cat f a f a }
+newtype Lens cat f o = Lens { point :: Point cat f o f o }
 
 -- | Create a lens out of a getter and setter.
 
-lens :: cat f a -> (cat (cat a a, f) f) -> Lens cat f a
+lens :: cat f o -> (cat (cat o o, f) f) -> Lens cat f o
 lens g m = Lens (Point g m)
 
 -- | Get the getter arrow from a lens.
 
-get :: Lens cat f a -> cat f a
+get :: Lens cat f o -> cat f o
 get = Point.get . point
 
 -- | Get the setter arrow from a lens.
 
-set :: Arrow arr => Lens arr f a -> arr (a, f) f
+set :: Arrow arr => Lens arr f o -> arr (o, f) f
 set = Point.set . point
 
 -- | Get the modifier arrow from a lens.
 
-modify :: Lens cat f a -> cat (cat a a, f) f
+modify :: Lens cat f o -> cat (cat o o, f) f
 modify = Point.modify . point
 
 -------------------------------------------------------------------------------
