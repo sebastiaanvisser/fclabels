@@ -1,5 +1,6 @@
-{- | Template Haskell functions for automatically generating labels for
-algebraic datatypes, newtypes and GADTs.
+{- |
+Template Haskell functions for automatically generating labels for algebraic
+datatypes, newtypes and GADTs.
 -}
 
 {-# OPTIONS -fno-warn-orphans #-}
@@ -19,23 +20,28 @@ module Data.Label.Derive
 , mkLabelsNoTypes
 , deriveWith
 , defaultMakeLabel
-) where
+)
+where
 
 import Control.Arrow
+import Control.Applicative
 import Control.Category
 import Control.Monad
-import Data.Char
+import Data.Char (toLower, toUpper)
 import Data.Function (on)
-import Data.Label.Mono
 import Data.Label.Partial ((:~>))
 import Data.Label.Point hiding (id)
 import Data.Label.Total ((:->))
-import Data.List
+import Data.List (groupBy, sortBy)
+import Data.Maybe (fromMaybe)
 import Data.Ord
 import Data.String
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Prelude hiding ((.), id)
+
+import qualified Data.Label.Mono as Mono
+import qualified Data.Label.Poly as Poly
 
 -- | Derive lenses including type signatures for all the record selectors for a
 -- collection of datatypes. The types will be polymorphic and can be used in an
@@ -84,7 +90,7 @@ deriveWith mk sigs conc info =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
-    let (tyname, cons, vars) =
+    let (tyname, cons, tyvars) =
           case info of
             TyConI (DataD    _ n vs cs _) -> (n, cs,  vs)
             TyConI (NewtypeD _ n vs c  _) -> (n, [c], vs)
@@ -93,7 +99,7 @@ deriveWith mk sigs conc info =
         -- We are only interested in lenses of record constructors.
         recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
 
-    concat `liftM` mapM (derive mk sigs conc tyname vars (length cons)) recordOnly
+    concat `liftM` mapM (derive mk sigs conc tyname tyvars (length cons)) recordOnly
 
     where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
                       . groupBy ((==) `on` (fst3 . fst))
@@ -117,127 +123,166 @@ defaultMakeLabel field =
 derive :: (String -> String)
        -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
        -> (VarStrictType, [Name]) -> Q [Dec]
-derive mk sigs conc tyname vars total ((field, _, fieldtyp), ctors) =
+derive mk sigs conc tyname tyvars total ((field, _, fieldtyp), ctors) =
 
-  do (sign, body) <-
-       if length ctors == total
-       then function mkTotal
-       else function mkPartial
+     -- Compute the type (including type variables of the record datatype.
+  do (inTy, outTy, vars, typ, ctor) <- computeType fieldtyp tyname tyvars
 
-     return $
-       if sigs
-       then [sign, inline, body]
-       else [inline, body]
+     let cat    = varT (mkName "cat")
+         catTv  = PlainTV (mkName "cat")
+         forall = forallT (catTv : vars) (return [])
 
-  where
+         -- Q style record updating.
+         record rec fld val = val >>= \v -> recUpdE rec [return (fld, v)]
 
-    -- Generate an inline declaration for the label.
-    --
-    -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
+         -- The label name.
+         name  = mk (nameBase field)
+         label = mkName name
+
+         -- Build a function declaration with both a type signature and body.
+         function (s, b) = liftM2 (,) 
+             (sigD label s)
+             (funD label [ clause [] (normalB b) [] ])
+
 #if MIN_VERSION_template_haskell(2,8,0)
-    inline = PragmaD (InlineP label Inline FunLike (FromPhase 0))
+         -- Generate an inline declaration for the label.
+         -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
+         inline = PragmaD (InlineP label Inline FunLike (FromPhase 0))
 #else
-    inline = PragmaD (InlineP label (InlineSpec True True (Just (True, 0))))
+         inline = PragmaD (InlineP label (InlineSpec True True (Just (True, 0))))
 #endif
-    name  = mk (nameBase field)
-    label = mkName name
 
-    ---------------------------------------------------------------------------
-    -- Build a single record label definition for labels that might fail.
-    mkPartial = (if conc then mono else poly, body)
-      where
-        mono = forallT prettyVars (return [])
-                 [t| $(inputType) :~> $(return prettyFieldtyp) |]
-        poly = forallT foralls (return [])
-                 [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
-                   => Lens $(cat) $(inputType) $(return prettyFieldtyp) |]
-        body = [| lens (failArrow ||| $(totalG) <<< $(caseG))
-                       (failArrow ||| $(totalM) <<< $(caseM))
-                |]
-          where
-            bodyG f   = [| Right $(f) |]
-            cases b   = map (\ctor -> match (recP ctor []) (normalB b) []) ctors
-            wild      = [match wildP (normalB failure) []]
-            failure   = [| Left $(litE (stringL name) `sigE` [t| String |] ) |]
-            caseG     = [| arr (\f      -> $(caseE [|f|] (cases (bodyG [|f     |]) ++ wild))) |]
-            caseM     = [| arr (\(m, f) -> $(caseE [|f|] (cases (bodyG [|(m, f)|]) ++ wild))) |]
+         -- The total getter and setter arrows. Directly used by total lenses,
+         -- indirectly used by partial lenses.
+         totalG = [| arr $(varE field) |]
+         totalM = [| modifier $(varE field) (\(v, f) -> $(record [| f |] field [| v |])) |]
 
-    ---------------------------------------------------------------------------
-    -- Build a single record label definition for labels that cannot fail.
-    mkTotal = (if conc then mono else poly, body)
-      where
-        mono = forallT prettyVars (return [])
-                 [t| $(inputType) :-> $(return prettyFieldtyp) |]
-        poly = forallT foralls (return [])
-                 [t| ArrowApply $(cat) => Lens $(cat) $(inputType) $(return prettyFieldtyp) |]
-        body = [| lens $(totalG) $(totalM) |]
+         ---------------------------------------------------------------------------
+         -- Build a single record label definition for labels that might fail.
 
-    ---------------------------------------------------------------------------
-    -- The total getter and setter arrows. Directly used by total lenses,
-    -- indirectly used by partial lenses.
-    totalG = [| arr $(varE field) |]
-    totalM = [| modifier $(varE field) (\(v, f) -> $(record [| f |] field [| v |])) |]
+         mkPartialPoint = (if conc then mono else poly, body)
+           where
+             mono = forall [t| $(inTy) :~> $(outTy) |]
+             poly = forall [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
+                        => $(typ) $(cat) $(inTy) $(outTy) |]
+             body = [| $(ctor)
+                         $ Point (failArrow ||| $(totalG) <<< $(caseG))
+                                 (failArrow ||| $(totalM) <<< $(caseM))
+                     |]
+             bodyG f = [| Right $(f) |]
+             cases b = map (\c -> match (recP c []) (normalB b) []) ctors
+             wild    = [match wildP (normalB failure) []]
+             failure = [| Left $(litE (stringL name) `sigE` [t| String |] ) |]
+             caseG   = [| arr (\f      -> $(caseE [|f|] (cases (bodyG [|f     |]) ++ wild))) |]
+             caseM   = [| arr (\(m, f) -> $(caseE [|f|] (cases (bodyG [|(m, f)|]) ++ wild))) |]
 
-    -- Compute the type (including type variables of the record datatype.
-    inputType = return $ foldr (flip AppT)
-                               (ConT tyname)
-                               (map tvToVarT (reverse prettyVars))
+         ---------------------------------------------------------------------------
+         -- Build a single record label definition for labels that cannot fail.
 
-    -- Convert a type variable binder to a regular type variable.
-    tvToVarT (PlainTV  tv     ) = VarT tv
-    tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
+         mkTotalPoint = (if conc then mono else poly, body)
+           where
+             mono = forall [t| $(inTy) :-> $(outTy) |]
+             poly = forall [t| ArrowApply $(cat) => $(typ) $(cat) $(inTy) $(outTy) |]
+             body = [| $(ctor) (Point $(totalG) $(totalM)) |]
 
-    -- Prettify type variables.
-    cat            = varT (mkName "cat")
-    prettyVars     = map prettyTyVar vars
-    foralls        = PlainTV (mkName "cat") : prettyVars
-    prettyFieldtyp = prettyType fieldtyp
+     (sign, body) <-
+       if length ctors == total
+       then function mkTotalPoint
+       else function mkPartialPoint
 
-    -- Q style record updating.
-    record rec fld val = val >>= \v -> recUpdE rec [return (fld, v)]
+     return $ if sigs
+              then [sign, inline, body]
+              else [      inline, body]
 
-    -- Build a function declaration with both a type signature and body.
-    function (s, b) = liftM2 (,) 
-        (sigD label s)
-        (funD label [ clause [] (normalB b) [] ])
+computeType :: Type -> Name -> [TyVarBndr] -> Q (TypeQ, TypeQ, [TyVarBndr], TypeQ, ExpQ)
+computeType field datatype vars =
+  do let fieldVars = typeVariables field
+         outTy     = return field
+         varNames  = fromTyVarBndr <$> vars
+         usedVars  = filter (`elem` fieldVars) varNames
+         inTy      = foldr (flip appT) (conT datatype)
+                           (return . tvToVarT <$> reverse vars)
 
--- Build a total modification function from a pure getter and setter.
+     case usedVars of
+       [] -> return
+         ( prettyType <$> inTy
+         , prettyType <$> outTy
+         , mapTyVarBndr pretty <$> vars
+         , [t| Mono.Lens |]
+         ,  [| Mono.Lens |]
+         )
+       vs ->
+         do let names = return <$> ['a'..'z']
+                used  = show . pretty <$> varNames
+                free  = filter (not . (`elem` used)) names
+            subs <- forM (zip vs free) (\(a, b) -> (,) a <$> newName b)
+            let rename = mapTypeVariables (\a -> a `fromMaybe` lookup a subs)
 
-modifier :: ArrowApply cat => (f -> a) -> ((a, f) -> f) -> cat (cat a a, f) f
+            return
+              ( prettyType <$> [t| $(inTy)  -> $(rename <$> inTy)  |]
+              , prettyType <$> [t| $(outTy) -> $(rename <$> outTy) |]
+              , mapTyVarBndr pretty <$> (vars ++ (PlainTV . snd <$> subs))
+              , [t| Poly.Lens |]
+              ,  [| Poly.Lens |]
+              )
+
+  where -- Convert a binder to a regular type variable.
+        tvToVarT (PlainTV  tv     ) = VarT tv
+        tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
+
+-- Build a total polymorphic modification function from a pure getter and setter.
+
+modifier :: ArrowApply cat => (f -> o) -> ((i, f) -> g) -> cat (cat o i, f) g
 modifier pg pm
   = arr pm
   . first app
   . arr (\(m, (f, o)) -> ((m, o), f))
   . second (id &&& arr pg)
+{-# INLINE modifier #-}
 
 -------------------------------------------------------------------------------
--- Cleaning up names in generated code.
+
+-- Compute all the free type variables from a type.
+
+typeVariables :: Type -> [Name]
+typeVariables ty =
+  case ty of
+    ForallT ts _ _ -> fromTyVarBndr <$> ts
+    AppT a b       -> typeVariables a ++ typeVariables b
+    SigT t _       -> typeVariables t
+    VarT n         -> [n]
+    _              -> []
+
+mapTypeVariables :: (Name -> Name) -> Type -> Type
+mapTypeVariables f ty =
+  case ty of
+    ForallT ts a b -> ForallT (mapTyVarBndr f <$> ts) (mapPred f <$> a) (mapTypeVariables f b)
+    AppT a b       -> AppT (mapTypeVariables f a) (mapTypeVariables f b)
+    SigT t a       -> SigT (mapTypeVariables f t) a
+    VarT n         -> VarT (f n)
+    t              -> t
+
+fromTyVarBndr :: TyVarBndr -> Name
+fromTyVarBndr (PlainTV  n  ) = n
+fromTyVarBndr (KindedTV n _) = n
+
+mapPred :: (Name -> Name) -> Pred -> Pred
+mapPred f (ClassP n ts) = ClassP (f n) (mapTypeVariables f <$> ts)
+mapPred f (EqualP t x ) = EqualP (mapTypeVariables f t) (mapTypeVariables f x)
+
+mapTyVarBndr :: (Name -> Name) -> TyVarBndr -> TyVarBndr
+mapTyVarBndr f (PlainTV  n  ) = PlainTV (f n)
+mapTyVarBndr f (KindedTV n a) = KindedTV (f n) a
 
 -- Prettify a TH name.
 
 pretty :: Name -> Name
-pretty tv = mkName (takeWhile (/='_') (show tv))
-
--- Prettify a type variable by prettyfing all names.
-
-prettyTyVar :: TyVarBndr -> TyVarBndr
-prettyTyVar (PlainTV  tv   ) = PlainTV (pretty tv)
-prettyTyVar (KindedTV tv ki) = KindedTV (pretty tv) ki
-
--- Prettify a type predicate.
-
-prettyPred :: Pred -> Pred
-prettyPred (ClassP nm tys) = ClassP (pretty nm) (map prettyType tys)
-prettyPred (EqualP ty tx ) = EqualP (prettyType ty) (prettyType tx)
+pretty tv = mkName (takeWhile (/= '_') (show tv))
 
 -- Prettify a type.
 
 prettyType :: Type -> Type
-prettyType (ForallT xs cx ty) = ForallT (map prettyTyVar xs) (map prettyPred cx) (prettyType ty)
-prettyType (VarT nm         ) = VarT (pretty nm)
-prettyType (AppT ty tx      ) = AppT (prettyType ty) (prettyType tx)
-prettyType (SigT ty ki      ) = SigT (prettyType ty) ki
-prettyType ty                 = ty
+prettyType = mapTypeVariables pretty
 
 -- IsString instances for TH types.
 

@@ -10,7 +10,7 @@ module Data.Label.Poly
 (
 
 -- * The polymorphic Lens type.
-  Lens
+  Lens (Lens)
 , lens
 , get
 , set
