@@ -39,14 +39,15 @@ Library
 
   Exposed-Modules:
     Data.Label
-    Data.Label.Abstract
     Data.Label.Derive
-    Data.Label.Total
-    Data.Label.TotalM
+    Data.Label.Failing
+    Data.Label.Mono
     Data.Label.Partial
     Data.Label.PartialM
-    Data.Label.Failing
+    Data.Label.Point
     Data.Label.Poly
+    Data.Label.Total
+    Data.Label.TotalM
 
   GHC-Options: -Wall
   Build-Depends:

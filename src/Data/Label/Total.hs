@@ -1,6 +1,7 @@
-{-| Default lenses for simple total getters and updates. Useful for creating
-accessor labels for single constructor datatypes. Also useful field labels that
-are shared between all the constructors of a multi constructor datatypes.
+{-| Default lenses for simple total getters and monomorphic updates. Useful for
+creating accessor labels for single constructor datatypes. Also useful field
+labels that are shared between all the constructors of a multi constructor
+datatypes.
 -}
 
 {-# LANGUAGE TypeOperators #-}
@@ -14,9 +15,10 @@ module Data.Label.Total
 )
 where
 
-import Data.Label.Abstract (Lens, Total)
+import Data.Label.Mono (Lens)
+import Data.Label.Point (Total)
 
-import qualified Data.Label.Abstract as A
+import qualified Data.Label.Mono as Mono
 
 -- | Total lens type specialized for total accessor functions.
 
@@ -33,20 +35,20 @@ type f :-> a = Lens Total f a
 lens :: (f -> a)              -- ^ Getter.
      -> ((a -> a) -> f -> f)  -- ^ Modifier.
      -> f :-> a
-lens g s = A.lens g (uncurry s)
+lens g s = Mono.lens g (uncurry s)
 
 -- | Getter for a total lens.
 
 get :: (f :-> a) -> f -> a
-get = A.get
+get = Mono.get
 
 -- | Setter for a total lens.
 
 set :: (f :-> a) -> a -> f -> f
-set = curry . A.set
+set = curry . Mono.set
 
 -- | Modifier for a total lens.
 
 modify :: (f :-> a) -> (a -> a) -> f -> f
-modify = curry . A.modify
+modify = curry . Mono.modify
 

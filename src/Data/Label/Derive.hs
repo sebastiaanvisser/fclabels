@@ -26,9 +26,10 @@ import Control.Category
 import Control.Monad
 import Data.Char
 import Data.Function (on)
-import Data.Label.Abstract
-import Data.Label.Total ((:->))
+import Data.Label.Mono
 import Data.Label.Partial ((:~>))
+import Data.Label.Point hiding (id)
+import Data.Label.Total ((:->))
 import Data.List
 import Data.Ord
 import Data.String

@@ -161,7 +161,8 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Abstract (Bijection(..), Iso(..), for, Lens(..), inv)
+import Data.Label.Point (Bijection(..), Iso(..), inv)
+import Data.Label.Mono (Lens(..), for)
 import Data.Label.Total
 import Data.Label.Derive
 

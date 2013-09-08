@@ -1,4 +1,4 @@
-{- | The lens internals. -}
+{- | The Point data type which generalizes the different lenses. -}
 
 {-# LANGUAGE
     TypeOperators
@@ -6,24 +6,15 @@
   , FlexibleInstances
   , MultiParamTypeClasses #-}
 
-module Data.Label.Abstract
+module Data.Label.Point
 (
 -- * The point data type that generalizes lens.
-   Point (Point)
-, _modify
-, _get
-, _set
-, _id
-, _compose
-
--- * A lens working in some abstract context.
-, Lens (..)
-, lens
+  Point (Point)
+, modify
 , get
 , set
-, modify
-
-, for
+, id
+, compose
 
 -- * Working with isomorphisms and bijections.
 , Iso (..)
@@ -38,31 +29,25 @@ module Data.Label.Abstract
 
 -- * Missing Arrow type class for failing with some error.
 , ArrowFail (..)
-
--- * Helpers
-, curry
 )
 where
 
 import Control.Arrow
 import Control.Applicative
-import Control.Category
+import Control.Category hiding (id)
 import Prelude hiding ((.), id, const, curry)
 
-{-# INLINE _get     #-}
-{-# INLINE _modify  #-}
-{-# INLINE _set     #-}
-{-# INLINE _id      #-}
-{-# INLINE _compose #-}
-{-# INLINE lens     #-}
-{-# INLINE get      #-}
-{-# INLINE set      #-}
-{-# INLINE modify   #-}
-{-# INLINE for      #-}
-{-# INLINE liftBij  #-}
-{-# INLINE inv      #-}
-{-# INLINE curry    #-}
-{-# INLINE const    #-}
+import qualified Control.Category as Cat
+
+{-# INLINE get     #-}
+{-# INLINE modify  #-}
+{-# INLINE set     #-}
+{-# INLINE id      #-}
+{-# INLINE compose #-}
+{-# INLINE liftBij #-}
+{-# INLINE inv     #-}
+{-# INLINE const   #-}
+{-# INLINE curry   #-}
 
 -------------------------------------------------------------------------------
 
@@ -73,64 +58,34 @@ data Point cat g i f o = Point (cat f o) (cat (cat o i, f) g)
 
 -- | Get a value.
 
-_get :: Point cat g i f o -> cat f o
-_get (Point g _) = g
+get :: Point cat g i f o -> cat f o
+get (Point g _) = g
 
 -- | Modify a value.
 
-_modify :: Point cat g i f o -> cat (cat o i, f) g
-_modify (Point _ m) = m
+modify :: Point cat g i f o -> cat (cat o i, f) g
+modify (Point _ m) = m
 
 -- | Setting a value in terms of modification with the constant function.
 
-_set :: Arrow arr => Point arr g i f o -> arr (i, f) g
-_set p = _modify p . first (arr const)
+set :: Arrow arr => Point arr g i f o -> arr (i, f) g
+set p = modify p . first (arr const)
 
-_id :: ArrowApply arr => Point arr f f o o
-_id = Point id app
+-- | Identity `Point`.
 
-_compose :: ArrowApply cat
-         => Point cat t i b o
-         -> Point cat g t f b
-         -> Point cat g i f o
-_compose (Point gi mi) (Point go mo)
+id :: ArrowApply arr => Point arr f f o o
+id = Point Cat.id app
+
+-- | `Point` composition.
+
+compose :: ArrowApply cat
+        => Point cat t i b o
+        -> Point cat g t f b
+        -> Point cat g i f o
+compose (Point gi mi) (Point go mo)
   = Point (gi <<< go) (app <<< arr (first (curry mo <<< curry mi)))
 
 -------------------------------------------------------------------------------
-
--- | Abstract Lens datatype. The getter and setter functions work in some
--- category. Categories allow for effectful lenses, for example, lenses that
--- might fail or use state.
-
-newtype Lens cat f a = Lens { unLens :: Point cat f a f a }
-
--- | Create a lens out of a getter and setter.
-
-lens :: cat f a -> (cat (cat a a, f) f) -> Lens cat f a
-lens g m = Lens (Point g m)
-
--- | Get the getter arrow from a lens.
-
-get :: Arrow arr => Lens arr f a -> arr f a
-get = _get . unLens
-
--- | Get the setter arrow from a lens.
-
-set :: Arrow arr => Lens arr f a -> arr (a, f) f
-set = _set . unLens
-
--- | Get the modifier arrow from a lens.
-
-modify :: ArrowApply arr => Lens arr f a -> arr (arr a a, f) f
-modify = _modify . unLens
-
--------------------------------------------------------------------------------
-
-instance ArrowApply arr => Category (Lens arr) where
-  id              = Lens _id
-  Lens a . Lens b = Lens (_compose a b)
-  {-# INLINE id  #-}
-  {-# INLINE (.) #-}
 
 instance Arrow arr => Functor (Point arr f i f) where
   fmap f x = pure f <*> x
@@ -138,19 +93,12 @@ instance Arrow arr => Functor (Point arr f i f) where
 
 instance Arrow arr => Applicative (Point arr f i f) where
   pure a  = Point (const a) (arr snd)
-  a <*> b = Point (arr app . (_get a &&& _get b)) $
-    proc (t, p) -> do (f, v) <- _get a &&& _get b -< p
-                      q <- _modify a              -< (t . arr ($ v), p)
-                      _modify b                   -< (t . arr f, q)
+  a <*> b = Point (arr app . (get a &&& get b)) $
+    proc (t, p) -> do (f, v) <- get a &&& get b -< p
+                      q <- modify a             -< (t . arr ($ v), p)
+                      modify b                  -< (t . arr f, q)
   {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
-
-infix 8 `for`
-
--- | Make a Lens output diverge by modification of the setter input.
-
-for :: Arrow arr => arr i o -> Lens arr f o -> Point arr f i f o
-for f (Lens l) = Point (_get l) (_modify l . first (arr (f .)))
 
 -------------------------------------------------------------------------------
 
@@ -163,7 +111,7 @@ data Bijection cat a b = Bij { fw :: cat a b, bw :: cat b a }
 -- | Bijections as categories.
 
 instance Category cat => Category (Bijection cat) where
-  id = Bij id id
+  id = Bij Cat.id Cat.id
   Bij a b . Bij c d = Bij (a . c) (d . b)
   {-# INLINE id  #-}
   {-# INLINE (.) #-}
@@ -184,13 +132,6 @@ class Iso cat f where
 
 inv :: Bijection cat b a -> Bijection cat a b
 inv (Bij a b) = (Bij b a)
-
--- | We can diverge 'Lens'es using an isomorphism.
-
-instance Arrow arr => Iso arr (Lens arr f) where
-  iso (Bij f b) (Lens (Point g m)) =
-    lens (f . g) (m . first (arr (\a -> b . a . f)))
-  {-# INLINE iso #-}
 
 -- | We can diverge 'Bijection's using an isomorphism.
 
@@ -231,5 +172,5 @@ const :: Arrow arr => c -> arr b c
 const a = arr (\_ -> a)
 
 curry :: Arrow cat => cat (a, b) c -> a -> cat b c
-curry m i = m . (const i &&& id)
+curry m i = m . (const i &&& Cat.id)
 

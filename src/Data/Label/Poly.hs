@@ -1,43 +1,122 @@
 {- | Lenses that allow polymorphic updates. -}
 
-{-# LANGUAGE GADTs, TypeOperators #-}
+{-# LANGUAGE
+    FlexibleInstances
+  , GADTs
+  , MultiParamTypeClasses
+  , TypeOperators #-}
 
-module Data.Label.Poly where
+module Data.Label.Poly
+(
+
+-- * The polymorphic Lens type.
+  Lens
+, lens
+, get
+, set
+, modify
+, for
+
+-- * Converting lenses.
+, point
+, mono
+, poly
+
+-- * Lenses with concrete context.
+, (:->)
+, (:~>)
+)
+where
 
 import Control.Category
 import Control.Arrow
-import Data.Label.Abstract (Point (Point), _compose, _id, _get, _set, _modify)
 import Prelude hiding ((.), id)
+import Data.Label.Point (Point (Point)) -- , Iso, Bijection (Bij))
 
-import qualified Data.Label.Abstract as A
+import qualified Data.Label.Mono  as Mono
+import qualified Data.Label.Point as Point
 
--- | Polymorphic lens type.
+{-# INLINE lens   #-}
+{-# INLINE get    #-}
+{-# INLINE set    #-}
+{-# INLINE modify #-}
+{-# INLINE for    #-}
 
-data Lens cat p q where
+-------------------------------------------------------------------------------
+
+-- | Abstract polymorphic lens datatype. The getter and setter functions work
+-- in some category. Categories allow for effectful lenses, for example, lenses
+-- that might fail or use state.
+
+data Lens cat f a where
   Lens :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
-  Id   :: Lens cat f f
+  Id   :: ArrowApply cat => Lens cat f f
 
--- | Polymorphic lenses form a `Category`.
+-- | Create a lens out of a getter and setter.
+
+lens :: cat f o                      -- ^ Getter.
+     -> cat (cat o i, f) g           -- ^ Modifier.
+     -> Lens cat (f -> g) (o -> i)
+lens g m = Lens (Point g m)
+
+-- | Get the getter arrow from a lens.
+
+get :: Lens cat (f -> g) (o -> i) -> cat f o
+get = Point.get . point
+
+-- | Get the setter arrow from a lens.
+
+set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
+set = Point.set . point
+
+-- | Get the modifier arrow from a lens.
+
+modify :: Lens cat (f -> g) (o -> i) -> cat (cat o i, f) g
+modify = Point.modify . point
+
+-------------------------------------------------------------------------------
+
+-- | Category instance for monomorphic lenses.
 
 instance ArrowApply arr => Category (Lens arr) where
   id              = Id
+  Lens f . Lens g = Lens (Point.compose f g)
   Id     . u      = u
   u      . Id     = u
-  Lens f . Lens g = Lens (_compose f g)
+  {-# INLINE id  #-}
+  {-# INLINE (.) #-}
 
-point :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> Point arr g i f o
-point Id       = _id
+-- | Make a Lens output diverge by changing the input of the modifier.
+
+for :: Arrow arr => arr j i -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
+for f (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
+for f Id       = Point id (app . first (arr (f .)))
+
+-- We can diverge 'Lens'es using an isomorphism.
+-- instance Arrow arr => Iso arr (Lens arr f) where
+--   iso (Bij f b) (Lens (Point g m)) =
+--     lens (f . g) (m . first (arr (\a -> b . a . f)))
+--   {-# INLINE iso #-}
+
+-------------------------------------------------------------------------------
+
+-- | Convert a polymorphic lens back to point.
+
+point :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
+point Id       = Point.id
 point (Lens p) = p
 
 -- | Convert a monomorphic lens into a polymorphic lens.
 
-poly :: A.Lens cat f a -> Lens cat (f -> f) (a -> a)
-poly = Lens . A.unLens
+poly :: Mono.Lens cat f a -> Lens cat (f -> f) (a -> a)
+poly = Lens . Mono.point
 
 -- | Convert a polymorphic lens into a monomorphic lens.
 
-mono :: ArrowApply arr => Lens arr (f -> f) (a -> a) -> A.Lens arr f a
-mono = A.Lens . point
+mono :: Lens cat (f -> f) (a -> a) -> Mono.Lens cat f a
+mono = Mono.Lens . point
+
+-------------------------------------------------------------------------------
 
 -- | Operator for total polymorphic lenses.
 
@@ -45,74 +124,5 @@ type f :-> a = Lens (->) f a
 
 -- | Operator for partial polymorphic lenses.
 
-type f :~> a = Lens A.Partial f a
-
--------------------------------------------------------------------------------
-
--- | Getter for a polymorphic lens.
-
-get :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr f o
-get = _get . point
-
--- | Setter for a polymorphic lens.
-
-set :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
-set = _set . point
-
--- | Modifier for a polymorphic lens.
-
-modify :: ArrowApply arr => Lens arr (f -> g) (o -> i) -> arr (arr o i, f) g
-modify = _modify . point
-
-
-
-
-
-
-
-
-
-
-
-
--------------------------------------------------------------------------------
--- Some example:
-
-fstL :: ((o, b) -> (i, b)) :-> (o -> i)
-fstL = Lens $ Point fst (\(f, (a, b)) -> (f a, b))
-
-sndL :: ((a, o) -> (a, i)) :-> (o -> i)
-sndL = Lens $ Point snd (\(f, (a, b)) -> (a, f b))
-
-sndSnd :: ((a, (b, o)) -> (a, (b, i))) :-> (o -> i)
-sndSnd = sndL . sndL
-
-fstFst :: Lens (->) (((o, b), c) -> ((i, b), c)) (o -> i)
-fstFst = fstL . fstL
-
-fstSnd :: Lens (->) ((a, (o, c)) -> (a, (i, c))) (o -> i)
-fstSnd = fstL . sndL
-
-sndFst :: Lens (->) (((a, o), c) -> ((a, i), c)) (o -> i)
-sndFst = sndL . fstL
-
-
-
-
-
-
-
-data Triple a b c = Triple a b c
-
-tripleA :: (Triple o b c -> Triple i b c) :-> (o -> i)
-tripleA = Lens $ Point (\(Triple a _ _) -> a) (\(f, (Triple a b c)) -> (Triple (f a) b c))
-
-tripleB :: (Triple a o c -> Triple a i c) :-> (o -> i)
-tripleB = Lens $ Point (\(Triple _ b _) -> b) (\(f, (Triple a b c)) -> (Triple a (f b) c))
-
-tripleC :: (Triple a b i -> Triple a b o) :-> (i -> o)
-tripleC = Lens $ Point (\(Triple _ _ c) -> c) (\(f, (Triple a b c)) -> (Triple a b (f c)))
-
-monofied2 :: A.Lens (->) (a, (b, Triple c d (e, f))) e
-monofied2 = mono (fstL . tripleC . sndSnd)
+type f :~> a = Lens Point.Partial f a
 
