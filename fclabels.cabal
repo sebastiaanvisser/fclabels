@@ -43,7 +43,6 @@ Library
     Data.Label.Failing
     Data.Label.Mono
     Data.Label.Partial
-    Data.Label.PartialM
     Data.Label.Point
     Data.Label.Poly
     Data.Label.Total
