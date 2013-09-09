@@ -18,11 +18,9 @@ module Data.Label.Point
 , id
 , compose
 
--- * Working with isomorphisms and bijections.
-, Iso (..)
+-- * Working with isomorphisms.
+, Isomorphism (..)
 , inv
-, Bijection (..)
-, liftBij
 
 -- * Specialized lens contexts.
 , Total
@@ -46,7 +44,6 @@ import qualified Control.Category as Cat
 {-# INLINE set     #-}
 {-# INLINE id      #-}
 {-# INLINE compose #-}
-{-# INLINE liftBij #-}
 {-# INLINE inv     #-}
 {-# INLINE const   #-}
 {-# INLINE curry   #-}
@@ -58,20 +55,20 @@ import qualified Control.Category as Cat
 
 data Point cat g i f o = Point (cat f o) (cat (cat o i, f) g)
 
--- | Get a value.
+-- | Get the getter arrow from a Point.
 
 get :: Point cat g i f o -> cat f o
 get (Point g _) = g
 
--- | Modify a value.
-
-modify :: Point cat g i f o -> cat (cat o i, f) g
-modify (Point _ m) = m
-
--- | Setting a value in terms of modification with the constant function.
+-- | Get the setter arrow from a Point.
 
 set :: Arrow arr => Point arr g i f o -> arr (i, f) g
 set p = modify p . first (arr const)
+
+-- | Get the modifier arrow from a Point.
+
+modify :: Point cat g i f o -> cat (cat o i, f) g
+modify (Point _ m) = m
 
 -- | Identity `Point`.
 
@@ -104,42 +101,24 @@ instance Arrow arr => Applicative (Point arr f i f) where
 
 -------------------------------------------------------------------------------
 
-infix 8 `Bij`
+infix 8 `Iso`
 
--- | The bijections datatype, a category that works in two directions.
+-- | An isomorphism is like a `Category` that works in two directions.
 
-data Bijection cat i o = Bij { fw :: cat i o, bw :: cat o i }
+data Isomorphism cat i o = Iso { fw :: cat i o, bw :: cat o i }
 
--- | Bijections as categories.
+-- | Isomorphisms are categories.
 
-instance Category cat => Category (Bijection cat) where
-  id = Bij Cat.id Cat.id
-  Bij a b . Bij c d = Bij (a . c) (d . b)
+instance Category cat => Category (Isomorphism cat) where
+  id = Iso Cat.id Cat.id
+  Iso a b . Iso c d = Iso (a . c) (d . b)
   {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
--- | Lifting 'Bijection's.
-
-liftBij :: Functor f => Bijection (->) i o -> Bijection (->) (f i) (f o)
-liftBij (Bij f b) = fmap f `Bij` fmap b
-
-infixr 8 `iso`
-
--- | The isomorphism type class is like a `Functor' can work in two directions.
-
-class Iso cat f where
-  iso :: Bijection cat i o -> f i -> f o
-
 -- | Flip an isomorphism.
 
-inv :: Bijection cat i o -> Bijection cat o i
-inv (Bij a b) = (Bij b a)
-
--- | We can diverge 'Bijection's using an isomorphism.
-
-instance Arrow arr => Iso arr (Bijection arr i) where
-  iso = (.)
-  {-# INLINE iso #-}
+inv :: Isomorphism cat i o -> Isomorphism cat o i
+inv i = Iso (bw i) (fw i)
 
 -------------------------------------------------------------------------------
 

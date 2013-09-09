@@ -138,9 +138,9 @@ Amsterdam over exactly two years:
 -- > ageAsString :: Person :-> String
 -- > ageAsString = Bij show read `iso` age
 
-, Bijection (..)
-, Iso (..)
+, Isomorphism (..)
 , inv
+, iso
 , for
 
 -- * Derive labels using Template Haskell.
@@ -159,9 +159,9 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Point (Bijection(..), Iso(..), inv, Total)
+import Data.Label.Point (Isomorphism(..), inv, Total)
 import Data.Label.Poly (for)
-import Data.Label.Mono (Lens)
+import Data.Label.Mono (Lens, iso)
 import Data.Label.Derive
 
 import qualified Data.Label.Mono as Mono

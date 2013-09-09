@@ -23,7 +23,7 @@ where
 import Control.Category
 import Control.Arrow
 import Prelude hiding ((.), id)
-import Data.Label.Point (Point (Point)) -- , Iso, Bijection (Bij))
+import Data.Label.Point (Point (Point))
 
 import qualified Data.Label.Point as Point
 
@@ -32,6 +32,7 @@ import qualified Data.Label.Point as Point
 {-# INLINE set    #-}
 {-# INLINE modify #-}
 {-# INLINE for    #-}
+{-# INLINE point  #-}
 
 -------------------------------------------------------------------------------
 
@@ -82,12 +83,6 @@ instance ArrowApply arr => Category (Lens arr) where
 for :: Arrow arr => arr j i -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
 for f (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
 for f Id       = Point id (app . first (arr (f .)))
-
--- We can diverge 'Lens'es using an isomorphism.
--- instance Arrow arr => Iso arr (Lens arr f) where
---   iso (Bij f b) (Lens (Point g m)) =
---     lens (f . g) (m . first (arr (\a -> b . a . f)))
---   {-# INLINE iso #-}
 
 -------------------------------------------------------------------------------
 
