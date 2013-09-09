@@ -22,6 +22,7 @@ module Data.Label.Failing
 )
 where
 
+import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Data.Label.Point (Failing)
@@ -74,7 +75,7 @@ modify l m = runKleisli (Poly.modify l . arr (arr m,))
 -- fail.
 
 embed :: Poly.Lens (->) (f -> g) (Either e o -> Either e i) -> Lens e (f -> g) (o -> i)
-embed l = lens (Poly.get l) (\m f -> Right (Poly.modify l ((>>= m), f)))
+embed l = lens (Poly.get l) (\m f -> const (Poly.modify l ((>>= m), f)) <$> Poly.get l f)
 
 -------------------------------------------------------------------------------
 

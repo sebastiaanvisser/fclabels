@@ -20,6 +20,7 @@ module Data.Label.Partial
 )
 where
 
+import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Data.Label.Point (Partial)
@@ -73,7 +74,7 @@ modify l m = runKleisli (Poly.modify l . arr ((,) (arr m)))
 -- fail.
 
 embed :: Lens (->) (f -> g) (Maybe o -> Maybe i) -> (f -> g) :~> (o -> i)
-embed l = lens (Poly.get l) (\m f -> Just (Poly.modify l ((>>= m), f)))
+embed l = lens (Poly.get l) (\m f -> const (Poly.modify l ((>>= m), f)) <$> Poly.get l f)
 
 -------------------------------------------------------------------------------
 
