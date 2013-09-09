@@ -2,7 +2,7 @@
 
 {-# LANGUAGE TypeOperators  #-}
 
-module Data.Label.TotalM
+module Data.Label.Monadic
 (
 -- * 'MonadState' lens operations.
   gets

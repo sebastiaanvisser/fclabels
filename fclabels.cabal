@@ -41,12 +41,12 @@ Library
     Data.Label
     Data.Label.Derive
     Data.Label.Failing
+    Data.Label.Monadic
     Data.Label.Mono
     Data.Label.Partial
     Data.Label.Point
     Data.Label.Poly
     Data.Label.Total
-    Data.Label.TotalM
 
   GHC-Options: -Wall
   Build-Depends:
