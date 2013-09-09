@@ -15,10 +15,17 @@ module Data.Label.Total
 )
 where
 
-import Data.Label.Mono (Lens)
+import Data.Label.Poly (Lens)
 import Data.Label.Point (Total)
 
-import qualified Data.Label.Mono as Mono
+import qualified Data.Label.Poly as Poly
+
+{-# INLINE lens   #-}
+{-# INLINE get    #-}
+{-# INLINE set    #-}
+{-# INLINE modify #-}
+
+-------------------------------------------------------------------------------
 
 -- | Total lens type specialized for total accessor functions.
 
@@ -33,22 +40,22 @@ type f :-> o = Lens Total f o
 -- > set l (get l f) f == f
 
 lens :: (f -> o)              -- ^ Getter.
-     -> ((o -> o) -> f -> f)  -- ^ Modifier.
-     -> f :-> o
-lens g s = Mono.lens g (uncurry s)
+     -> ((o -> i) -> f -> g)  -- ^ Modifier.
+     -> (f -> g) :-> (o -> i)
+lens g s = Poly.lens g (uncurry s)
 
--- | Getter for a total lens.
+-- | Get the getter function from a lens.
 
-get :: (f :-> o) -> f -> o
-get = Mono.get
+get :: ((f -> g) :-> (o -> i)) -> f -> o
+get = Poly.get
 
--- | Setter for a total lens.
+-- | Get the setter function from a lens.
 
-set :: (f :-> o) -> o -> f -> f
-set = curry . Mono.set
+set :: ((f -> g) :-> (o -> i)) -> i -> f -> g
+set = curry . Poly.set
 
--- | Modifier for a total lens.
+-- | Get the modifier function from a lens.
 
-modify :: (f :-> o) -> (o -> o) -> f -> f
-modify = curry . Mono.modify
+modify :: (f -> g) :-> (o -> i) -> (o -> i) -> f -> g
+modify = curry . Poly.modify
 

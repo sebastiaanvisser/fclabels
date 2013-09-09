@@ -11,20 +11,12 @@ module Data.Label.Poly
 
 -- * The polymorphic Lens type.
   Lens (Lens)
+, point
 , lens
 , get
 , set
 , modify
 , for
-
--- * Converting lenses.
-, point
-, mono
-, poly
-
--- * Lenses with concrete context.
-, (:->)
-, (:~>)
 )
 where
 
@@ -33,7 +25,6 @@ import Control.Arrow
 import Prelude hiding ((.), id)
 import Data.Label.Point (Point (Point)) -- , Iso, Bijection (Bij))
 
-import qualified Data.Label.Mono  as Mono
 import qualified Data.Label.Point as Point
 
 {-# INLINE lens   #-}
@@ -105,24 +96,4 @@ for f Id       = Point id (app . first (arr (f .)))
 point :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
 point Id       = Point.id
 point (Lens p) = p
-
--- | Convert a monomorphic lens into a polymorphic lens.
-
-poly :: Mono.Lens cat f o -> Lens cat (f -> f) (o -> o)
-poly = Lens . Mono.point
-
--- | Convert a polymorphic lens into a monomorphic lens.
-
-mono :: Lens cat (f -> f) (o -> o) -> Mono.Lens cat f o
-mono = Mono.Lens . point
-
--------------------------------------------------------------------------------
-
--- | Operator for total polymorphic lenses.
-
-type f :-> o = Lens (->) f o
-
--- | Operator for partial polymorphic lenses.
-
-type f :~> o = Lens Point.Partial f o
 

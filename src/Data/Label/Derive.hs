@@ -209,7 +209,7 @@ computeType field datatype vars =
          , prettyType <$> outTy
          , mapTyVarBndr pretty <$> vars
          , [t| Mono.Lens |]
-         ,  [| Mono.Lens |]
+         ,  [| Poly.Lens |]
          )
        vs ->
          do let names = return <$> ['a'..'z']

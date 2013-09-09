@@ -1,4 +1,6 @@
-{- | The Point data type which generalizes the different lenses. -}
+{- | The Point data type which generalizes the different lenses and forms the
+basis for vertical composition using the `Applicative` type class.
+-}
 
 {-# LANGUAGE
     TypeOperators

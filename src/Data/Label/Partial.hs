@@ -21,13 +21,22 @@ where
 
 import Control.Arrow
 import Control.Category
-import Data.Label.Mono (Lens)
 import Data.Label.Point (Partial)
+import Data.Label.Poly (Lens)
 import Data.Maybe
 import Prelude hiding ((.), id)
 
-import qualified Data.Label.Mono as Mono
+import qualified Data.Label.Poly as Poly
 
+{-# INLINE lens    #-}
+{-# INLINE get     #-}
+{-# INLINE set     #-}
+{-# INLINE modify  #-}
+{-# INLINE embed   #-}
+{-# INLINE set'    #-}
+{-# INLINE modify' #-}
+
+-------------------------------------------------------------------------------
 -- | Partial lens type for situations in which the accessor functions can fail.
 
 type f :~> o = Lens Partial f o
@@ -36,45 +45,45 @@ type f :~> o = Lens Partial f o
 -- themselves potentially fail.
 
 lens :: (f -> Maybe o)                    -- ^ Getter.
-     -> ((o -> Maybe o) -> f -> Maybe f)  -- ^ Modifier.
-     -> f :~> o
-lens g s = Mono.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
+     -> ((o -> Maybe i) -> f -> Maybe g)  -- ^ Modifier.
+     -> (f -> g) :~> (o -> i)
+lens g s = Poly.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
 
 -- | Getter for a lens that can fail. When the field to which the lens points
 -- is not accessible the getter returns 'Nothing'.
 
-get :: (f :~> o) -> f -> Maybe o
-get l = runKleisli (Mono.get l)
+get :: (f -> g) :~> (o -> i) -> f -> Maybe o
+get l = runKleisli (Poly.get l)
 
 -- | Setter for a lens that can fail. When the field to which the lens points
 -- is not accessible this function returns 'Nothing'.
 
-set :: f :~> o -> o -> f -> Maybe f
-set l v = runKleisli (Mono.set l . arr ((,) v))
+set :: (f -> g) :~> (o -> i) -> i -> f -> Maybe g
+set l v = runKleisli (Poly.set l . arr ((,) v))
 
 -- | Modifier for a lens that can fail. When the field to which the lens points
 -- is not accessible this function returns 'Nothing'.
 
-modify :: (f :~> o) -> (o -> o) -> f -> Maybe f
-modify l m = runKleisli (Mono.modify l . arr ((,) (arr m)))
+modify :: (f -> g) :~> (o -> i) -> (o -> i) -> f -> Maybe g
+modify l m = runKleisli (Poly.modify l . arr ((,) (arr m)))
 
 -- | Embed a total lens that points to a `Maybe` field into a lens that might
 -- fail.
 
-embed :: Lens (->) f (Maybe o) -> f :~> o
-embed l = lens (Mono.get l) (\m f -> Just (Mono.modify l ((>>= m), f)))
+embed :: Lens (->) (f -> g) (Maybe o -> Maybe i) -> (f -> g) :~> (o -> i)
+embed l = lens (Poly.get l) (\m f -> Just (Poly.modify l ((>>= m), f)))
 
 -------------------------------------------------------------------------------
 
 -- | Like 'set' but return behaves like the identity function when the field
 -- could not be set.
 
-set' :: (f :~> o) -> o -> f -> f
+set' :: ((f -> f) :~> (o -> i)) -> i -> f -> f
 set' l v f = f `fromMaybe` set l v f
 
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
 
-modify' :: (f :~> o) -> (o -> o) -> f -> f
+modify' :: ((f -> f) :~> (o -> i)) -> (o -> i) -> f -> f
 modify' l m f = f `fromMaybe` modify l m f
 

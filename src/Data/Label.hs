@@ -79,7 +79,7 @@ Composition is done using the @(`.`)@ operator which is part of the
 
 -}
 
--- * Total lenses.
+-- * Total monomorphic lenses.
 
   (:->)
 , lens
@@ -124,8 +124,6 @@ Amsterdam over exactly two years:
 
 -}
 
-, Lens (Lens)
-
 -- * Working with bijections and isomorphisms.
 -- 
 -- | This package contains a bijection datatype that encodes bidirectional
@@ -161,8 +159,49 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Point (Bijection(..), Iso(..), inv)
-import Data.Label.Mono (Lens(..), for)
-import Data.Label.Total
+import Data.Label.Point (Bijection(..), Iso(..), inv, Total)
+import Data.Label.Poly (for)
+import Data.Label.Mono (Lens)
 import Data.Label.Derive
+
+import qualified Data.Label.Mono as Mono
+
+{-# INLINE lens   #-}
+{-# INLINE get    #-}
+{-# INLINE set    #-}
+{-# INLINE modify #-}
+
+-------------------------------------------------------------------------------
+
+-- | Total lens type specialized for total accessor functions.
+
+type f :-> o = Lens Total f o
+
+-- | Create a total lens from a getter and a modifier.
+--
+-- We expect the following law to hold:
+--
+-- > get l (set l a f) == a
+--
+-- > set l (get l f) f == f
+
+lens :: (f -> o)              -- ^ Getter.
+     -> ((o -> o) -> f -> f)  -- ^ Modifier.
+     -> f :-> o
+lens g s = Mono.lens g (uncurry s)
+
+-- | Get the getter function from a lens.
+
+get :: (f :-> o) -> f -> o
+get = Mono.get
+
+-- | Get the setter function from a lens.
+
+set :: (f :-> o) -> o -> f -> f
+set = curry . Mono.set
+
+-- | Get the modifier function from a lens.
+
+modify :: f :-> o -> (o -> o) -> f -> f
+modify = curry . Mono.modify
 
