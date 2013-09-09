@@ -124,6 +124,8 @@ Amsterdam over exactly two years:
 
 -}
 
+, for
+
 -- * Working with bijections and isomorphisms.
 -- 
 -- | This package contains a bijection datatype that encodes bidirectional
@@ -136,12 +138,11 @@ Amsterdam over exactly two years:
 -- the following:
 -- 
 -- > ageAsString :: Person :-> String
--- > ageAsString = Bij show read `iso` age
+-- > ageAsString = iso (Iso show read) . age
 
 , Isomorphism (..)
 , inv
 , iso
-, for
 
 -- * Derive labels using Template Haskell.
 --
