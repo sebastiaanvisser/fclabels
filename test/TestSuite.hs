@@ -1,4 +1,4 @@
-{-  OPTIONS -ddump-splices #-}
+{- OPTIONS -ddump-splices #-}
 {-# LANGUAGE
     TemplateHaskell
   , TypeOperators
@@ -10,20 +10,20 @@ import Control.Applicative
 import Control.Category
 import Prelude hiding ((.), id)
 import Test.HUnit
-import Data.Label.Abstract
-import Data.Label (mkLabels)
-import Data.Label.Total   ((:->))
+import Data.Label
+import Data.Label.Mono (Lens)
 import Data.Label.Partial ((:~>))
+import Data.Label.Failing (Failing)
 
-import Control.Monad.Reader (ReaderT, runReaderT, runReader)
-import Control.Monad.State (evalStateT, evalState, execState, runState)
+import Control.Monad.Reader (runReader)
+import Control.Monad.State (evalState, execState, runState)
 
-import qualified Data.Label.Total    as Total
-import qualified Data.Label.Partial  as Partial
 import qualified Data.Label.Failing  as Failing
-import qualified Data.Label.TotalM   as TotalM
-import qualified Data.Label.PartialM as PartialM
-import qualified Data.Label.Poly     as Poly ()
+import qualified Data.Label.Mono     as Mono ()
+import qualified Data.Label.Partial  as Partial
+import qualified Data.Label.Poly     as Poly
+import qualified Data.Label.Total    as Total
+import qualified Data.Label.Monadic  as Monadic
 
 -------------------------------------------------------------------------------
 
@@ -33,112 +33,129 @@ data NoRecord = NoRecord Integer Bool
 newtype Newtype a = Newtype { _unNewtype :: [a] }
   deriving (Eq, Ord, Show)
 
-data Tot = Tot
+data Record = Record
   { _fA :: Integer
   , _fB :: Maybe (Newtype Bool)
   , _fC :: Newtype Bool
   , _fD :: Either Integer Bool
   } deriving (Eq, Ord, Show)
 
-data App = App
-  { _tA :: Maybe (Newtype Bool)
-  , _tB :: Either Integer Bool
-  , _tD :: Newtype Bool
-  } deriving (Eq, Ord, Show)
-
-data Part 
-  = First  { _pfst  :: Tot
-           , _psnd :: Double
-           , _third  :: Either String Float
+data Multi
+  = First  { _mA :: Record
+           , _mB :: Double
+           , _mC :: Either String Float
            }
-  | Second { _psnd :: Double }
+  | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
-mkLabels [''NoRecord, ''Newtype, ''Tot, ''App, ''Part]
+mkLabels [''NoRecord, ''Newtype, ''Record, ''Multi]
+
+data View = View
+  { _vA :: Maybe (Newtype Bool)
+  , _vB :: Either Integer Bool
+  , _vC :: Newtype Bool
+  } deriving (Eq, Ord, Show)
+
+mkLabel ''View
+
+data Direction i a b c d
+  = North { _dir :: i, _north :: a }
+  | East  { _dir :: i, _east  :: b }
+  | South { _dir :: i, _south :: c }
+  | West  { _dir :: i, _west  :: d }
+  | All   { _dir :: i, _allDirs  :: (a, b, c, d) }
+  deriving (Eq, Ord, Show)
+
+mkLabel ''Direction
 
 -------------------------------------------------------------------------------
 
-lfA :: Tot :-> Integer
-lfA = Total.lens _fA (\m f -> f { _fA = m (_fA f) })
+embed_fB :: (Record -> Record) :~> (Newtype Bool -> Newtype Bool)
+embed_fB = Partial.embed fB
 
-lfst :: Part :~> Tot
-lfst = Partial.lens
-  (\p   -> case p of First {} -> Just (_pfst p); _ -> Nothing)
-  (\m p -> case p of First {} -> (\v -> p { _pfst = v }) `fmap` m (_pfst p); _ -> Nothing)
+manual_fA :: Record :-> Integer
+manual_fA = Total.lens _fA (\m f -> f { _fA = m (_fA f) })
 
-lfstF :: Lens (Failing String) Part Tot
-lfstF = Failing.lens
-  (\p   -> case p of First {} -> Right (_pfst p); _ -> Left "lfst")
-  (\m p -> case p of First {} -> (\v -> p { _pfst = v }) `fmap` m (_pfst p); _ -> Left "lfst")
+manual_fA_m :: Lens (->) Record Integer
+manual_fA_m = lens _fA (\m f -> f { _fA = m (_fA f) })
 
-fstF :: Lens (Failing String) Part Tot
-fstF = pfst
+manual_mA :: (Multi -> Multi) :~> (Record -> Record)
+manual_mA = Partial.lens
+  (\p   -> case p of First {} -> Just (_mA p); _ -> Nothing)
+  (\m p -> case p of First {} -> (\v -> p { _mA = v }) `fmap` m (_mA p); _ -> Nothing)
 
-compTot :: Tot :-> [Bool]
-compTot = unNewtype . fC
+mA_f :: Failing.Lens String (Multi -> Multi) (Record -> Record)
+mA_f = mA
 
-compTotId :: Tot :-> [Bool]
-compTotId = id . unNewtype . fC
+manual_mA_f :: Failing.Lens String (Multi -> Multi) (Record -> Record)
+manual_mA_f = Failing.lens
+  (\p   -> case p of First {} -> Right (_mA p); _ -> Left "mA")
+  (\m p -> case p of First {} -> (\v -> p { _mA = v }) `fmap` m (_mA p); _ -> Left "mA")
 
-compIdTot :: Tot :-> [Bool]
-compIdTot = unNewtype . fC . id
+embed_fD :: Failing.Lens Integer (Record -> Record) (Bool -> Bool)
+embed_fD = Failing.embed fD
 
-compPart :: Part :~> Integer
-compPart = fA . pfst
+manual_dir :: Poly.Lens (->) (Direction i a b c d -> Direction e a b c d) (i -> e)
+manual_dir = Poly.lens _dir (\(m, f) -> f {_dir = m (_dir f) })
 
-compFail :: Lens (Failing String) Part Integer
-compFail = fA . pfst
+north_f :: Poly.Lens (Failing String) (Direction i a b c d -> Direction i e b c d) (a -> e)
+north_f = north
 
-fBembed :: Tot :~> Newtype Bool
-fBembed = Partial.embed fB
+fAmA :: (Multi -> Multi) :~> (Integer -> Integer)
+fAmA = fA . mA
 
-fDembed :: Failing.LensF Integer Tot Bool
-fDembed = Failing.embed fD
+recordView :: Record :-> View
+recordView = Poly.Lens $
+  View <$> _vA `for` fB
+       <*> _vB `for` fD
+       <*> _vC `for` fC
 
-totTot2 :: Tot :-> App
-totTot2 = Lens $
-  App <$> _tA `for` fB
-      <*> _tB `for` fD
-      <*> _tD `for` fC
+newtypeId :: Newtype Bool :-> Newtype Bool
+newtypeId = Poly.Lens (id <$> id `for` id)
 
 -------------------------------------------------------------------------------
 
-nt0, nt1 :: Newtype Bool
-nt0 = Newtype []
-nt1 = Newtype [True]
+newtype0, newtype1, newtype2 :: Newtype Bool
+newtype0 = Newtype []
+newtype1 = Newtype [True]
+newtype2 = Newtype [False]
 
-tot0, tot1, tot2, tot3, tot4, tot5, tot6, tot7 :: Tot
-tot0 = Tot 0 Nothing nt0 (Left 1)
-tot1 = Tot 1 (Just nt0) nt0 (Left 1)
-tot2 = Tot 2 Nothing nt0 (Left 1)
-tot3 = Tot 1 Nothing nt0 (Left 1)
-tot4 = Tot 1 (Just nt1) nt0 (Left 1)
-tot5 = Tot 0 Nothing nt1 (Left 1)
-tot6 = Tot 0 Nothing nt1 (Right False)
-tot7 = Tot 0 Nothing nt1 (Right True)
+record0, record1, record2, record3, record4, record5, record10, record11 :: Record
+record0 = Record 0 Nothing newtype0 (Left 1)
+record1 = Record 1 Nothing newtype0 (Left 1)
+record2 = Record 0 (Just newtype1) newtype0 (Left 1)
+record3 = Record 0 (Just newtype0) newtype0 (Left 1)
+record4 = Record 0 Nothing newtype0 (Right True)
+record5 = Record 0 Nothing newtype0 (Right False)
+record10 = Record 10 Nothing newtype0 (Left 1)
+record11 = Record 11 Nothing newtype0 (Left 1)
 
-fst0, fst1, fst2, snd0, snd1 :: Part
-fst0 = First tot0 0.0 (Right 10.0)
-fst1 = First tot1 0.0 (Right 10.0)
-fst2 = First tot0 2.0 (Right 10.0)
-snd0 = Second 2.0
-snd1 = Second 4.0
+first0, first1, first2 :: Multi
+first0 = First record0 0.0 (Right 1.0)
+first1 = First record0 1.0 (Right 1.0)
+first2 = First record1 0.0 (Right 1.0)
 
-app0, app1, app2, app3, app4, app5, app6, app7 :: App
-app0 = App Nothing (Left 1) nt0
-app1 = App (Just nt1) (Left 1) nt0
-app2 = App Nothing (Left 1) nt0
-app3 = App Nothing (Left 1) nt0
-app4 = App (Just nt1) (Left 1) nt0
-app5 = App Nothing (Left 1) nt1
-app6 = App Nothing (Right False) nt1
-app7 = App Nothing (Right True) nt1
+second0, second1 :: Multi
+second0 = Second 0.0
+second1 = Second 1.0
 
-mulDiv :: Bijection (->) Integer Double
-mulDiv = Bij (\i -> fromInteger i / 10) (\i -> round (i * 10))
+north0 :: Direction Integer () () () ()
+north0 = North 0 ()
 
-addSub :: Bijection (->) Integer Double
-addSub = Bij (\i -> fromInteger i - 1) (\i -> round (i + 1))
+north1 :: Direction Bool () () () ()
+north1 = North False ()
+
+north2 :: Direction Integer Bool () () ()
+north2 = North 0 False
+
+west0 :: Direction Integer () () () ()
+west0 = West 0 ()
+
+mulDiv :: Isomorphism (->) Integer Double
+mulDiv = Iso (\i -> fromInteger i / 10) (\i -> round (i * 10))
+
+addSub :: Isomorphism (->) Double Integer
+addSub = Iso (\i -> round (i + 10)) (\i -> fromInteger i - 10)
 
 -------------------------------------------------------------------------------
 
@@ -149,171 +166,198 @@ main =
 
 allTests :: Test
 allTests = TestList
-  [ total
-  , partialOk
-  , partialFail
-  , partialEmbed
-  , failingOk
-  , failingFail
-  , failingEmbed
-  , compTotal
-  , totalM
-  , partialM
-  , bijections
+  [ mono
+  , totalMono
+  , partialMono
+  , failingMono
+  , totalPoly
+  , partialPoly
+  , failingPoly
+  , composition
   , applicative
+  , bijections
+  , monadic
   ]
 
-total :: Test
-total = TestList
-  [ eq "get fA total" (Total.get fA tot0) 0 
-  , eq "set fA total" (Total.set fA 2 tot0) tot2 
-  , eq "mod fA total" (Total.modify fA (+2) tot0) tot2
-  , eq "get lfA total" (Total.get lfA tot0) 0
-  , eq "set lfA total" (Total.set lfA 2 tot0) tot2
-  , eq "mod lfA total" (Total.modify lfA (+2) tot0) tot2
-  , eq "get fB total" (Total.get fB tot0) Nothing
-  , eq "set fB total" (Total.set fB Nothing tot1) tot3
-  , eq "mod fB total" (Total.modify fB (fmap (const nt1)) tot1) tot4
-  , eq "get psnd total" (Total.get psnd fst0) 0
-  , eq "set psnd total" (Total.set psnd 2 fst0) fst2
-  , eq "mod psnd total" (Total.modify psnd (+2) fst0) fst2
-  ]
+mono :: Test
+mono = TestList
+  [ eq "get manual_fA_m" (get manual_fA_m record0) 0
+  , eq "set manual_fA_m" (set manual_fA_m 1 record0) record1
+  , eq "mod manual_fA_m" (modify manual_fA_m (+ 1) record0) record1
+  ] where eq x = equality ("total mono " ++ x)
 
-partialOk :: Test
-partialOk = TestList
-  [ eq "get pfst partial ok" (Partial.get pfst fst0) (Just tot0)
-  , eq "set pfst partial ok" (Partial.set pfst tot1 fst0) (Just fst1)
-  , eq "mod pfst partial ok" (Partial.modify pfst (const tot1) fst0) (Just fst1)
-  , eq "get lfst partial ok" (Partial.get lfst fst0) (Just tot0)
-  , eq "set lfst partial ok" (Partial.set lfst tot1 fst0) (Just fst1)
-  , eq "mod lfst partial ok" (Partial.modify lfst (const tot1) fst0) (Just fst1)
-  , eq "set' pfst partial ok" (Partial.set' pfst tot1 fst0) fst1
-  , eq "mod' pfst partial ok" (Partial.modify' pfst (const tot1) fst0) fst1
-  ]
+totalMono :: Test
+totalMono = TestList
+  [ eq "get fA" (Total.get fA record0) 0
+  , eq "set fA" (Total.set fA 1 record0) record1
+  , eq "mod fA" (Total.modify fA (+ 1) record0) record1
+  , eq "get manual_fA" (Total.get manual_fA record0) 0 
+  , eq "set manual_fA" (Total.set manual_fA 1 record0) record1
+  , eq "mod manual_fA" (Total.modify manual_fA (+ 1) record0) record1
+  , eq "get mB" (Total.get mB first0) 0
+  , eq "set mB" (Total.set mB 1 first0) first1
+  , eq "mod mB" (Total.modify mB (+ 1) first0) first1
+  ] where eq x = equality ("total mono " ++ x)
 
-partialFail :: Test
-partialFail = TestList
-  [ eq "get pfst partial fail" (Partial.get pfst snd0) Nothing
-  , eq "set pfst partial fail" (Partial.set pfst tot1 snd0) Nothing
-  , eq "mod pfst partial fail" (Partial.modify pfst (const tot1) snd0) Nothing
-  , eq "get lfst partial fail" (Partial.get lfst snd0) Nothing
-  , eq "set lfst partial fail" (Partial.set lfst tot1 snd0) Nothing
-  , eq "mod lfst partial fail" (Partial.modify lfst (const tot1) snd0) Nothing
-  , eq "set' pfst partial fail" (Partial.set' pfst tot1 snd0) snd0
-  , eq "mod' pfst partial fail" (Partial.modify' pfst (const tot1) snd0) snd0
-  ]
+partialMono :: Test
+partialMono = TestList
+  [ eq0 "get mA" (Partial.get mA first0) (Just record0)
+  , eq0 "set mA" (Partial.set mA record1 first0) (Just first2)
+  , eq0 "mod mA" (Partial.modify mA (Total.modify fA (+ 1)) first0) (Just first2)
+  , eq0 "get manual_mA" (Partial.get manual_mA first0) (Just record0)
+  , eq0 "set manual_mA" (Partial.set manual_mA record1 first0) (Just first2)
+  , eq0 "mod manual_mA" (Partial.modify manual_mA (Total.modify fA (+ 1)) first0) (Just first2)
+  , eq1 "get mA" (Partial.get mA second0) Nothing
+  , eq1 "set mA" (Partial.set mA record1 second0) Nothing
+  , eq1 "mod mA" (Partial.modify mA (Total.modify fA (+ 1)) second0) Nothing
+  , eq1 "get manual_mA" (Partial.get manual_mA second0) Nothing
+  , eq1 "set manual_mA" (Partial.set manual_mA record1 second0) Nothing
+  , eq1 "mod manual_mA" (Partial.modify manual_mA (Total.modify fA (+ 1)) second0) Nothing
+  , eq2 "set mA" (Partial.set' mA record1 first0) first2
+  , eq2 "mod mA" (Partial.modify' mA (Total.modify fA (+ 1)) first0) first2
+  , eq2 "set manual_mA" (Partial.set' manual_mA record1 first0) first2
+  , eq2 "mod manual_mA" (Partial.modify' manual_mA (Total.modify fA (+ 1)) first0) first2
+  , eq2 "set mA" (Partial.set' mA record1 second0) second0
+  , eq2 "mod mA" (Partial.modify' mA (Total.modify fA (+ 1)) second0) second0
+  , eq2 "set manual_mA" (Partial.set' manual_mA record1 second0) second0
+  , eq2 "mod manual_mA" (Partial.modify' manual_mA (Total.modify fA (+ 1)) second0) second0
+  , eq3 "get embed_fB" (Partial.get embed_fB record2) (Just newtype1)
+  , eq3 "set embed_fB" (Partial.set embed_fB newtype0 record2) (Just record3)
+  , eq3 "mod embed_fB" (Partial.modify embed_fB (const newtype0) record2) (Just record3)
+  , eq4 "get embed_fB" (Partial.get embed_fB record0) Nothing
+  , eq4 "set embed_fB" (Partial.set embed_fB newtype0 record0) Nothing
+  , eq4 "mod embed_fB" (Partial.modify embed_fB (const newtype0) record0) Nothing
+  ] where eq0 x = equality ("partial mono " ++ x)
+          eq1 x = equality ("partial mono fail " ++ x)
+          eq2 x = equality ("partial mono prime " ++ x)
+          eq3 x = equality ("partial mono embed " ++ x)
+          eq4 x = equality ("partial mono embed fail" ++ x)
 
-partialEmbed :: Test
-partialEmbed = TestList
-  [ eq "get fB partial embed" (Partial.get fBembed tot1) (Just nt0)
-  , eq "get fB partial embed" (Partial.get fBembed tot0) Nothing
-  , eq "set fB partial embed" (Partial.set fBembed nt1 tot1) (Just tot4)
-  , eq "mod fB partial embed" (Partial.modify fBembed (const nt1) tot1) (Just tot4)
-  ]
+failingMono :: Test
+failingMono = TestList
+  [ eq0 "get mA_f" (Failing.get mA_f first0) (Right record0)
+  , eq0 "set mA_f" (Failing.set mA_f record1 first0) (Right first2)
+  , eq0 "mod mA_f" (Failing.modify mA_f (Total.modify fA (+ 1)) first0) (Right first2)
+  , eq0 "get manual_mA_f" (Failing.get manual_mA_f first0) (Right record0)
+  , eq0 "set manual_mA_f" (Failing.set manual_mA_f record1 first0) (Right first2)
+  , eq0 "mod manual_mA_f" (Failing.modify manual_mA_f (Total.modify fA (+ 1)) first0) (Right first2)
+  , eq1 "get mA_f fail" (Failing.get mA_f second0) (Left "mA")
+  , eq1 "set mA_f fail" (Failing.set mA_f record1 second0) (Left "mA")
+  , eq1 "mod mA_f fail" (Failing.modify mA_f (Total.modify fA (+ 1)) second0) (Left "mA")
+  , eq1 "get manual_mA_f" (Failing.get manual_mA_f second0) (Left "mA")
+  , eq1 "set manual_mA_f" (Failing.set manual_mA_f record1 second0) (Left "mA")
+  , eq1 "mod manual_mA_f" (Failing.modify manual_mA_f (Total.modify fA (+ 1)) second0) (Left "mA")
+  , eq2 "set mA_f" (Failing.set' mA_f record1 first0) first2
+  , eq2 "mod mA_f" (Failing.modify' mA_f (Total.modify fA (+ 1)) first0) first2
+  , eq2 "set manual_mA_f" (Failing.set' manual_mA_f record1 first0) first2
+  , eq2 "mod manual_mA_f" (Failing.modify' manual_mA_f (Total.modify fA (+ 1)) first0) first2
+  , eq2 "set mA_f" (Failing.set' mA_f record1 second0) second0
+  , eq2 "mod mA_f" (Failing.modify' mA_f (Total.modify fA (+ 1)) second0) second0
+  , eq2 "set manual_mA_f" (Failing.set' manual_mA_f record1 second0) second0
+  , eq2 "mod manual_mA_f" (Failing.modify' manual_mA_f (Total.modify fA (+ 1)) second0) second0
+  , eq3 "get embed_fD" (Failing.get embed_fD record4) (Right True)
+  , eq3 "set embed_fD" (Failing.set embed_fD False record4) (Right record5)
+  , eq3 "mod embed_fD" (Failing.modify embed_fD not record4) (Right record5)
+  , eq4 "get embed_fD" (Failing.get embed_fD record0) (Left 1)
+  , eq4 "set embed_fD" (Failing.set embed_fD False record0) (Left 1)
+  , eq4 "mod embed_fD" (Failing.modify embed_fD not record0) (Left 1)
+  ] where eq0 x = equality ("failing mono " ++ x)
+          eq1 x = equality ("failing mono fail " ++ x)
+          eq2 x = equality ("failing mono prime " ++ x)
+          eq3 x = equality ("failing mono embed " ++ x)
+          eq4 x = equality ("failing mono embed fail " ++ x)
 
-failingOk :: Test
-failingOk = TestList
-  [ eq "get pfst failing ok" (Failing.get fstF fst0) (Right tot0)
-  , eq "set pfst failing ok" (Failing.set fstF tot1 fst0) (Right fst1)
-  , eq "mod pfst failing ok" (Failing.modify fstF (const tot1) fst0) (Right fst1)
-  , eq "get lfstF failing ok" (Failing.get lfstF fst0) (Right tot0)
-  , eq "set lfstF failing ok" (Failing.set lfstF tot1 fst0) (Right fst1)
-  , eq "mod lfstF failing ok" (Failing.modify lfstF (const tot1) fst0) (Right fst1)
-  , eq "set' pfst failing ok" (Failing.set' fstF tot1 fst0) fst1
-  , eq "mod' pfst failing ok" (Failing.modify' fstF (const tot1) fst0) fst1
-  ]
+totalPoly :: Test
+totalPoly = TestList
+  [ eq "get dir" (Total.get dir north0) (0 :: Integer)
+  , eq "set dir" (Total.set dir False north0) north1
+  , eq "mod dir" (Total.modify dir (> 1) north0) north1
+  , eq "get manual_dir" (Total.get manual_dir north0) 0
+  , eq "set manual_dir" (Total.set manual_dir False north0) north1
+  , eq "mod manual_dir" (Total.modify manual_dir (> 1) north0) north1
+  ] where eq x = equality ("total mono " ++ x)
 
-failingFail :: Test
-failingFail = TestList
-  [ eq "get pfst failing fail" (Failing.get pfst snd0) (Left "pfst")
-  , eq "set pfst failing fail" (Failing.set pfst tot1 snd0) (Left "pfst")
-  , eq "mod pfst failing fail" (Failing.modify pfst (const tot1) snd0) (Left "pfst")
-  , eq "get lfstF failing fail" (Failing.get lfstF snd0) (Left "lfst")
-  , eq "set lfstF failing fail" (Failing.set lfstF tot1 snd0) (Left "lfst")
-  , eq "mod lfstF failing fail" (Failing.modify lfstF (const tot1) snd0) (Left "lfst")
-  , eq "set' pfst failing fail" (Failing.set' fstF tot1 snd0) snd0
-  , eq "mod' pfst failing fail" (Failing.modify' fstF (const tot1) snd0) snd0
-  ]
+partialPoly :: Test
+partialPoly = TestList
+  [ eq0 "get north" (Partial.get north north0) (Just ())
+  , eq0 "set north" (Partial.set north False north0) (Just north2)
+  , eq0 "mod north" (Partial.modify north (> ()) north0) (Just north2)
+  , eq1 "get north" (Partial.get north west0) Nothing
+  , eq1 "set north" (Partial.set north False west0) Nothing
+  , eq1 "mod north" (Partial.modify north (> ()) west0) Nothing
+  ] where eq0 x = equality ("partial poly " ++ x)
+          eq1 x = equality ("partial poly fail " ++ x)
 
-failingEmbed :: Test
-failingEmbed = TestList
-  [ eq "get fD failing embed" (Failing.get fDembed tot1) (Left 1)
-  , eq "get fD failing embed" (Failing.get fDembed tot6) (Right False)
-  , eq "set fD failing embed" (Failing.set fDembed True tot1) (Right tot1)
-  , eq "set fD failing embed" (Failing.set fDembed True tot6) (Right tot7)
-  , eq "mod fD failing embed" (Failing.modify fDembed not tot1) (Right tot1)
-  , eq "mod fD failing embed" (Failing.modify fDembed not tot6) (Right tot7)
-  ]
+failingPoly :: Test
+failingPoly = TestList
+  [ eq0 "get north" (Failing.get north_f north0) (Right ())
+  , eq0 "set north" (Failing.set north_f False north0) (Right north2)
+  , eq0 "mod north" (Failing.modify north_f (> ()) north0) (Right north2)
+  , eq1 "get north" (Failing.get north_f west0) (Left "north")
+  , eq1 "set north" (Failing.set north_f False west0) (Left "north")
+  , eq1 "mod north" (Failing.modify north_f (> ()) west0) (Left "north")
+  ] where eq0 x = equality ("failing poly " ++ x)
+          eq1 x = equality ("failing poly fail " ++ x)
 
-compTotal :: Test
-compTotal = TestList
-  [ eq "get fB partial comp" (Total.get compTot tot0) []
-  , eq "set fB partial comp" (Total.set compTot [True] tot0) tot5
-  , eq "mod fB partial comp" (Total.modify compTot (True:) tot0) tot5
-  , eq "get fB partial comp" (Total.get compTotId tot0) []
-  , eq "set fB partial comp" (Total.set compTotId [True] tot0) tot5
-  , eq "mod fB partial comp" (Total.modify compTotId (True:) tot0) tot5
-  , eq "get fB partial comp" (Total.get compIdTot tot0) []
-  , eq "set fB partial comp" (Total.set compIdTot [True] tot0) tot5
-  , eq "mod fB partial comp" (Total.modify compIdTot (True:) tot0) tot5
-  ]
-
-totalM :: Test
-totalM = TestList
-  [ eq "asks id total" (runReader (TotalM.asks id) tot0) (tot0)
-  , eq "asks fC total" (runReader (TotalM.asks fC) tot0) nt0
-  , eq "asks psnd total" (runReader (TotalM.asks psnd) fst0) 0.0
-  , eq "gets id total" (evalState (TotalM.gets id) tot0) tot0
-  , eq "gets fC total" (evalState (TotalM.gets fC) tot0) nt0
-  , eq "gets psnd total" (evalState (TotalM.gets psnd) fst0) 0.0
-  , eq "put psnd total" (execState (psnd TotalM.=: 2) fst0) fst2
-  , eq "modify psnd total" (execState (psnd TotalM.=. (+2)) fst0) fst2
-  , eq "local psnd total" (runReader (TotalM.local psnd (+2) $ TotalM.asks id) fst0) fst2
-  , eq "modifyAndGet fA total" (runState (TotalM.modifyAndGet psnd (\a -> (a+10, a+2))) fst0) (10, fst2)
-  ]
-
-partialM :: Test
-partialM = TestList
-  [ eq "asks id partial" (runReaderT (PartialM.asks id) tot0) (Just tot0)
-  , eq "asks fC partial" (runReaderT (PartialM.asks fC) tot0) (Just nt0)
-  , eq "asks psnd partial" (runReaderT (PartialM.asks psnd) fst0) (Just 0.0)
-  , eq "asks pfst partial" (runReaderT (PartialM.asks pfst) snd0) Nothing
-  , eq "gets id partial" (evalStateT (PartialM.gets id) tot0) (Just tot0)
-  , eq "gets fC partial" (evalStateT (PartialM.gets fC) tot0) (Just nt0)
-  , eq "gets psnd partial" (evalStateT (PartialM.gets psnd) fst0) (Just 0.0)
-  , eq "gets pfst partial" (evalStateT (PartialM.gets pfst) snd0) Nothing
-  ]
-
-bijections :: Test
-bijections = TestList
-  [ eq "fw bij" (fw mulDiv 10) 1.0
-  , eq "bw bij" (bw mulDiv 1.0) 10
-  , eq "fw id bij" (fw id 10) (10 :: Integer)
-  , eq "bw id bij" (bw id 10) (10 :: Integer)
-  , eq "fw id comp bij" (fw (id . mulDiv) 10) 1.0
-  , eq "bw id comp bij" (bw (id . mulDiv) 1.0) 10
-  , eq "fw comp bij" (fw (inv addSub . mulDiv) 10) 2
-  , eq "bw comp bij" (bw (inv addSub . mulDiv) 2) 10
-  , eq "fw comp iso bij" (fw (inv addSub `iso` mulDiv) 10) 2
-  , eq "bw comp iso bij" (bw (inv addSub `iso` mulDiv) 2) 10
-  , eq "fw lift bij" (fw (liftBij (addSub . inv mulDiv)) [10, 4]) [99, 39]
-  , eq "bw lift bij" (bw (liftBij (addSub . inv mulDiv)) [2, 3]) [0.3, 0.4]
-  , eq "get fA bij total" (Total.get (mulDiv `iso` fA) tot1) 0.1
-  , eq "get psnd bij inv total" (Total.get (inv mulDiv `iso` psnd) snd0) 20
-  , eq "modify fA bij total" (Total.modify (mulDiv `iso` fA) (* 0.5) tot2) tot3
-  , eq "modify psnd bij inv total" (Total.modify (inv mulDiv `iso` psnd) (`div` 2) snd1) snd0
-  ]
+composition :: Test
+composition = TestList
+  [ eq0 "get id" (Partial.get id first0) (Just first0)
+  , eq0 "set id" (Partial.set id first2 first0) (Just first2)
+  , eq0 "mod id" (Partial.modify id (const first2) first0) (Just first2)
+  , eq0 "get fAmA" (Partial.get fAmA first0) (Just 0)
+  , eq0 "set fAmA" (Partial.set fAmA 1 first0) (Just first2)
+  , eq0 "mod fAmA" (Partial.modify fAmA (+ 1) first0) (Just first2)
+  , eq0 "get id fAmA" (Partial.get (id . fAmA) first0) (Just 0)
+  , eq0 "set id fAmA" (Partial.set (id . fAmA) 1 first0) (Just first2)
+  , eq0 "mod id fAmA" (Partial.modify (id . fAmA) (+ 1) first0) (Just first2)
+  , eq0 "get fAmA id" (Partial.get (fAmA . id) first0) (Just 0)
+  , eq0 "set fAmA id" (Partial.set (fAmA . id) 1 first0) (Just first2)
+  , eq0 "mod fAmA id" (Partial.modify (fAmA . id) (+ 1) first0) (Just first2)
+  ] where eq0 x = equality ("composition partial mono" ++ x)
 
 applicative :: Test
 applicative = TestList
-  [ eq "get tA appl" (Total.get (tA . totTot2) tot0) Nothing
-  , eq "get tB appl" (Total.get (tB . totTot2) tot0) (Left 1)
-  , eq "get tD appl" (Total.get (tD . totTot2) tot0) nt0
-  , eq "set tA appl" (Total.set (tA . totTot2) (Just nt1) tot1) tot4
-  , eq "set tA appl" (Total.set (tA . totTot2) Nothing tot4) tot3
-  , eq "mod tA appl" (Total.modify (tB . totTot2) (fmap not) tot6) tot7
-  ]
+  [ eq "get vA" (Total.get (vA . recordView) record0) Nothing
+  , eq "get vB" (Total.get (vB . recordView) record0) (Left 1)
+  , eq "get vC" (Total.get (vC . recordView) record0) newtype0
+  , eq "set vA" (Total.set (vA . recordView) (Just newtype0) record2) record3
+  , eq "modify vA" (Total.modify (vA . recordView) (fmap (const newtype0)) record2) record3
 
-eq :: (Eq a, Show a) => String -> a -> a -> Test
-eq d a b = TestCase (assertEqual d a b)
+  , eq "get newtypeId" (Total.get newtypeId newtype0) newtype0
+  , eq "set newtypeId" (Total.set newtypeId newtype1 newtype0) newtype1
+  , eq "mod newtypeId" (Total.modify newtypeId (const newtype2) newtype0) newtype2
+  ] where eq x = equality ("applicative total mono" ++ x)
 
+bijections :: Test
+bijections = TestList
+  [ eq "get mulDiv" (get (iso mulDiv . fA) record0) 0
+  , eq "set mulDiv" (set (iso mulDiv . fA) 1 record0) record10
+  , eq "mod mulDiv" (modify (iso mulDiv . fA) (+ 1) record0) record10
+  , eq "get addSub" (get (iso (inv addSub) . fA) record0) (-10)
+  , eq "set addSub" (set (iso (inv addSub) . fA) 1 record0) record11
+  , eq "mod addSub" (modify (iso (inv addSub) . fA) (+ 1) record0) record1
+
+  , eq "get id mulDiv" (get (iso (id . mulDiv) . fA) record0) 0
+  , eq "set id mulDiv" (set (iso (id . mulDiv) . fA) 1 record0) record10
+  , eq "mod id mulDiv" (modify (iso (id . mulDiv) . fA) (+ 1) record0) record10
+  , eq "get id mulDiv" (get (iso (mulDiv . id) . fA) record0) 0
+  , eq "set id mulDiv" (set (iso (mulDiv . id) . fA) 1 record0) record10
+  , eq "mod id mulDiv" (modify (iso (mulDiv . id) . fA) (+ 1) record0) record10
+  ] where eq x = equality ("isomorphisms mono " ++ x)
+
+monadic :: Test
+monadic = TestList
+  [ eq "asks id total" (runReader (Monadic.asks id) record0) record0
+  , eq "asks fC total" (runReader (Monadic.asks fC) record0) newtype0
+  , eq "gets id total" (evalState (Monadic.gets id) record0) record0
+  , eq "gets fC total" (evalState (Monadic.gets fC) record0) newtype0
+
+  , eq "put fA total" (execState (fA Monadic.=: 1) record0) record1
+  , eq "modify fA total" (execState (fA Monadic.=. (+ 1)) record0) record1
+
+  , eq "local fA total" (runReader (Monadic.local fA (+1) $ Monadic.asks id) record0) record1
+  , eq "modifyAndGet fA total" (runState (Monadic.modifyAndGet fA (\a -> (a+10, a+1))) record0) (10, record1)
+  ] where eq x = equality ("total monadic " ++ x)
+
+equality :: (Eq a, Show a) => String -> a -> a -> Test
+equality d a b = TestCase (assertEqual d a b)
