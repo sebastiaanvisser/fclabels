@@ -78,12 +78,12 @@ embed l = lens (Poly.get l) (\m f -> Just (Poly.modify l ((>>= m), f)))
 -- | Like 'set' but return behaves like the identity function when the field
 -- could not be set.
 
-set' :: ((f -> f) :~> (o -> i)) -> i -> f -> f
+set' :: (f -> f) :~> (o -> o) -> o -> f -> f
 set' l v f = f `fromMaybe` set l v f
 
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
 
-modify' :: ((f -> f) :~> (o -> i)) -> (o -> i) -> f -> f
+modify' :: (f -> f) :~> (o -> o) -> (o -> o) -> f -> f
 modify' l m f = f `fromMaybe` modify l m f
 

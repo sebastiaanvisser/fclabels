@@ -80,12 +80,12 @@ embed l = lens (Poly.get l) (\m f -> Right (Poly.modify l ((>>= m), f)))
 -- | Like 'set' but return behaves like the identity function when the field
 -- could not be set.
 
-set' :: Lens e (f -> f) (o -> i) -> i -> f -> f
+set' :: Lens e (f -> f) (o -> o) -> o -> f -> f
 set' l v f = either (const f) id (set l v f)
 
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
 
-modify' :: Lens e (f -> f) (o -> i) -> (o -> i) -> f -> f
+modify' :: Lens e (f -> f) (o -> o) -> (o -> o) -> f -> f
 modify' l m f = either (const f) id (modify l m f)
 
