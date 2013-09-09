@@ -37,11 +37,12 @@ import qualified Data.Label.Poly as Poly
 {-# INLINE set'    #-}
 {-# INLINE modify' #-}
 
--------------------------------------------------------------------------------
 -- | Lens type for situations in which the accessor functions can fail with
 -- some error information.
 
 type Lens e f o = Poly.Lens (Failing e) f o
+
+-------------------------------------------------------------------------------
 
 -- | Create a lens that can fail from a getter and a modifier that can
 -- themselves potentially fail.

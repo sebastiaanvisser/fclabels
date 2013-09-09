@@ -7,6 +7,7 @@ always succeed.
 {-# LANGUAGE TypeOperators #-}
 module Data.Label.Partial
 ( (:~>)
+, Partial
 , lens
 , get
 , set
@@ -36,10 +37,11 @@ import qualified Data.Label.Poly as Poly
 {-# INLINE set'    #-}
 {-# INLINE modify' #-}
 
--------------------------------------------------------------------------------
 -- | Partial lens type for situations in which the accessor functions can fail.
 
 type f :~> o = Lens Partial f o
+
+-------------------------------------------------------------------------------
 
 -- | Create a lens that can fail from a getter and a modifier that can
 -- themselves potentially fail.
