@@ -185,7 +185,7 @@ generateLabel mk tyname tyvars total field fieldtyp ctors =
              conc = forall [t| $(inTy) :~> $(outTy) |]
              abst = forall [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
                         => $(typ) $(cat) $(inTy) $(outTy) |]
-             body = [| Poly.Lens
+             body = [| Poly.point
                          $ Point (failArrow ||| $(totalG) <<< $(caseG))
                                  (failArrow ||| $(totalM) <<< $(caseM))
                      |]
@@ -203,7 +203,7 @@ generateLabel mk tyname tyvars total field fieldtyp ctors =
            where
              conc = forall [t| $(inTy) :-> $(outTy) |]
              abst = forall [t| ArrowApply $(cat) => $(typ) $(cat) $(inTy) $(outTy) |]
-             body = [| Poly.Lens (Point $(totalG) $(totalM)) |]
+             body = [| Poly.point (Point $(totalG) $(totalM)) |]
 
      let (conc, abst, body) =
            if isTotal

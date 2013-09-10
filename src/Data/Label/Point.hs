@@ -27,7 +27,7 @@ module Data.Label.Point
 , Partial
 , Failing
 
--- * Missing Arrow type class for failing with some error.
+-- * Arrow type class for failing with some error.
 , ArrowFail (..)
 )
 where
@@ -134,7 +134,7 @@ type Partial = Kleisli Maybe
 
 type Failing e = Kleisli (Either e)
 
--- | The ArrowFail class embed some error in a failing arrow computation.
+-- | The ArrowFail class embeds some error in a failing arrow computation.
 
 class Arrow a => ArrowFail e a where
   failArrow :: a e c
@@ -148,6 +148,7 @@ instance ArrowFail e (Failing e) where
   {-# INLINE failArrow #-}
 
 -------------------------------------------------------------------------------
+-- Helpers.
 
 const :: Arrow arr => c -> arr b c
 const a = arr (\_ -> a)

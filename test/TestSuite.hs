@@ -114,13 +114,13 @@ fAmA :: (Multi -> Multi) :~> (Integer -> Integer)
 fAmA = fA . mA
 
 recordView :: Record :-> View
-recordView = Poly.Lens $
-  View <$> _vA `for` fB
-       <*> _vB `for` fD
-       <*> _vC `for` fC
+recordView = Poly.point $
+  View <$> _vA >- fB
+       <*> _vB >- fD
+       <*> _vC >- fC
 
 newtypeId :: Newtype Bool :-> Newtype Bool
-newtypeId = Poly.Lens (id <$> id `for` id)
+newtypeId = Poly.point (id <$> id >- id)
 
 -------------------------------------------------------------------------------
 

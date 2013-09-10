@@ -10,13 +10,13 @@ module Data.Label.Poly
 (
 
 -- * The polymorphic Lens type.
-  Lens (Lens)
-, point
+  Lens
 , lens
+, point
 , get
 , set
 , modify
-, for
+, (>-)
 )
 where
 
@@ -31,8 +31,9 @@ import qualified Data.Label.Point as Point
 {-# INLINE get    #-}
 {-# INLINE set    #-}
 {-# INLINE modify #-}
-{-# INLINE for    #-}
+{-# INLINE (>-)   #-}
 {-# INLINE point  #-}
+{-# INLINE unpack #-}
 
 -------------------------------------------------------------------------------
 
@@ -51,20 +52,25 @@ lens :: cat f o             -- ^ Getter.
      -> Lens cat (f -> g) (o -> i)
 lens g m = Lens (Point g m)
 
+-- | Create lens from a `Point`.
+
+point :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
+point = Lens
+
 -- | Get the getter arrow from a lens.
 
 get :: Lens cat (f -> g) (o -> i) -> cat f o
-get = Point.get . point
+get = Point.get . unpack
 
 -- | Get the setter arrow from a lens.
 
 set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
-set = Point.set . point
+set = Point.set . unpack
 
 -- | Get the modifier arrow from a lens.
 
 modify :: Lens cat (f -> g) (o -> i) -> cat (cat o i, f) g
-modify = Point.modify . point
+modify = Point.modify . unpack
 
 -------------------------------------------------------------------------------
 
@@ -80,15 +86,15 @@ instance ArrowApply arr => Category (Lens arr) where
 
 -- | Make a Lens output diverge by changing the input of the modifier.
 
-for :: Arrow arr => arr j i -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
-for f (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
-for f Id       = Point id (app . first (arr (f .)))
+(>-) :: Arrow arr => arr j i -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
+(>-) f (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
+(>-) f Id       = Point id (app . first (arr (f .)))
 
 -------------------------------------------------------------------------------
 
 -- | Convert a polymorphic lens back to point.
 
-point :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
-point Id       = Point.id
-point (Lens p) = p
+unpack :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
+unpack Id       = Point.id
+unpack (Lens p) = p
 
