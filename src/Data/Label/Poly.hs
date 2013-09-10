@@ -86,9 +86,10 @@ instance ArrowApply arr => Category (Lens arr) where
 
 -- | Make a Lens output diverge by changing the input of the modifier.
 
-(>-) :: Arrow arr => arr j i -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
-(>-) f (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
-(>-) f Id       = Point id (app . first (arr (f .)))
+(>-) :: Arrow arr => Lens arr (j -> a) (i -> b) -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
+(>-) (Lens (Point f _)) (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
+(>-) (Lens (Point f _)) Id       = Point id (app . first (arr (f .)))
+(>-) Id                 l        = unpack l
 
 -------------------------------------------------------------------------------
 

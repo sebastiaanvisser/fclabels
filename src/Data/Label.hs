@@ -87,7 +87,7 @@ Composition is done using the @(`.`)@ operator which is part of the
 , set
 , modify
 
--- * Views using @Applicative@.
+-- * Vertical composition using @Applicative@.
 
 {- |
 
@@ -99,10 +99,12 @@ city. This can be done by using a neat `Applicative` functor instance:
 
 >import Control.Applicative
 
+>(fstL, sndL) = $(getLabel ''(,))
+
 >ageAndCity :: Person :-> (Int, String)
 >ageAndCity = point $
->  (,) <$> fst >- age
->      <*> snd >- city . place
+>  (,) <$> fstL >- age
+>      <*> sndL >- city . place
 
 Because the applicative type class on its own is not capable of expressing
 bidirectional relations, which we need for our lenses, the actual instance is

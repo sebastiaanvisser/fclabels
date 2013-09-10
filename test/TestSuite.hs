@@ -115,9 +115,9 @@ fAmA = fA . mA
 
 recordView :: Record :-> View
 recordView = Poly.point $
-  View <$> _vA >- fB
-       <*> _vB >- fD
-       <*> _vC >- fC
+  View <$> vA >- fB
+       <*> vB >- fD
+       <*> vC >- fC
 
 newtypeId :: Newtype Bool :-> Newtype Bool
 newtypeId = Poly.point (id <$> id >- id)
