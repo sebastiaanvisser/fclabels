@@ -1,4 +1,4 @@
-{- OPTIONS -ddump-splices #-}
+{-  OPTIONS -ddump-splices #-}
 {-# LANGUAGE
     TemplateHaskell
   , TypeOperators
@@ -6,11 +6,13 @@
 
 module Main where
 
+import Control.Arrow
 import Control.Applicative
 import Control.Category
 import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
+import Data.Label.Derive (defaultNaming)
 import Data.Label.Mono (Lens)
 import Data.Label.Partial ((:~>))
 import Data.Label.Failing (Failing)
@@ -19,7 +21,7 @@ import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalState, execState, runState)
 
 import qualified Data.Label.Failing  as Failing
-import qualified Data.Label.Mono     as Mono ()
+import qualified Data.Label.Mono     as Mono
 import qualified Data.Label.Partial  as Partial
 import qualified Data.Label.Poly     as Poly
 import qualified Data.Label.Total    as Total
@@ -40,6 +42,13 @@ data Record = Record
   , _fD :: Either Integer Bool
   } deriving (Eq, Ord, Show)
 
+mkLabelsWith defaultNaming False False False ''Record
+
+fD :: ArrowApply cat => Mono.Lens cat (Record) (Either Integer Bool)
+fC :: ArrowApply cat => Mono.Lens cat (Record) (Newtype Bool)
+fB :: ArrowApply cat => Mono.Lens cat (Record) (Maybe (Newtype Bool))
+fA :: ArrowApply cat => Mono.Lens cat (Record) (Integer)
+
 data Multi
   = First  { _mA :: Record
            , _mB :: Double
@@ -48,7 +57,7 @@ data Multi
   | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
-mkLabels [''NoRecord, ''Newtype, ''Record, ''Multi]
+mkLabels [''NoRecord, ''Newtype, ''Multi]
 
 data View = View
   { _vA :: Maybe (Newtype Bool)

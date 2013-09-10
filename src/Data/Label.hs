@@ -152,11 +152,10 @@ Amsterdam over exactly two years:
 -- additional type context that forces them to be only usable using the
 -- functions from "Data.Label.Maybe".
 
-, mkLabels
 , mkLabel
+, mkLabels
+, mkLabelsNamed
 , mkLabelsWith
-, mkLabelsMono
-, mkLabelsNoTypes
 )
 where
 

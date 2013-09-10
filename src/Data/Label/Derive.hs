@@ -3,23 +3,17 @@ Template Haskell functions for automatically generating labels for algebraic
 datatypes, newtypes and GADTs.
 -}
 
-{-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE
     TemplateHaskell
-  , OverloadedStrings
-  , FlexibleContexts
-  , FlexibleInstances
   , TypeOperators
   , CPP #-}
 
 module Data.Label.Derive
 ( mkLabel
 , mkLabels
+, mkLabelsNamed
 , mkLabelsWith
-, mkLabelsMono
-, mkLabelsNoTypes
-, deriveWith
-, defaultMakeLabel
+, defaultNaming
 )
 where
 
@@ -37,7 +31,6 @@ import Data.Maybe (fromMaybe)
 import Data.Ord
 import Data.String
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
 import Prelude hiding ((.), id)
 
 import qualified Data.Label.Mono as Mono
@@ -48,7 +41,7 @@ import qualified Data.Label.Poly as Poly
 -- arbitrary context.
 
 mkLabels :: [Name] -> Q [Dec]
-mkLabels = mkLabelsWith defaultMakeLabel
+mkLabels = liftM concat . mapM (mkLabelsWith defaultNaming True False True)
 
 -- | Derive lenses including type signatures for all the record selectors in a
 -- single datatype. The types will be polymorphic and can be used in an
@@ -63,30 +56,64 @@ mkLabel = mkLabels . return
 -- For instance, @(drop 1 . dropWhile (/='_'))@ creates a label
 -- @val@ from a record @Rec { rec_val :: X }@.
 
-mkLabelsWith :: (String -> String) -> [Name] -> Q [Dec]
-mkLabelsWith mk = liftM concat . mapM (reify >=> deriveWith mk True False)
+mkLabelsNamed :: (String -> String) -> [Name] -> Q [Dec]
+mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False True)
 
--- | Derive lenses including type signatures for all the record selectors in a
--- datatype. The signatures will be concrete and can only be used in the
--- appropriate context.
+-- | Low level label derivation function.
 
-mkLabelsMono :: [Name] -> Q [Dec]
-mkLabelsMono = liftM concat . mapM (reify >=> deriveWith defaultMakeLabel True True)
+mkLabelsWith
+  :: (String -> String) -- ^ Supply a function to perform custom label naming.
+  -> Bool               -- ^ Generate type signatures or not.
+  -> Bool               -- ^ Generate concrete type or abstract type. When
+                        -- true the signatures will be concrete and can only be
+                        -- used in the appropriate context. Total lenses will
+                        -- use (`:->`) and partial labels will use (`:~>`).
+  -> Bool               -- ^ Generate inline pragma or not.
+  -> Name               -- ^ The type to derive labels for.
+  -> Q [Dec]
 
--- | Derive lenses without type signatures for all the record selectors in a
--- datatype.
+mkLabelsWith mk sigs conc inl name =
+  do info   <- reify name
+     labels <- generateLabels mk info
+     decls  <- forM labels $ \(Label n c a b i) ->
+       do bdy <- pure <$> funD n [clause [] (normalB b) []]
+          prg <- if inl then pure <$> i else return []
+          typ <- if sigs
+                   then pure <$> sigD n (if conc then c else a)
+                   else return []
+          return (concat [prg, typ, bdy])
+     return (concat decls)
 
-mkLabelsNoTypes :: [Name] -> Q [Dec]
-mkLabelsNoTypes = liftM concat . mapM (reify >=> deriveWith defaultMakeLabel False False)
+-- | Generate a name for the label. If the original selector starts with an
+-- underscore, remove it and make the next character lowercase. Otherwise, add
+-- 'l', and make the next character uppercase.
 
--- | Low level label generation function.
+defaultNaming :: String -> String
+defaultNaming field =
+  case field of
+    '_' : c : rest -> toLower c : rest
+    f : rest       -> 'l' : toUpper f : rest
+    n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
 
-deriveWith :: (String -> String) -- ^ Supply a function to perform custom label naming.
-           -> Bool               -- ^ Generate type signatures or not.
-           -> Bool               -- ^ Generate concrete type or abstract type.
-           -> Info               -- ^ The type to derive labels for.
-           -> Q [Dec]
-deriveWith mk sigs conc info =
+-------------------------------------------------------------------------------
+
+data Label = Label
+  Name   -- The label name.
+  TypeQ  -- The concreate type signature.
+  TypeQ  -- The abstract type signature.
+  ExpQ   -- The label body.
+  DecQ   -- An INLINE pragma for the label.
+
+data LensType = LensType
+  TypeQ        -- The lens input type.
+  TypeQ        -- The lens output type.
+  [TyVarBndr]  -- All used type variables.
+  TypeQ        -- The type constructor.
+
+-- Generate the labels for all the record fields in the data type.
+
+generateLabels :: (String -> String) -> Info -> Q [Label]
+generateLabels mk info =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
@@ -99,36 +126,35 @@ deriveWith mk sigs conc info =
         -- We are only interested in lenses of record constructors.
         recordOnly = groupByCtor [ (f, n) | RecC n fs <- cons, f <- fs ]
 
-    concat `liftM` mapM (derive mk sigs conc tyname tyvars (length cons)) recordOnly
+    forM recordOnly $ \((field, _, ty), ctors) ->
+      do generateLabel mk tyname tyvars (length cons) field ty ctors
 
-    where groupByCtor = map (\xs -> (fst (head xs), map snd xs))
-                      . groupBy ((==) `on` (fst3 . fst))
-                      . sortBy (comparing (fst3 . fst))
-                      where fst3 (a, _, _) = a
+    where groupByCtor
+            = map (\xs -> (fst (head xs), map snd xs))
+            . groupBy ((==) `on` (fst3 . fst))
+            . sortBy (comparing (fst3 . fst))
+            where fst3 (a, _, _) = a
 
--------------------------------------------------------------------------------
--- Generate the code for the labels.
+-- Generate the code for a single label.
 
--- | Generate a name for the label. If the original selector starts with an
--- underscore, remove it and make the next character lowercase. Otherwise, add
--- 'l', and make the next character uppercase.
+generateLabel
+  :: (String -> String)
+  -> Name
+  -> [TyVarBndr]
+  -> Int
+  -> Name
+  -> Type
+  -> [Name]
+  -> Q Label
 
-defaultMakeLabel :: String -> String
-defaultMakeLabel field =
-  case field of
-    '_' : c : rest -> toLower c : rest
-    f : rest       -> 'l' : toUpper f : rest
-    n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
-
-derive :: (String -> String)
-       -> Bool -> Bool -> Name -> [TyVarBndr] -> Int
-       -> (VarStrictType, [Name]) -> Q [Dec]
-derive mk sigs conc tyname tyvars total ((field, _, fieldtyp), ctors) =
+generateLabel mk tyname tyvars total field fieldtyp ctors =
 
      -- Compute the type (including type variables of the record datatype.
-  do (inTy, outTy, vars, typ, ctor) <- computeType fieldtyp tyname tyvars
+  do (LensType inTy outTy vars typ) <- computeTypes fieldtyp tyname tyvars
 
-     let cat    = varT (mkName "cat")
+     let isTotal = length ctors == total
+
+         cat    = varT (mkName "cat")
          catTv  = PlainTV (mkName "cat")
          forall = forallT (catTv : vars) (return [])
 
@@ -136,20 +162,14 @@ derive mk sigs conc tyname tyvars total ((field, _, fieldtyp), ctors) =
          record rec fld val = val >>= \v -> recUpdE rec [return (fld, v)]
 
          -- The label name.
-         name  = mk (nameBase field)
-         label = mkName name
-
-         -- Build a function declaration with both a type signature and body.
-         function (s, b) = liftM2 (,) 
-             (sigD label s)
-             (funD label [ clause [] (normalB b) [] ])
+         name = mkName (mk (nameBase field))
 
 #if MIN_VERSION_template_haskell(2,8,0)
          -- Generate an inline declaration for the label.
          -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
-         inline = PragmaD (InlineP label Inline FunLike (FromPhase 0))
+         inline = return $ PragmaD (InlineP name Inline FunLike (FromPhase 0))
 #else
-         inline = PragmaD (InlineP label (InlineSpec True True (Just (True, 0))))
+         inline = Preturn $ ragmaD (InlineP name (InlineSpec True True (Just (True, 0))))
 #endif
 
          -- The total getter and setter arrows. Directly used by total lenses,
@@ -160,75 +180,37 @@ derive mk sigs conc tyname tyvars total ((field, _, fieldtyp), ctors) =
          ---------------------------------------------------------------------------
          -- Build a single record label definition for labels that might fail.
 
-         mkPartialPoint = (if conc then mono else poly, body)
+         partialPoint = (conc, abst, body)
            where
-             mono = forall [t| $(inTy) :~> $(outTy) |]
-             poly = forall [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
+             conc = forall [t| $(inTy) :~> $(outTy) |]
+             abst = forall [t| (ArrowChoice $(cat), ArrowFail String $(cat), ArrowApply $(cat))
                         => $(typ) $(cat) $(inTy) $(outTy) |]
-             body = [| $(ctor)
+             body = [| Poly.Lens
                          $ Point (failArrow ||| $(totalG) <<< $(caseG))
                                  (failArrow ||| $(totalM) <<< $(caseM))
                      |]
              bodyG f = [| Right $(f) |]
              cases b = map (\c -> match (recP c []) (normalB b) []) ctors
              wild    = [match wildP (normalB failure) []]
-             failure = [| Left $(litE (stringL name) `sigE` [t| String |] ) |]
+             failure = [| Left $(litE (stringL (nameBase name)) `sigE` [t| String |] ) |]
              caseG   = [| arr (\f      -> $(caseE [|f|] (cases (bodyG [|f     |]) ++ wild))) |]
              caseM   = [| arr (\(m, f) -> $(caseE [|f|] (cases (bodyG [|(m, f)|]) ++ wild))) |]
 
          ---------------------------------------------------------------------------
          -- Build a single record label definition for labels that cannot fail.
 
-         mkTotalPoint = (if conc then mono else poly, body)
+         totalPoint = (conc, abst, body)
            where
-             mono = forall [t| $(inTy) :-> $(outTy) |]
-             poly = forall [t| ArrowApply $(cat) => $(typ) $(cat) $(inTy) $(outTy) |]
-             body = [| $(ctor) (Point $(totalG) $(totalM)) |]
+             conc = forall [t| $(inTy) :-> $(outTy) |]
+             abst = forall [t| ArrowApply $(cat) => $(typ) $(cat) $(inTy) $(outTy) |]
+             body = [| Poly.Lens (Point $(totalG) $(totalM)) |]
 
-     (sign, body) <-
-       if length ctors == total
-       then function mkTotalPoint
-       else function mkPartialPoint
+     let (conc, abst, body) =
+           if isTotal
+           then totalPoint
+           else partialPoint
 
-     return $ if sigs
-              then [sign, inline, body]
-              else [      inline, body]
-
-computeType :: Type -> Name -> [TyVarBndr] -> Q (TypeQ, TypeQ, [TyVarBndr], TypeQ, ExpQ)
-computeType field datatype vars =
-  do let fieldVars = typeVariables field
-         outTy     = return field
-         varNames  = fromTyVarBndr <$> vars
-         usedVars  = filter (`elem` fieldVars) varNames
-         inTy      = foldr (flip appT) (conT datatype)
-                           (return . tvToVarT <$> reverse vars)
-
-     case usedVars of
-       [] -> return
-         ( prettyType <$> inTy
-         , prettyType <$> outTy
-         , mapTyVarBndr pretty <$> vars
-         , [t| Mono.Lens |]
-         ,  [| Poly.Lens |]
-         )
-       vs ->
-         do let names = return <$> ['a'..'z']
-                used  = show . pretty <$> varNames
-                free  = filter (not . (`elem` used)) names
-            subs <- forM (zip vs free) (\(a, b) -> (,) a <$> newName b)
-            let rename = mapTypeVariables (\a -> a `fromMaybe` lookup a subs)
-
-            return
-              ( prettyType <$> [t| $(inTy)  -> $(rename <$> inTy)  |]
-              , prettyType <$> [t| $(outTy) -> $(rename <$> outTy) |]
-              , mapTyVarBndr pretty <$> (vars ++ (PlainTV . snd <$> subs))
-              , [t| Poly.Lens |]
-              ,  [| Poly.Lens |]
-              )
-
-  where -- Convert a binder to a regular type variable.
-        tvToVarT (PlainTV  tv     ) = VarT tv
-        tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
+     return (Label name conc abst body inline)
 
 -- Build a total polymorphic modification function from a pure getter and setter.
 
@@ -239,6 +221,41 @@ modifier pg pm
   . arr (\(m, (f, o)) -> ((m, o), f))
   . second (id &&& arr pg)
 {-# INLINE modifier #-}
+
+-------------------------------------------------------------------------------
+
+computeTypes :: Type -> Name -> [TyVarBndr] -> Q LensType
+computeTypes field datatype vars =
+
+  do let fieldVars = typeVariables field
+         outTy     = return field
+         varNames  = fromTyVarBndr <$> vars
+         usedVars  = filter (`elem` fieldVars) varNames
+         inTy      = foldr (flip appT) (conT datatype)
+                           (return . tvToVarT <$> reverse vars)
+
+     case usedVars of
+       [] -> return $ LensType
+         (prettyType <$> inTy)
+         (prettyType <$> outTy)
+         (mapTyVarBndr pretty <$> vars)
+         [t| Mono.Lens |]
+       vs ->
+         do let names = return <$> ['a'..'z']
+                used  = show . pretty <$> varNames
+                free  = filter (not . (`elem` used)) names
+            subs <- forM (zip vs free) (\(a, b) -> (,) a <$> newName b)
+            let rename = mapTypeVariables (\a -> a `fromMaybe` lookup a subs)
+
+            return $ LensType
+              (prettyType <$> [t| $(inTy)  -> $(rename <$> inTy)  |])
+              (prettyType <$> [t| $(outTy) -> $(rename <$> outTy) |])
+              (mapTyVarBndr pretty <$> (vars ++ (PlainTV . snd <$> subs)))
+              [t| Poly.Lens |]
+
+  where -- Convert a binder to a regular type variable.
+        tvToVarT (PlainTV  tv     ) = VarT tv
+        tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
 
 -------------------------------------------------------------------------------
 
@@ -283,17 +300,6 @@ pretty tv = mkName (takeWhile (/= '_') (show tv))
 
 prettyType :: Type -> Type
 prettyType = mapTypeVariables pretty
-
--- IsString instances for TH types.
-
-instance IsString Exp where
-  fromString = VarE . mkName
-
-instance IsString (Q Pat) where
-  fromString = varP . mkName
-
-instance IsString (Q Exp) where
-  fromString = varE . mkName
 
 -- Throw a fclabels specific error.
 
