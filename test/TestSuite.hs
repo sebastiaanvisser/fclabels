@@ -1,7 +1,9 @@
 {-  OPTIONS -ddump-splices #-}
 {-# LANGUAGE
-    TemplateHaskell
+    NoMonomorphismRestriction
+  , TemplateHaskell
   , TypeOperators
+  , RankNTypes
   , FlexibleContexts #-}
 
 module Main where
@@ -13,19 +15,36 @@ import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
 import Data.Label.Derive (defaultNaming)
-import Data.Label.Mono (Lens)
 import Data.Label.Partial ((:~>))
 import Data.Label.Failing (Failing)
 
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalState, execState, runState)
 
-import qualified Data.Label.Failing  as Failing
-import qualified Data.Label.Mono     as Mono
-import qualified Data.Label.Partial  as Partial
-import qualified Data.Label.Poly     as Poly
-import qualified Data.Label.Total    as Total
-import qualified Data.Label.Monadic  as Monadic
+import qualified Data.Label.Failing as Failing
+import qualified Data.Label.Mono    as Mono
+import qualified Data.Label.Partial as Partial
+import qualified Data.Label.Poly    as Poly
+import qualified Data.Label.Total   as Total
+import qualified Data.Label.Monadic as Monadic
+
+fstL :: ArrowApply arr => Poly.Lens arr ((a, b) -> (o, b)) (a -> o)
+sndL :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
+
+(fstL, sndL) = $(getLabel ''(,))
+
+headL :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Mono.Lens arr [a] a
+tailL :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Mono.Lens arr [a] [a]
+
+(headL, tailL) = $(getLabel ''[])
+
+left  :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Poly.Lens arr (Either a b -> Either o b) (a -> o)
+right :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Poly.Lens arr (Either a b -> Either a o) (b -> o)
+
+(left, right) = $(getLabel ''Either)
+
+just :: (ArrowChoice cat, ArrowZero cat, ArrowApply cat) => Poly.Lens cat (Maybe a -> Maybe b) (a -> b)
+just = $(getLabel ''Maybe)
 
 -------------------------------------------------------------------------------
 
@@ -57,7 +76,8 @@ data Multi
   | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
-mkLabels [''NoRecord, ''Newtype, ''Multi]
+-- mkLabel ''NoRecord
+mkLabels [''Newtype, ''Multi]
 
 data View = View
   { _vA :: Maybe (Newtype Bool)
@@ -85,7 +105,7 @@ embed_fB = Partial.embed fB
 manual_fA :: Record :-> Integer
 manual_fA = Total.lens _fA (\m f -> f { _fA = m (_fA f) })
 
-manual_fA_m :: Lens (->) Record Integer
+manual_fA_m :: Mono.Lens (->) Record Integer
 manual_fA_m = lens _fA (\m f -> f { _fA = m (_fA f) })
 
 manual_mA :: (Multi -> Multi) :~> (Record -> Record)
@@ -370,3 +390,4 @@ monadic = TestList
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d a b)
+
