@@ -35,7 +35,7 @@ where
 import Control.Arrow
 import Control.Applicative
 import Control.Category hiding (id)
-import Prelude hiding ((.), id, const, curry)
+import Prelude hiding ((.), id, const, curry, uncurry)
 
 import qualified Control.Category as Cat
 
@@ -81,8 +81,8 @@ compose :: ArrowApply cat
         => Point cat t i b o
         -> Point cat g t f b
         -> Point cat g i f o
-compose (Point gi mi) (Point go mo)
-  = Point (gi <<< go) (app <<< arr (first (curry mo <<< curry mi)))
+compose (Point f m) (Point g n)
+  = Point (f . g) (uncurry (curry n . curry m))
 
 -------------------------------------------------------------------------------
 
@@ -153,6 +153,9 @@ instance ArrowFail e (Failing e) where
 const :: Arrow arr => c -> arr b c
 const a = arr (\_ -> a)
 
-curry :: Arrow cat => cat (a, b) c -> a -> cat b c
+curry :: Arrow cat => cat (a, b) c -> (a -> cat b c)
 curry m i = m . (const i &&& Cat.id)
+
+uncurry :: ArrowApply cat => (a -> cat b c) -> cat (a, b) c
+uncurry a = app . arr (first a)
 
