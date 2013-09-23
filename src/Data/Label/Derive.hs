@@ -44,17 +44,7 @@ import qualified Data.Label.Poly as Poly
 -- arbitrary context.
 
 mkLabels :: [Name] -> Q [Dec]
-mkLabels = liftM concat . mapM (mkLabelsWith defaultNaming True False True)
-
-getLabel :: Name -> Q Exp
-getLabel name =
-  do info   <- reify name
-     labels <- generateLabels id False info
-     let bodies  =        map (\(LabelExpr _ _ _ b) -> b) labels
-         types   =        map (\(LabelExpr _ _ t _) -> t) labels
-         context = head $ map (\(LabelExpr _ c _ _) -> c) labels
-         vars    = head $ map (\(LabelExpr v _ _ _) -> v) labels
-     tupE bodies `sigE` forallT vars context (foldl appT (tupleT (length bodies)) types)
+mkLabels = liftM concat . mapM (mkLabelsWith defaultNaming True False False True)
 
 -- | Derive lenses including type signatures for all the record selectors in a
 -- single datatype. The types will be polymorphic and can be used in an
@@ -70,7 +60,17 @@ mkLabel = mkLabels . return
 -- @val@ from a record @Rec { rec_val :: X }@.
 
 mkLabelsNamed :: (String -> String) -> [Name] -> Q [Dec]
-mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False True)
+mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False False True)
+
+getLabel :: Name -> Q Exp
+getLabel name =
+  do info   <- reify name
+     labels <- generateLabels id False False info
+     let bodies  =        map (\(LabelExpr _ _ _ b) -> b) labels
+         types   =        map (\(LabelExpr _ _ t _) -> t) labels
+         context = head $ map (\(LabelExpr _ c _ _) -> c) labels
+         vars    = head $ map (\(LabelExpr v _ _ _) -> v) labels
+     tupE bodies `sigE` forallT vars context (foldl appT (tupleT (length bodies)) types)
 
 -- | Low level label derivation function.
 
@@ -82,13 +82,14 @@ mkLabelsWith
                         --   be used in the appropriate context. Total lenses
                         --   will use (`:->`) and partial labels will use
                         --   (`:~>`).
+  -> Bool               -- ^ Use `failArrow` for failure instead of `zeroArrow`.
   -> Bool               -- ^ Generate inline pragma or not.
   -> Name               -- ^ The type to derive labels for.
   -> Q [Dec]
 
-mkLabelsWith mk sigs conc inl name =
+mkLabelsWith mk sigs conc failing inl name =
   do info   <- reify name
-     labels <- generateLabels mk conc info
+     labels <- generateLabels mk failing conc info
      decls  <- forM labels $ \(LabelDecl n i v c t b) ->
        do bdy <- pure <$> funD n [clause [] (normalB b) []]
           prg <- if inl then pure <$> i else return []
@@ -146,8 +147,8 @@ data Typing = Typing
 
 -- Generate the labels for all the record fields in the data type.
 
-generateLabels :: (String -> String) -> Bool -> Info -> Q [Label]
-generateLabels mk conc info =
+generateLabels :: (String -> String) -> Bool -> Bool -> Info -> Q [Label]
+generateLabels mk failing conc info =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
@@ -158,22 +159,25 @@ generateLabels mk conc info =
             _ -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
-        fields = groupFields cons
+        fields = groupFields mk cons
 
     forM (fields `zip` [0..]) $ \(field, i) ->
-      do generateLabel mk conc name vars (length cons) i field
+      do generateLabel failing conc name vars (length cons) i field
 
 recordsOnly :: [Con] -> [Con]
 recordsOnly fs = [ RecC c f | RecC c f <- fs ]
 
-groupFields :: [Con] -> [Field [Context]]
-groupFields
-  = concatMap (\fs -> let cons = concat (toList <$> fs) in nub $ map (fmap (const cons)) fs)
+groupFields :: (String -> String) -> [Con] -> [Field [Context]]
+groupFields mk
+  = map (rename mk)
+  . concatMap (\fs -> let cons = concat (toList <$> fs) in nub $ map (fmap (const cons)) fs)
   . groupBy eq
   . sortBy (comparing name)
   . concatMap constructorFields
   where name (Field n _ _ _) = n
         eq f g = False `fromMaybe` ((==) <$> name f <*> name g)
+        rename f (Field n a b c) =
+          Field (mkName . f . nameBase <$> n) a b c
 
 constructorFields :: Con -> [Field Context]
 constructorFields con =
@@ -199,7 +203,7 @@ constructorFields con =
     ForallC _ _ c -> constructorFields c
 
 generateLabel
-  :: (String -> String)
+  :: Bool
   -> Bool
   -> Name
   -> [TyVarBndr]
@@ -208,7 +212,7 @@ generateLabel
   -> Field [Context]
   -> Q Label
 
-generateLabel mk conc tyname tyvars total i field@(Field mfieldName mono fieldtyp ctors) =
+generateLabel failing conc tyname tyvars total i field@(Field mfieldName mono fieldtyp ctors) =
 
   do (Typing tyI tyO vars typ) <- computeTypes mono fieldtyp tyname tyvars
 
@@ -217,20 +221,26 @@ generateLabel mk conc tyname tyvars total i field@(Field mfieldName mono fieldty
          cat    = varT (mkName "cat")
          tvs    = PlainTV (mkName "cat") : vars
          forall = forallT tvs (return [])
+         failE  = if failing
+                  then [| failArrow |]
+                  else [| zeroArrow |]
 
          getT  = [| arr $(getter isTotal field)                     |]
          putT  = [| arr $(setter isTotal field)                     |]
-         getP  = [| zeroArrow ||| id <<< $getT                      |]
-         putP  = [| zeroArrow ||| id <<< $putT                      |]
+         getP  = [| $(failE) ||| id <<< $getT                      |]
+         putP  = [| $(failE) ||| id <<< $putT                      |]
          bodyT = [| Poly.point $ Point $getT (modifier $getT $putT) |]
          bodyP = [| Poly.point $ Point $getP (modifier $getP $putP) |]
 
-         ctxP = cxt [ classP ''ArrowChoice [cat]
-                    , classP ''ArrowZero   [cat]
-                    , classP ''ArrowApply  [cat]
-                    ]
-         ctxT = cxt [classP ''ArrowApply [cat]]
-         ctxN = cxt []
+         failP = if failing
+                 then classP ''ArrowFail [ [t| String |], cat]
+                 else classP ''ArrowZero [cat]
+         ctxP  = cxt [ classP ''ArrowChoice [cat]
+                     , classP ''ArrowApply  [cat]
+                     , failP
+                     ]
+         ctxT  = cxt [classP ''ArrowApply [cat]]
+         ctxN  = cxt []
 
          concTy = [t| $tyI :~> $tyO       |]
          abstTy = [t| $typ $cat $tyI $tyO |]
@@ -248,8 +258,8 @@ generateLabel mk conc tyname tyvars total i field@(Field mfieldName mono fieldty
 
      case mfieldName of
        Nothing        -> return (LabelExpr tvs ctx ty body)
-       Just fieldName ->
-         do let name = (mkName . mk . nameBase) fieldName
+       Just name ->
+         do let
 
 #if MIN_VERSION_template_haskell(2,8,0)
                 -- Generate an inline declaration for the label.
@@ -269,9 +279,10 @@ modifier g m = m . first app . arr (\(n, (f, o)) -> ((n, o), f)) . second (id &&
 -------------------------------------------------------------------------------
 
 getter :: Bool -> Field [Context] -> Q Exp
-getter total (Field _ _ _ cons) =
+getter total (Field mn _ _ cons) =
   do let pt = mkName "f"
-         wild = if total then [] else [match wildP (normalB [| Left () |]) []]
+         nm = maybe (tupE []) (litE . StringL . nameBase) mn
+         wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
          mkCase (Context i _ c) = match pat (normalB (rght var)) []
            where (pat, var) = case1 i c
@@ -290,10 +301,11 @@ getter total (Field _ _ _ cons) =
           var   = varE (fresh !! i)
 
 setter :: Bool -> Field [Context] -> Q Exp
-setter total (Field _ _ _ cons) =
+setter total (Field mn _ _ cons) =
   do let pt = mkName "f"
          md = mkName "v"
-         wild = if total then [] else [match wildP (normalB [| Left () |]) []]
+         nm = maybe (tupE []) (litE . StringL . nameBase) mn
+         wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
          mkCase (Context i _ c) = match pat (normalB (rght var)) []
            where (pat, var) = case1 i c

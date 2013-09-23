@@ -61,7 +61,7 @@ data Record = Record
   , _fD :: Either Integer Bool
   } deriving (Eq, Ord, Show)
 
-mkLabelsWith defaultNaming False False False ''Record
+mkLabelsWith defaultNaming False False False False ''Record
 
 fD :: ArrowApply cat => Mono.Lens cat (Record) (Either Integer Bool)
 fC :: ArrowApply cat => Mono.Lens cat (Record) (Newtype Bool)
@@ -95,7 +95,7 @@ data Direction i a b c d
   | All   { _dir :: i, _allDirs  :: (a, b, c, d) }
   deriving (Eq, Ord, Show)
 
-mkLabel ''Direction
+mkLabelsWith defaultNaming True False True True ''Direction
 
 -------------------------------------------------------------------------------
 
@@ -270,9 +270,9 @@ failingMono = TestList
   , eq0 "get manual_mA_f" (Failing.get manual_mA_f first0) (Right record0)
   , eq0 "set manual_mA_f" (Failing.set manual_mA_f record1 first0) (Right first2)
   , eq0 "mod manual_mA_f" (Failing.modify manual_mA_f (Total.modify fA (+ 1)) first0) (Right first2)
-  , eq1 "get mA_f fail" (Failing.get mA_f second0) (Left "mA")
-  , eq1 "set mA_f fail" (Failing.set mA_f record1 second0) (Left "mA")
-  , eq1 "mod mA_f fail" (Failing.modify mA_f (Total.modify fA (+ 1)) second0) (Left "mA")
+  , eq1 "get mA_f fail" (Failing.get mA_f second0) (Left "")
+  , eq1 "set mA_f fail" (Failing.set mA_f record1 second0) (Left "")
+  , eq1 "mod mA_f fail" (Failing.modify mA_f (Total.modify fA (+ 1)) second0) (Left "")
   , eq1 "get manual_mA_f" (Failing.get manual_mA_f second0) (Left "mA")
   , eq1 "set manual_mA_f" (Failing.set manual_mA_f record1 second0) (Left "mA")
   , eq1 "mod manual_mA_f" (Failing.modify manual_mA_f (Total.modify fA (+ 1)) second0) (Left "mA")
