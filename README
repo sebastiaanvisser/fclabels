@@ -1,16 +1,23 @@
 This package provides first class labels that can act as bidirectional record
 fields. The labels can be derived automatically using Template Haskell which
 means you don't have to write any boilerplate yourself. The labels are
-implemented as lenses and are fully composable. Labels can be used to get, set
-and modify parts of a datatype in a consistent way.
+implemented as lenses and are fully composable. Labels can be used to /get/,
+/set/ and /modify/ parts of a datatype in a consistent way.
 
-See Data.Label for an introductory explanation.
+See "Data.Label" for an introductory explanation.
 
-Internally lenses are not tied to Haskell functions directly, but are
-implemented as arrows. Arrows allow the lenses to be run in custom
-computational contexts. This approach allows us to make partial lenses that
-point to fields of multi-constructor datatypes in an elegant way.
+Internally lenses do not used Haskell functions directly, but are implemented
+as categories. Categories allow the lenses to be run in custom computational
+contexts. This approach allows us to make partial lenses that point to fields
+of multi-constructor datatypes in an elegant way.
 
-See the Data.Label.Maybe module for the use of partial labels.
+We have both polymorphic and monomorphic lenses. Polymorphic lenses allow
+updates that change the type. The types of polymorphic lenses are slightly less
+elegant than their monomorphic counterparts, but there usage is similar.
+Because monomorphic lenses are built by only restricting the types of
+polymorphic lenses they are essentially the same and can be freely composed
+with eachother.
+
+See the "Data.Label.Partial" module for the use of partial labels.
 
 On Hackage: http://hackage.haskell.org/package/fclabels
