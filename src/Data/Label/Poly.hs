@@ -42,7 +42,7 @@ import qualified Data.Label.Point as Point
 -- that might fail or use state.
 
 data Lens cat f o where
-  Lens :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
+  Lens :: !(Point cat g i f o) -> Lens cat (f -> g) (o -> i)
   Id   :: ArrowApply cat => Lens cat f f
 
 -- | Create a lens out of a getter and setter.
