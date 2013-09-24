@@ -4,6 +4,11 @@ datatypes, newtypes and GADTs. There are two basic modes of label generation,
 the `mkLabels` family of functions create labels (and optionally type
 signatures) in scope as top level funtions, the `getLabel` family of funtions
 create labels as expressions that can be named and typed manually.
+
+In the case of multi-constructor datatypes some fields might not always be
+available and the derived labels will be partial. Partial labels are provided
+with an additional type context that forces them to be only usable in the
+`Partial' or `Failing` context.
 -}
 
 {-# LANGUAGE
@@ -20,13 +25,13 @@ module Data.Label.Derive
   mkLabel
 , mkLabels
 , mkLabelsNamed
-, mkLabelsWith
 
 -- * Produce labels as expressions.
 , getLabel
-, getLabelWith
 
--- * Default naming function.
+-- * Low level derivation functions.
+, mkLabelsWith
+, getLabelWith
 , defaultNaming
 )
 where
@@ -144,9 +149,10 @@ mkLabelsWith mk sigs concrete failing inl name =
               return (concat [prg, typ, bdy])
      return (concat decls)
 
--- | Generate a name for the label. If the original selector starts with an
--- underscore, remove it and make the next character lowercase. Otherwise, add
--- 'l', and make the next character uppercase.
+-- | Default way of generating a label name from the Haskell record selector
+-- name. If the original selector starts with an underscore, remove it and make
+-- the next character lowercase. Otherwise, add 'l', and make the next
+-- character uppercase.
 
 defaultNaming :: String -> String
 defaultNaming field =

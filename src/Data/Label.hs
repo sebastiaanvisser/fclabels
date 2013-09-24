@@ -30,7 +30,6 @@ To illustrate this package, let's take the following two example datatypes.
 -- >data Person = Person
 -- >  { _name   :: String
 -- >  , _age    :: Int
--- >  , _isMale :: Bool
 -- >  , _place  :: Place
 -- >  } deriving Show
 -- >
@@ -54,7 +53,7 @@ Now let's look at this example. This 71 year old fellow, my neighbour called
 Jan, didn't mind using him as an example:
 
 >jan :: Person
->jan = Person "Jan" 71 True (Place "Utrecht" "The Netherlands" "Europe")
+>jan = Person "Jan" 71 (Place "Utrecht" "The Netherlands" "Europe")
 
 When we want to be sure Jan is really as old as he claims we can use the `get`
 function to get the age out as an integer:
@@ -71,7 +70,7 @@ days. Using composition we can change the city value deep inside the structure:
 And now:
 
 >ghci> moveToAmsterdam jan
->Person "Jan" 71 True (Place "Amsterdam" "The Netherlands" "Europe")
+>Person "Jan" 71 (Place "Amsterdam" "The Netherlands" "Europe")
 
 Composition is done using the @(`.`)@ operator which is part of the
 "Control.Category" module. Make sure to import this module and hide the default
@@ -111,7 +110,7 @@ bidirectional relations, which we need for our lenses, the actual instance is
 defined for an internal helper structure called `Point`. Points are a more
 general than lenses. As you can see above, the `point` function has to be
 used to convert a `Point` back into a `Lens`. The (`>-`) operator is used to
-indicate which partial destructor to use for which lens in the applicative
+indicate which partial destructor to use per arm of the applicative
 composition.
 
 Now that we have an appropriate age+city view on the `Person` datatype (which
@@ -129,17 +128,17 @@ Amsterdam over exactly two years:
 , point
 , (>-)
 
--- * Working with bijections and isomorphisms.
--- 
--- | This package contains a bijection datatype that encodes bidirectional
--- functions. Just like lenses, bijections can be composed using the
--- "Control.Category" type class. Bijections can be used to change the type of
--- a lens. The `Iso` type class, which can be seen as a bidirectional functor,
--- can be used to apply bijections to lenses.
--- 
+-- * Working with isomorphisms.
+--
+-- | This package contains an isomorphisms datatype that encodes bidirectional
+-- functions, or better bidirectional categories. Just like lenses,
+-- isomorphisms can be composed using the `Category` type class. Isomorphisms
+-- can be used to change the type of a lens. Every isomorphism can be lifted
+-- into a lens.
+--
 -- For example, when we want to treat the age of a person as a string we can do
 -- the following:
--- 
+--
 -- > ageAsString :: Person :-> String
 -- > ageAsString = iso (Iso show read) . age
 
@@ -149,17 +148,22 @@ Amsterdam over exactly two years:
 
 -- * Derive labels using Template Haskell.
 --
--- | We can either derive labels with or without type signatures. In the case
--- of multi-constructor datatypes some fields might not always be available and
--- the derived labels will be partial. Partial labels are provided with an
--- additional type context that forces them to be only usable using the
--- functions from "Data.Label.Maybe".
+-- | Template Haskell functions for automatically generating labels for
+-- algebraic datatypes, newtypes and GADTs. There are two basic modes of label
+-- generation, the `mkLabels` family of functions create labels (and optionally
+-- type signatures) in scope as top level funtions, the `getLabel` family of
+-- funtions create labels as expressions that can be named and typed manually.
+--
+-- In the case of multi-constructor datatypes some fields might not always be
+-- available and the derived labels will be partial. Partial labels are
+-- provided with an additional type context that forces them to be only usable
+-- in the `Partial' or `Failing` context.
+--
+-- More derivation functions can be found in "Data.Label.Derive".
 
 , mkLabel
-, getLabel
 , mkLabels
-, mkLabelsNamed
-, mkLabelsWith
+, getLabel
 )
 where
 
@@ -177,35 +181,34 @@ import qualified Data.Label.Mono as Mono
 
 -------------------------------------------------------------------------------
 
--- | Total lens type specialized for total accessor functions.
+-- | Monomorphic lens type specialized for total accessor functions. This is
+-- the simplest lens type compatible with older version of fclabels.
 
-type f :-> o = Lens Total f o
+type f :-> a = Lens Total f a
 
 -- | Create a total lens from a getter and a modifier.
 --
 -- We expect the following law to hold:
 --
--- > get l (set l a f) == a
---
--- > set l (get l f) f == f
+-- > get l (modify l m f) == m (get l f)
 
-lens :: (f -> o)              -- ^ Getter.
-     -> ((o -> o) -> f -> f)  -- ^ Modifier.
-     -> f :-> o
+lens :: (f -> a)              -- ^ Getter.
+     -> ((a -> a) -> f -> f)  -- ^ Modifier.
+     -> f :-> a
 lens g s = Mono.lens g (uncurry s)
 
 -- | Get the getter function from a lens.
 
-get :: (f :-> o) -> f -> o
+get :: (f :-> a) -> f -> a
 get = Mono.get
 
 -- | Get the setter function from a lens.
 
-set :: (f :-> o) -> o -> f -> f
+set :: (f :-> a) -> a -> f -> f
 set = curry . Mono.set
 
 -- | Get the modifier function from a lens.
 
-modify :: f :-> o -> (o -> o) -> f -> f
+modify :: f :-> a -> (a -> a) -> f -> f
 modify = curry . Mono.modify
 
