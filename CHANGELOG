@@ -1,5 +1,32 @@
 CHANGELOG
 
+1.1.7.1 -> 2.0
+  - Introduced polymorphic lenses.
+  - Lenses are now based on getters and modifiers, not getters and setters.
+  - Pure lenses are now named Total lenses.
+  - Maybe lenses are now named Partial lenses.
+  - Introduced Failing lenses that preserve errors.
+  - Generalized Point datatype.
+  - Removed unused monadic functions for partial lenses.
+  - Added ArrowFail type class.
+  - Added lenses for base types. (tuples, lists, Maybe, Either)
+  - Isomorphisms now uses regular function space for base morphism.
+  - Swapped iso for more useful inv.
+  - Introduced iso to more easily lift isomorphisms into lenses.
+  - Removed mainly unused bimap.
+  - Added derivation of lenses as expressions.
+  - Convert record declarations directly into fclabels variants.
+  - Allow deriving lenses for GADTs.
+  - Added reasonably sophisticated totality checker for GADT labels.
+  - Derived lenses can now fail in either ArrowZero or ArrowFail.
+  - Alternative instance for Point.
+  - Vertical composition for multi-constructor data types.
+  - Extensive test suite.
+  - Fully documented.
+
+1.1.7 -> 1.1.7.1
+  - Removed unicode from cabal file to help messed up build servers.
+
 1.1.6 -> 1.1.7
   - Fixed compilation issue on newer GHC using clang.
     Thanks to 唐鳳.
