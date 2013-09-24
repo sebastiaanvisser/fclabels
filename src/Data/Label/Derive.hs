@@ -1,6 +1,9 @@
 {- |
 Template Haskell functions for automatically generating labels for algebraic
-datatypes, newtypes and GADTs.
+datatypes, newtypes and GADTs. There are two basic modes of label generation,
+the `mkLabels` family of functions create labels (and optionally type
+signatures) in scope as top level funtions, the `getLabel` family of funtions
+create labels as expressions that can be named and typed manually.
 -}
 
 {-# LANGUAGE
@@ -34,7 +37,7 @@ import Control.Category
 import Control.Monad
 import Data.Char (toLower, toUpper)
 import Data.Foldable (Foldable, toList)
-import Data.Label.Point hiding (id)
+import Data.Label.Point
 import Data.List (groupBy, sortBy, delete, nub)
 import Data.Maybe (fromMaybe)
 import Data.Ord
@@ -45,14 +48,14 @@ import Prelude hiding ((.), id)
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
 
--- | Derive lenses including type signatures for all the record selectors for a
+-- | Derive labels including type signatures for all the record selectors for a
 -- collection of datatypes. The types will be polymorphic and can be used in an
 -- arbitrary context.
 
 mkLabels :: [Name] -> Q [Dec]
 mkLabels = liftM concat . mapM (mkLabelsWith defaultNaming True False False True)
 
--- | Derive lenses including type signatures for all the record selectors in a
+-- | Derive labels including type signatures for all the record selectors in a
 -- single datatype. The types will be polymorphic and can be used in an
 -- arbitrary context.
 
@@ -68,30 +71,56 @@ mkLabel = mkLabels . return
 mkLabelsNamed :: (String -> String) -> [Name] -> Q [Dec]
 mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False False True)
 
+-- | Derive unnamed labels as n-tuples that can be named manually. The types
+-- will be polymorphic and can be used in an arbitrary context.
+--
+-- For example:
+--
+-- > (left, right) = $(getLabel ''Either)
+--
+-- The lenses can now also be typed manually:
+--
+-- > left  :: (Either a b -> Either c b) :~> (a -> c)
+-- > right :: (Either a b -> Either a c) :~> (b -> c)
+--
+-- Note: Because of the abstract nature of the generated lenses, it might be
+-- required to use 'NoMonomorphismRestriction' in some cases.
+
 getLabel :: Name -> Q Exp
-getLabel = getLabelWith False
+getLabel = getLabelWith True False False
+
+-- | Low level label as expression derivation function.
 
 getLabelWith
-  :: Bool
-  -> Name
+  :: Bool  -- ^ Generate type signatures or not.
+  -> Bool  -- ^ Generate concrete type or abstract type. When true the
+           --   signatures will be concrete and can only be used in the
+           --   appropriate context. Total labels will use (`:->`) and partial
+           --   labels will use either `Lens Partial` or `Lens Failing`
+           --   dependent on the following flag:
+  -> Bool  -- ^ Use `ArrowFail` for failure instead of `ArrowZero`.
+  -> Name  -- ^ The type to derive labels for.
   -> Q Exp
-getLabelWith failing name =
+getLabelWith sigs concrete failing name =
   do info   <- reify name
-     labels <- generateLabels id failing False info
+     labels <- generateLabels id concrete failing info
      let bodies  =        map (\(LabelExpr _ _ _ b) -> b) labels
          types   =        map (\(LabelExpr _ _ t _) -> t) labels
          context = head $ map (\(LabelExpr _ c _ _) -> c) labels
          vars    = head $ map (\(LabelExpr v _ _ _) -> v) labels
-     tupE bodies `sigE` forallT vars context (foldl appT (tupleT (length bodies)) types)
+     if sigs
+       then tupE bodies `sigE`
+              forallT vars context (foldl appT (tupleT (length bodies)) types)
+       else tupE bodies
 
--- | Low level label derivation function.
+-- | Low level standalone label derivation function.
 
 mkLabelsWith
   :: (String -> String) -- ^ Supply a function to perform custom label naming.
   -> Bool               -- ^ Generate type signatures or not.
   -> Bool               -- ^ Generate concrete type or abstract type. When
                         --   true the signatures will be concrete and can only
-                        --   be used in the appropriate context. Total lenses
+                        --   be used in the appropriate context. Total labels
                         --   will use (`:->`) and partial labels will use
                         --   either `Lens Partial` or `Lens Failing` dependent
                         --   on the following flag:
@@ -102,7 +131,7 @@ mkLabelsWith
 
 mkLabelsWith mk sigs concrete failing inl name =
   do info   <- reify name
-     labels <- generateLabels mk failing concrete info
+     labels <- generateLabels mk concrete failing info
      decls  <- forM labels $ \l ->
        case l of
          LabelExpr {} -> return []
@@ -163,7 +192,7 @@ data Typing = Typing
 -- Generate the labels for all the record fields in the data type.
 
 generateLabels :: (String -> String) -> Bool -> Bool -> Info -> Q [Label]
-generateLabels mk failing concrete info =
+generateLabels mk concrete failing info =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
