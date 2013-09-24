@@ -46,6 +46,7 @@ Library
 
   Exposed-Modules:
     Data.Label
+    Data.Label.Base
     Data.Label.Derive
     Data.Label.Failing
     Data.Label.Monadic

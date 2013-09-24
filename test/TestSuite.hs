@@ -14,37 +14,20 @@ import Control.Category
 import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
-import Data.Label.Derive (defaultNaming)
+import Data.Label.Derive (defaultNaming, mkLabelsWith)
 import Data.Label.Partial ((:~>))
 import Data.Label.Failing (Failing)
 
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalState, execState, runState)
 
+import qualified Data.Label.Base    as L
 import qualified Data.Label.Failing as Failing
 import qualified Data.Label.Mono    as Mono
 import qualified Data.Label.Partial as Partial
 import qualified Data.Label.Poly    as Poly
 import qualified Data.Label.Total   as Total
 import qualified Data.Label.Monadic as Monadic
-
-fstL :: ArrowApply arr => Poly.Lens arr ((a, b) -> (o, b)) (a -> o)
-sndL :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
-
-(fstL, sndL) = $(getLabel ''(,))
-
-headL :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Mono.Lens arr [a] a
-tailL :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Mono.Lens arr [a] [a]
-
-(headL, tailL) = $(getLabel ''[])
-
-left  :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Poly.Lens arr (Either a b -> Either o b) (a -> o)
-right :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr) => Poly.Lens arr (Either a b -> Either a o) (b -> o)
-
-(left, right) = $(getLabel ''Either)
-
-just :: (ArrowChoice cat, ArrowZero cat, ArrowApply cat) => Poly.Lens cat (Maybe a -> Maybe b) (a -> b)
-just = $(getLabel ''Maybe)
 
 -------------------------------------------------------------------------------
 
