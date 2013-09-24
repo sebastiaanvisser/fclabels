@@ -11,23 +11,29 @@ datatypes, newtypes and GADTs.
   , CPP #-}
 
 module Data.Label.Derive
-( mkLabel
-, getLabel
+(
+
+-- * Generate labels in scope.
+  mkLabel
 , mkLabels
 , mkLabelsNamed
 , mkLabelsWith
+
+-- * Produce labels as expressions.
+, getLabel
+, getLabelWith
+
+-- * Default naming function.
 , defaultNaming
-, modifier
 )
 where
 
-import Control.Arrow
 import Control.Applicative
+import Control.Arrow
 import Control.Category
 import Control.Monad
 import Data.Char (toLower, toUpper)
 import Data.Foldable (Foldable, toList)
-import Data.Label.Partial ((:~>))
 import Data.Label.Point hiding (id)
 import Data.List (groupBy, sortBy, delete, nub)
 import Data.Maybe (fromMaybe)
@@ -63,9 +69,15 @@ mkLabelsNamed :: (String -> String) -> [Name] -> Q [Dec]
 mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False False True)
 
 getLabel :: Name -> Q Exp
-getLabel name =
+getLabel = getLabelWith False
+
+getLabelWith
+  :: Bool
+  -> Name
+  -> Q Exp
+getLabelWith failing name =
   do info   <- reify name
-     labels <- generateLabels id False False info
+     labels <- generateLabels id failing False info
      let bodies  =        map (\(LabelExpr _ _ _ b) -> b) labels
          types   =        map (\(LabelExpr _ _ t _) -> t) labels
          context = head $ map (\(LabelExpr _ c _ _) -> c) labels
@@ -81,22 +93,26 @@ mkLabelsWith
                         --   true the signatures will be concrete and can only
                         --   be used in the appropriate context. Total lenses
                         --   will use (`:->`) and partial labels will use
-                        --   (`:~>`).
-  -> Bool               -- ^ Use `failArrow` for failure instead of `zeroArrow`.
+                        --   either `Lens Partial` or `Lens Failing` dependent
+                        --   on the following flag:
+  -> Bool               -- ^ Use `ArrowFail` for failure instead of `ArrowZero`.
   -> Bool               -- ^ Generate inline pragma or not.
   -> Name               -- ^ The type to derive labels for.
   -> Q [Dec]
 
-mkLabelsWith mk sigs conc failing inl name =
+mkLabelsWith mk sigs concrete failing inl name =
   do info   <- reify name
-     labels <- generateLabels mk failing conc info
-     decls  <- forM labels $ \(LabelDecl n i v c t b) ->
-       do bdy <- pure <$> funD n [clause [] (normalB b) []]
-          prg <- if inl then pure <$> i else return []
-          typ <- if sigs
-                   then pure <$> sigD n (forallT v c t)
-                   else return []
-          return (concat [prg, typ, bdy])
+     labels <- generateLabels mk failing concrete info
+     decls  <- forM labels $ \l ->
+       case l of
+         LabelExpr {} -> return []
+         LabelDecl n i v c t b ->
+           do bdy <- pure <$> funD n [clause [] (normalB b) []]
+              prg <- if inl then pure <$> i else return []
+              typ <- if sigs
+                       then pure <$> sigD n (forallT v c t)
+                       else return []
+              return (concat [prg, typ, bdy])
      return (concat decls)
 
 -- | Generate a name for the label. If the original selector starts with an
@@ -148,7 +164,7 @@ data Typing = Typing
 -- Generate the labels for all the record fields in the data type.
 
 generateLabels :: (String -> String) -> Bool -> Bool -> Info -> Q [Label]
-generateLabels mk failing conc info =
+generateLabels mk failing concrete info =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
@@ -161,11 +177,7 @@ generateLabels mk failing conc info =
         -- We are only interested in lenses of record constructors.
         fields = groupFields mk cons
 
-    forM (fields `zip` [0..]) $ \(field, i) ->
-      do generateLabel failing conc name vars (length cons) i field
-
-recordsOnly :: [Con] -> [Con]
-recordsOnly fs = [ RecC c f | RecC c f <- fs ]
+    forM fields $ generateLabel failing concrete name vars (length cons)
 
 groupFields :: (String -> String) -> [Con] -> [Field [Context]]
 groupFields mk
@@ -185,20 +197,20 @@ constructorFields con =
   case con of
 
     NormalC c fs -> one <$> zip [0..] fs
-      where one (i, f@(_, ty)) = Field Nothing isMono ty (Context i c con)
+      where one (i, f@(_, ty)) = Field Nothing mono ty (Context i c con)
               where fsTys = map (typeVariables . snd) (delete f fs)
-                    isMono = any (\x -> any (elem x) fsTys) (typeVariables ty)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
     RecC c fs -> one <$> zip [0..] fs
-      where one (i, f@(n, _, ty)) = Field (Just n) isMono ty (Context i c con)
+      where one (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con)
               where fsTys = map (typeVariables . trd) (delete f fs)
-                    isMono = any (\x -> any (elem x) fsTys) (typeVariables ty)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
                     trd (_, _, x) = x
 
     InfixC a c b -> one <$> [(0, a), (1, b)]
-      where one (i, (_, ty)) = Field Nothing isMono ty (Context i c con)
+      where one (i, (_, ty)) = Field Nothing mono ty (Context i c con)
               where fsTys = map (typeVariables . snd) [a, b]
-                    isMono = any (\x -> any (elem x) fsTys) (typeVariables ty)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
     ForallC _ _ c -> constructorFields c
 
@@ -208,67 +220,67 @@ generateLabel
   -> Name
   -> [TyVarBndr]
   -> Int
-  -> Int
   -> Field [Context]
   -> Q Label
 
-generateLabel failing conc tyname tyvars total i field@(Field mfieldName mono fieldtyp ctors) =
+generateLabel failing concrete tyname tyvars conCount
+              field@(Field name forcedMono fieldtyp ctors) =
 
-  do (Typing tyI tyO vars typ) <- computeTypes mono fieldtyp tyname tyvars
+  do let total = length ctors == conCount
+         mono  = forcedMono || isMonomorphic fieldtyp tyvars
 
-     let isTotal = length ctors == total
+     (Typing tyI tyO vars typ) <- computeTypes mono fieldtyp tyname tyvars
 
-         cat    = varT (mkName "cat")
-         tvs    = PlainTV (mkName "cat") : vars
-         forall = forallT tvs (return [])
-         failE  = if failing
-                  then [| failArrow |]
-                  else [| zeroArrow |]
+     let cat     = varT (mkName "cat")
+         tvs     = if concrete
+                   then vars
+                   else PlainTV (mkName "cat") : vars
+         forall  = forallT tvs (return [])
+         failE   = if failing
+                   then [| failArrow |]
+                   else [| zeroArrow |]
+         getT    = [| arr $(getter total field) |]
+         putT    = [| arr $(setter total field) |]
+         getP    = [| $(failE) ||| id <<< $getT |]
+         putP    = [| $(failE) ||| id <<< $putT |]
+         failP   = if failing
+                   then classP ''ArrowFail [ [t| String |], cat]
+                   else classP ''ArrowZero [cat]
+         ctx     = if total
+                   then cxt [ classP ''ArrowApply  [cat] ]
+                   else cxt [ classP ''ArrowChoice [cat]
+                            , classP ''ArrowApply  [cat]
+                            , failP
+                            ]
+         body    = if total
+                   then [| Poly.point $ Point $getT (modifier $getT $putT) |]
+                   else [| Poly.point $ Point $getP (modifier $getP $putP) |]
+         cont    = if concrete
+                   then cxt []
+                   else ctx
+         partial = if failing
+                   then [t| Failing String |]
+                   else [t| Partial |]
+         concTy  = if total
+                   then [t| $typ Total $tyI $tyO |]
+                   else [t| $typ $partial $tyI $tyO |]
+         ty      = if concrete
+                   then concTy
+                   else [t| $typ $cat $tyI $tyO |]
 
-         getT  = [| arr $(getter isTotal field)                     |]
-         putT  = [| arr $(setter isTotal field)                     |]
-         getP  = [| $(failE) ||| id <<< $getT                      |]
-         putP  = [| $(failE) ||| id <<< $putT                      |]
-         bodyT = [| Poly.point $ Point $getT (modifier $getT $putT) |]
-         bodyP = [| Poly.point $ Point $getP (modifier $getP $putP) |]
-
-         failP = if failing
-                 then classP ''ArrowFail [ [t| String |], cat]
-                 else classP ''ArrowZero [cat]
-         ctxP  = cxt [ classP ''ArrowChoice [cat]
-                     , classP ''ArrowApply  [cat]
-                     , failP
-                     ]
-         ctxT  = cxt [classP ''ArrowApply [cat]]
-         ctxN  = cxt []
-
-         concTy = [t| $tyI :~> $tyO       |]
-         abstTy = [t| $typ $cat $tyI $tyO |]
-
-         (ctx, ty, body) =
-           if isTotal
-             then ( if conc then ctxN   else ctxT
-                  , if conc then concTy else abstTy
-                  , bodyT
-                  )
-             else ( if conc then ctxN   else ctxP
-                  , if conc then concTy else abstTy
-                  , bodyP
-                  )
-
-     case mfieldName of
-       Nothing        -> return (LabelExpr tvs ctx ty body)
-       Just name ->
-         do let
+     return $
+       case name of
+         Nothing -> LabelExpr tvs cont ty body
+         Just n  ->
 
 #if MIN_VERSION_template_haskell(2,8,0)
-                -- Generate an inline declaration for the label.
-                -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
-                inline = PragmaD (InlineP name Inline FunLike (FromPhase 0))
+           -- Generate an inline declaration for the label.
+           -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
+           let inline = PragmaD (InlineP n Inline FunLike (FromPhase 0))
 #else
-                inline = PragmaD (InlineP name (InlineSpec True True (Just (True, 0))))
+           let inline = PragmaD (InlineP n (InlineSpec True True (Just (True, 0))))
 #endif
-            return (LabelDecl name (return inline) tvs ctx ty body)
+            in LabelDecl n (return inline) tvs cont ty body
 
 -- Build a total polymorphic modification function from a getter and setter.
 
@@ -330,6 +342,14 @@ setter total (Field mn _ _ cons) =
 
 -------------------------------------------------------------------------------
 
+isMonomorphic :: Type -> [TyVarBndr] -> Bool
+isMonomorphic field vars =
+
+  let fieldVars = typeVariables field
+      varNames  = fromTyVarBndr <$> vars
+      usedVars  = filter (`elem` fieldVars) varNames
+   in null usedVars
+
 computeTypes :: Bool -> Type -> Name -> [TyVarBndr] -> Q Typing
 computeTypes mono field datatype vars =
 
@@ -340,9 +360,8 @@ computeTypes mono field datatype vars =
          tyI       = foldr (flip appT) (conT datatype)
                            (return . tvToVarT <$> reverse vars)
 
-     if mono || null usedVars
-       then
-             return $ Typing
+     if mono
+       then return $ Typing
                (prettyType <$> tyI)
                (prettyType <$> tyO)
                (mapTyVarBndr pretty <$> vars)
@@ -355,7 +374,7 @@ computeTypes mono field datatype vars =
             let rename = mapTypeVariables (\a -> a `fromMaybe` lookup a subs)
 
             return $ Typing
-              (prettyType <$> [t| $tyI  -> $(rename <$> tyI)  |])
+              (prettyType <$> [t| $tyI -> $(rename <$> tyI) |])
               (prettyType <$> [t| $tyO -> $(rename <$> tyO) |])
               (mapTyVarBndr pretty <$> vars ++ (PlainTV . snd <$> subs))
               [t| Poly.Lens |]

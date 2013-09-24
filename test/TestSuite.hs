@@ -76,7 +76,7 @@ data Multi
   | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
--- mkLabel ''NoRecord
+mkLabel ''NoRecord
 mkLabels [''Newtype, ''Multi]
 
 data View = View
@@ -85,7 +85,7 @@ data View = View
   , _vC :: Newtype Bool
   } deriving (Eq, Ord, Show)
 
-mkLabel ''View
+mkLabelsWith defaultNaming True True False False ''View
 
 data Direction i a b c d
   = North { _dir :: i, _north :: a }
