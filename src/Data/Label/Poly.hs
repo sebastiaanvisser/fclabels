@@ -23,7 +23,7 @@ where
 import Control.Category
 import Control.Arrow
 import Prelude hiding ((.), id)
-import Data.Label.Point (Point (Point))
+import Data.Label.Point (Point (Point), identity, compose)
 
 import qualified Data.Label.Point as Point
 
@@ -78,7 +78,7 @@ modify = Point.modify . unpack
 
 instance ArrowApply arr => Category (Lens arr) where
   id              = Id
-  Lens f . Lens g = Lens (Point.compose f g)
+  Lens f . Lens g = Lens (compose f g)
   Id     . u      = u
   u      . Id     = u
   {-# INLINE id  #-}
@@ -96,6 +96,6 @@ instance ArrowApply arr => Category (Lens arr) where
 -- | Convert a polymorphic lens back to point.
 
 unpack :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
-unpack Id       = Point.id
+unpack Id       = identity
 unpack (Lens p) = p
 
