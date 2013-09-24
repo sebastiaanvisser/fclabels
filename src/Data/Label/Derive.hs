@@ -159,7 +159,6 @@ data Typing = Typing
   TypeQ                -- The lens input type.
   TypeQ                -- The lens output type.
   [TyVarBndr]          -- All used type variables.
-  TypeQ                -- The type constructor.
 
 -- Generate the labels for all the record fields in the data type.
 
@@ -229,7 +228,7 @@ generateLabel failing concrete tyname tyvars conCount
   do let total = length ctors == conCount
          mono  = forcedMono || isMonomorphic fieldtyp tyvars
 
-     (Typing tyI tyO vars typ) <- computeTypes mono fieldtyp tyname tyvars
+     (Typing tyI tyO vars) <- computeTypes mono fieldtyp tyname tyvars
 
      let cat     = varT (mkName "cat")
          tvs     = if concrete
@@ -262,11 +261,17 @@ generateLabel failing concrete tyname tyvars conCount
                    then [t| Failing String |]
                    else [t| Partial |]
          concTy  = if total
-                   then [t| $typ Total $tyI $tyO |]
-                   else [t| $typ $partial $tyI $tyO |]
+                   then if mono
+                        then [t| Mono.Lens Total $tyI $tyO |]
+                        else [t| Poly.Lens Total $tyI $tyO |]
+                   else if mono
+                        then [t| Mono.Lens $partial $tyI $tyO |]
+                        else [t| Poly.Lens $partial $tyI $tyO |]
          ty      = if concrete
                    then concTy
-                   else [t| $typ $cat $tyI $tyO |]
+                   else if mono
+                        then [t| Mono.Lens $cat $tyI $tyO |]
+                        else [t| Poly.Lens $cat $tyI $tyO |]
 
      return $
        case name of
@@ -276,11 +281,11 @@ generateLabel failing concrete tyname tyvars conCount
 #if MIN_VERSION_template_haskell(2,8,0)
            -- Generate an inline declaration for the label.
            -- Type of InlineSpec removed in TH-2.8.0 (GHC 7.6)
-           let inline = PragmaD (InlineP n Inline FunLike (FromPhase 0))
+           let inline = InlineP n Inline FunLike (FromPhase 0)
 #else
-           let inline = PragmaD (InlineP n (InlineSpec True True (Just (True, 0))))
+           let inline = InlineP n (InlineSpec True True (Just (True, 0)))
 #endif
-            in LabelDecl n (return inline) tvs cont ty body
+            in LabelDecl n (return (PragmaD inline)) tvs cont ty body
 
 -- Build a total polymorphic modification function from a getter and setter.
 
@@ -365,7 +370,6 @@ computeTypes mono field datatype vars =
                (prettyType <$> tyI)
                (prettyType <$> tyO)
                (mapTyVarBndr pretty <$> vars)
-               [t| Mono.Lens |]
        else
          do let names = return <$> ['a'..'z']
                 used  = show . pretty <$> varNames
@@ -377,7 +381,6 @@ computeTypes mono field datatype vars =
               (prettyType <$> [t| $tyI -> $(rename <$> tyI) |])
               (prettyType <$> [t| $tyO -> $(rename <$> tyO) |])
               (mapTyVarBndr pretty <$> vars ++ (PlainTV . snd <$> subs))
-              [t| Poly.Lens |]
 
   where -- Convert a binder to a regular type variable.
         tvToVarT (PlainTV  tv     ) = VarT tv
