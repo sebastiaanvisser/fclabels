@@ -46,7 +46,7 @@ moveAndAge' = ageByOneYear' . moveToAmsterdam' . ageByOneYear' . ageByOneYear' .
 
 main :: IO ()
 main = 
-  defaultMain 
+  defaultMain
     [ bench "warmup" $ whnf show "Hello World"
     , bench "ageByOneYear" $ whnf ageByOneYear jan
     , bench "ageByOneYear'" $ whnf ageByOneYear' jan
