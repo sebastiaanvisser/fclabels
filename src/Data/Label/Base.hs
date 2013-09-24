@@ -35,12 +35,12 @@ import Data.Label (getLabel)
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
 
--- | Lens pointing to the head of list's cons cell. (Partial and monomorphic)
+-- | Lens pointing to the head of a list's cons cell. (Partial and monomorphic)
 
 head :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr)
      => Mono.Lens arr [a] a
 
--- | Lens pointing to the tail of list's cons cell. (Partial and monomorphic)
+-- | Lens pointing to the tail of a list's cons cell. (Partial and monomorphic)
 
 tail :: (ArrowZero arr, ArrowApply arr, ArrowChoice arr)
      => Mono.Lens arr [a] [a]
@@ -66,25 +66,25 @@ just :: (ArrowChoice cat, ArrowZero cat, ArrowApply cat)
 
 just = $(getLabel ''Maybe)
 
--- | Lens pointing to the first component of 2-tuple. (Total and polymorphic)
+-- | Lens pointing to the first component of a 2-tuple. (Total and polymorphic)
 
 fst :: ArrowApply arr => Poly.Lens arr ((a, b) -> (o, b)) (a -> o)
 
--- | Lens pointing to the second component of 2-tuple. (Total and polymorphic)
+-- | Lens pointing to the second component of a 2-tuple. (Total and polymorphic)
 
 snd :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
 
 (fst, snd) = $(getLabel ''(,))
 
--- | Lens pointing to the first component of 3-tuple. (Total and polymorphic)
+-- | Lens pointing to the first component of a 3-tuple. (Total and polymorphic)
 
 fst3 :: ArrowApply arr => Poly.Lens arr ((a, b, c) -> (o, b, c)) (a -> o)
 
--- | Lens pointing to the second component of 3-tuple. (Total and polymorphic)
+-- | Lens pointing to the second component of a 3-tuple. (Total and polymorphic)
 
 snd3 :: ArrowApply arr => Poly.Lens arr ((a, b, c) -> (a, o, c)) (b -> o)
 
--- | Lens pointing to the third component of 3-tuple. (Total and polymorphic)
+-- | Lens pointing to the third component of a 3-tuple. (Total and polymorphic)
 
 trd3 :: ArrowApply arr => Poly.Lens arr ((a, b, c) -> (a, b, o)) (c -> o)
 
