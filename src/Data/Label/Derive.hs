@@ -91,8 +91,9 @@ mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False False True)
 -- > left  :: (Either a b -> Either c b) :~> (a -> c)
 -- > right :: (Either a b -> Either a c) :~> (b -> c)
 --
--- Note: Because of the abstract nature of the generated lenses, it might be
--- required to use 'NoMonomorphismRestriction' in some cases.
+-- Note: Because of the abstract nature of the generated lenses and the top
+-- level pattern match, it might be required to use 'NoMonomorphismRestriction'
+-- in some cases.
 
 getLabel :: Name -> Q Exp
 getLabel = getLabelWith True False False
