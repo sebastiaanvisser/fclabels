@@ -29,6 +29,9 @@ module Data.Label.Derive
 -- * Produce labels as expressions.
 , getLabel
 
+-- * First class record labels.
+, fclabels
+
 -- * Low level derivation functions.
 , mkLabelsWith
 , getLabelWith
@@ -79,7 +82,7 @@ mkLabelsNamed mk = liftM concat . mapM (mkLabelsWith mk True False False True)
 -- | Derive unnamed labels as n-tuples that can be named manually. The types
 -- will be polymorphic and can be used in an arbitrary context.
 --
--- For example:
+-- Example:
 --
 -- > (left, right) = $(getLabel ''Either)
 --
@@ -106,9 +109,10 @@ getLabelWith
   -> Bool  -- ^ Use `ArrowFail` for failure instead of `ArrowZero`.
   -> Name  -- ^ The type to derive labels for.
   -> Q Exp
+
 getLabelWith sigs concrete failing name =
-  do info   <- reify name
-     labels <- generateLabels id concrete failing info
+  do dec    <- reifyDec name
+     labels <- generateLabels id concrete failing dec
      let bodies  =        map (\(LabelExpr _ _ _ b) -> b) labels
          types   =        map (\(LabelExpr _ _ t _) -> t) labels
          context = head $ map (\(LabelExpr _ c _ _) -> c) labels
@@ -135,19 +139,8 @@ mkLabelsWith
   -> Q [Dec]
 
 mkLabelsWith mk sigs concrete failing inl name =
-  do info   <- reify name
-     labels <- generateLabels mk concrete failing info
-     decls  <- forM labels $ \l ->
-       case l of
-         LabelExpr {} -> return []
-         LabelDecl n i v c t b ->
-           do bdy <- pure <$> funD n [clause [] (normalB b) []]
-              prg <- if inl then pure <$> i else return []
-              typ <- if sigs
-                       then pure <$> sigD n (forallT v c t)
-                       else return []
-              return (concat [prg, typ, bdy])
-     return (concat decls)
+  do dec <- reifyDec name
+     mkLabelsWithForDec mk sigs concrete failing inl dec
 
 -- | Default way of generating a label name from the Haskell record selector
 -- name. If the original selector starts with an underscore, remove it and make
@@ -160,6 +153,49 @@ defaultNaming field =
     '_' : c : rest -> toLower c : rest
     f : rest       -> 'l' : toUpper f : rest
     n              -> fclError ("Cannot derive label for record selector with name: " ++ n)
+
+-- | Derive labels for all the record types in the supplied declaration. The
+-- record fields don't need an underscore prefix. Multiple data types /
+-- newtypes are allowed at once.
+--
+-- The advantage of this approach is that you don't need to explicitly hide the
+-- original record accessors from being exported and they won't show up in the
+-- derived `Show` instance.
+--
+-- Example:
+--
+-- > fclabels [d|
+-- >   data Record = Record
+-- >     { int  :: Int
+-- >     , bool :: Bool
+-- >     } deriving Show
+-- >   |]
+--
+-- > ghci> modify int (+2) (Record 1 False)
+-- > Record 3 False
+
+fclabels :: Q [Dec] -> Q [Dec]
+fclabels decls =
+  do ds <- decls
+     ls <- forM (ds >>= labels) (mkLabelsWithForDec id True False False False)
+     return (concat ((delabelize <$> ds) : ls))
+  where
+
+  labels :: Dec -> [Dec]
+  labels dec =
+    case dec of
+      DataD    {} -> [dec]
+      NewtypeD {} -> [dec]
+      _           -> []
+
+  delabelize :: Dec -> Dec
+  delabelize dec =
+    case dec of
+      DataD    ctx nm vars cs ns -> DataD    ctx nm vars (con <$> cs) ns
+      NewtypeD ctx nm vars c  ns -> NewtypeD ctx nm vars (con c)      ns
+      rest                       -> rest
+    where con (RecC n vst) = NormalC n (map (\(_, s, t) -> (s, t)) vst)
+          con c            = c
 
 -------------------------------------------------------------------------------
 
@@ -195,17 +231,32 @@ data Typing = Typing
   TypeQ                -- The lens output type.
   [TyVarBndr]          -- All used type variables.
 
+mkLabelsWithForDec :: (String -> String) -> Bool -> Bool -> Bool -> Bool -> Dec -> Q [Dec]
+mkLabelsWithForDec mk sigs concrete failing inl dec =
+  do labels <- generateLabels mk concrete failing dec
+     decls  <- forM labels $ \l ->
+       case l of
+         LabelExpr {} -> return []
+         LabelDecl n i v c t b ->
+           do bdy <- pure <$> funD n [clause [] (normalB b) []]
+              prg <- if inl then pure <$> i else return []
+              typ <- if sigs
+                       then pure <$> sigD n (forallT v c t)
+                       else return []
+              return (concat [prg, typ, bdy])
+     return (concat decls)
+
 -- Generate the labels for all the record fields in the data type.
 
-generateLabels :: (String -> String) -> Bool -> Bool -> Info -> Q [Label]
-generateLabels mk concrete failing info =
+generateLabels :: (String -> String) -> Bool -> Bool -> Dec -> Q [Label]
+generateLabels mk concrete failing dec =
 
  do -- Only process data and newtype declarations, filter out all
     -- constructors and the type variables.
     let (name, cons, vars) =
-          case info of
-            TyConI (DataD    _ n vs cs _) -> (n, cs,  vs)
-            TyConI (NewtypeD _ n vs c  _) -> (n, [c], vs)
+          case dec of
+            DataD    _ n vs cs _ -> (n, cs,  vs)
+            NewtypeD _ n vs c  _ -> (n, [c], vs)
             _ -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
@@ -464,6 +515,15 @@ pretty tv = mkName (takeWhile (/= '_') (show tv))
 
 prettyType :: Type -> Type
 prettyType = mapTypeVariables pretty
+
+-- Reify a name into a declaration.
+
+reifyDec :: Name -> Q Dec
+reifyDec name =
+  do info <- reify name
+     case info of
+       TyConI dec -> return dec
+       _ -> fclError "Info must be type declaration type."
 
 -- Throw a fclabels specific error.
 
