@@ -1,4 +1,5 @@
 {-  OPTIONS -ddump-splices #-}
+
 {-# LANGUAGE
     NoMonomorphismRestriction
   , GADTs
@@ -464,8 +465,8 @@ base = TestList
   , eq "get right" (Partial.get L.right (Left 'a' :: Either Char ())) Nothing
   , eq "get just" (Partial.get L.just (Just 'a')) (Just 'a')
   , eq "get just" (Partial.get L.just (Nothing :: Maybe Char)) Nothing
-  , eq "get fst" (Total.get L.fst ('a', ())) 'a'
-  , eq "get snd" (Total.get L.snd ((), 'b')) 'b'
+  , eq "get fst" (Total.get (L.fst . L.swap) ('a', ())) ()
+  , eq "get snd" (Total.get (L.snd . L.swap) ((), 'b')) ()
   , eq "get fst3" (Total.get L.fst3 ('a', (), ())) 'a'
   , eq "get snd3" (Total.get L.snd3 ((), 'b', ())) 'b'
   , eq "get trd3" (Total.get L.trd3 ((), (), 'c')) 'c'
@@ -479,12 +480,15 @@ base = TestList
   , eq "mod right" (Partial.modify L.right (=='c') (Left ())) (Nothing :: Maybe (Either () Bool))
   , eq "mod just" (Partial.modify L.just (=='a') (Just 'a')) (Just (Just True))
   , eq "mod just" (Partial.modify L.just (=='a') Nothing) Nothing
-  , eq "mod fst" (Total.modify L.fst (== 'a') ('a', ())) (True, ())
-  , eq "mod snd" (Total.modify L.snd (== 'a') ((), 'b')) ((), False)
+  , eq "mod fst" (Total.modify (L.fst . L.swap) (+ 1) ((), 1)) ((), 2::Int)
+  , eq "mod snd" (Total.modify (L.snd . L.swap) (+ 1) (1, ())) (2::Int, ())
   , eq "mod fst3" (Total.modify L.fst3 (== 'a') ('a', (), ())) (True, (), ())
   , eq "mod snd3" (Total.modify L.snd3 (== 'a') ((), 'b', ())) ((), False, ())
   , eq "mod trd3" (Total.modify L.trd3 (== 'a') ((), (), 'c')) ((), (), False)
   ] where eq x = equality ("base" ++ x)
+
+xxx :: (b, o) :-> o
+xxx = L.fst . L.swap
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d a b)

@@ -3,7 +3,12 @@ Labels for data types in the base package. The lens types are kept abstract to
 be fully reusable in custom contexts. Build to be imported qualified.
 -}
 
-{-# LANGUAGE NoMonomorphismRestriction, TemplateHaskell #-}
+{-# LANGUAGE
+    NoMonomorphismRestriction
+  , TemplateHaskell
+  , TypeOperators
+  #-}
+
 module Data.Label.Base
 (
 -- * Lenses for lists.
@@ -20,6 +25,7 @@ module Data.Label.Base
 -- * Lenses for 2-tuples.
 , fst
 , snd
+, swap
 
 -- * Lenses for 3-tuples.
 , fst3
@@ -30,10 +36,11 @@ where
 
 import Prelude hiding (fst, snd, head, tail)
 import Control.Arrow (ArrowApply, ArrowZero, ArrowChoice)
-import Data.Label (getLabel)
+import Data.Label (getLabel, Isomorphism(..), iso, (:->))
 
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
+import qualified Data.Tuple      as Tuple
 
 -- | Lens pointing to the head of a list's cons cell. (Partial and monomorphic)
 
@@ -75,6 +82,11 @@ fst :: ArrowApply arr => Poly.Lens arr ((a, b) -> (o, b)) (a -> o)
 snd :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
 
 (fst, snd) = $(getLabel ''(,))
+
+-- | Lens that swap the components of a tuple.
+
+swap :: (a, b) :-> (b, a)
+swap = iso (Iso Tuple.swap Tuple.swap)
 
 -- | Lens pointing to the first component of a 3-tuple. (Total and polymorphic)
 
