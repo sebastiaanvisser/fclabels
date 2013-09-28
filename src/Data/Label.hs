@@ -164,13 +164,14 @@ Amsterdam over exactly two years:
 , mkLabel
 , mkLabels
 , getLabel
+, fclabels
 )
 where
 
 import Data.Label.Point (Isomorphism(..), inv)
 import Data.Label.Poly (point, (>-))
 import Data.Label.Mono (iso, (:->))
-import Data.Label.Derive
+import Data.Label.Derive (mkLabel, mkLabels, getLabel, fclabels)
 
 import qualified Data.Label.Mono as Mono
 

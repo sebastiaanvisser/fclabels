@@ -15,7 +15,7 @@ import Control.Category
 import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
-import Data.Label.Derive (defaultNaming, mkLabelsWith, fclabels)
+import Data.Label.Derive (defaultNaming, mkLabelsWith)
 import Data.Label.Mono ((:~>))
 import Data.Label.Failing (Failing)
 import Data.Tuple (swap)
