@@ -15,7 +15,7 @@ import Control.Category
 import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
-import Data.Label.Derive (defaultNaming, mkLabelsWith)
+import Data.Label.Derive (defaultNaming, mkLabelsWith, fclabels)
 import Data.Label.Partial ((:~>))
 import Data.Label.Failing (Failing)
 
@@ -37,8 +37,13 @@ data NoRecord = NoRecord Integer Bool
 
 mkLabel ''NoRecord
 
-newtype Newtype a = Newtype { _unNewtype :: [a] }
-  deriving (Eq, Ord, Show)
+fclabels [d|
+  newtype Newtype a = Newtype { unNewtype :: [a] }
+    deriving (Eq, Ord, Show)
+  |]
+
+newtypeL :: ArrowApply cat => Poly.Lens cat (Newtype a -> Newtype b) ([a] -> [b])
+newtypeL = unNewtype
 
 data Record = Record
   { _fA :: Integer
@@ -62,7 +67,7 @@ data Multi
   | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
-mkLabels [''Newtype, ''Multi]
+mkLabels [''Multi]
 
 data View = View
   { _vA :: Maybe (Newtype Bool)
