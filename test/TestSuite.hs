@@ -219,6 +219,7 @@ allTests = TestList
   , applicative
   , bijections
   , monadic
+  , base
   ]
 
 mono :: Test
@@ -400,6 +401,40 @@ monadic = TestList
   , eq "local fA total" (runReader (Monadic.local fA (+1) $ Monadic.asks id) record0) record1
   , eq "modifyAndGet fA total" (runState (Monadic.modifyAndGet fA (\a -> (a+10, a+1))) record0) (10, record1)
   ] where eq x = equality ("total monadic " ++ x)
+
+base :: Test
+base = TestList
+  [ eq "get head" (Partial.get L.head [1, 2, 3]) (Just (1::Int))
+  , eq "get head" (Partial.get L.head ([] :: [Int])) Nothing
+  , eq "get tail" (Partial.get L.tail [1, 2, 3]) (Just [2, 3 ::Int])
+  , eq "get tail" (Partial.get L.tail ([] :: [Int])) Nothing
+  , eq "get left" (Partial.get L.left (Left 'a')) (Just 'a')
+  , eq "get left" (Partial.get L.left (Right 'a' :: Either () Char)) Nothing
+  , eq "get right" (Partial.get L.right (Right 'a')) (Just 'a')
+  , eq "get right" (Partial.get L.right (Left 'a' :: Either Char ())) Nothing
+  , eq "get just" (Partial.get L.just (Just 'a')) (Just 'a')
+  , eq "get just" (Partial.get L.just (Nothing :: Maybe Char)) Nothing
+  , eq "get fst" (Total.get L.fst ('a', ())) 'a'
+  , eq "get snd" (Total.get L.snd ((), 'b')) 'b'
+  , eq "get fst3" (Total.get L.fst3 ('a', (), ())) 'a'
+  , eq "get snd3" (Total.get L.snd3 ((), 'b', ())) 'b'
+  , eq "get trd3" (Total.get L.trd3 ((), (), 'c')) 'c'
+  , eq "mod head" (Partial.modify L.head (*2) [1, 2, 3]) (Just [2, 2, 3::Int])
+  , eq "mod head" (Partial.modify L.head (*2) ([]::[Int])) Nothing
+  , eq "mod tail" (Partial.modify L.tail reverse [1, 2, 3]) (Just [1, 3, 2::Int])
+  , eq "mod tail" (Partial.modify L.tail reverse ([]::[Int])) Nothing
+  , eq "mod left" (Partial.modify L.left (=='a') (Left 'a')) (Just (Left True :: Either Bool ()))
+  , eq "mod left" (Partial.modify L.left (=='a') (Right ())) (Nothing :: Maybe (Either Bool ()))
+  , eq "mod right" (Partial.modify L.right (=='c') (Right 'b')) (Just (Right False :: Either () Bool))
+  , eq "mod right" (Partial.modify L.right (=='c') (Left ())) (Nothing :: Maybe (Either () Bool))
+  , eq "mod just" (Partial.modify L.just (=='a') (Just 'a')) (Just (Just True))
+  , eq "mod just" (Partial.modify L.just (=='a') Nothing) Nothing
+  , eq "mod fst" (Total.modify L.fst (== 'a') ('a', ())) (True, ())
+  , eq "mod snd" (Total.modify L.snd (== 'a') ((), 'b')) ((), False)
+  , eq "mod fst3" (Total.modify L.fst3 (== 'a') ('a', (), ())) (True, (), ())
+  , eq "mod snd3" (Total.modify L.snd3 (== 'a') ((), 'b', ())) ((), False, ())
+  , eq "mod trd3" (Total.modify L.trd3 (== 'a') ((), (), 'c')) ((), (), False)
+  ] where eq x = equality ("base" ++ x)
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d a b)
