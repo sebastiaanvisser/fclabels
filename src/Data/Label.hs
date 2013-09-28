@@ -142,7 +142,7 @@ Amsterdam over exactly two years:
 -- > ageAsString :: Person :-> String
 -- > ageAsString = iso (Iso show read) . age
 
-, Isomorphism (..)
+, Iso (..)
 , inv
 , iso
 
@@ -168,7 +168,7 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Point (Isomorphism(..), inv)
+import Data.Label.Point (Iso(..), inv)
 import Data.Label.Poly (point, (>-))
 import Data.Label.Mono (iso, (:->))
 import Data.Label.Derive (mkLabel, mkLabels, getLabel, fclabels)

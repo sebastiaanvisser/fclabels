@@ -221,10 +221,10 @@ north2 = North 0 False
 west0 :: Direction Integer () () () ()
 west0 = West 0 ()
 
-mulDiv :: Isomorphism (->) Integer Double
+mulDiv :: Iso (->) Integer Double
 mulDiv = Iso (\i -> fromInteger i / 10) (\i -> round (i * 10))
 
-addSub :: Isomorphism (->) Double Integer
+addSub :: Iso (->) Double Integer
 addSub = Iso (\i -> round (i + 10)) (\i -> fromInteger i - 10)
 
 -------------------------------------------------------------------------------

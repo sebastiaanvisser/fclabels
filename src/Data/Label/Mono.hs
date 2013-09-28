@@ -24,7 +24,7 @@ where
 
 import Control.Category
 import Control.Arrow
-import Data.Label.Point (Isomorphism (Iso), Total, Partial)
+import Data.Label.Point (Iso (..), Total, Partial)
 import Prelude hiding ((.), id)
 
 import qualified Data.Label.Poly as Poly
@@ -67,7 +67,7 @@ set = Poly.set
 
 -- | Lift an isomorphism into a `Lens`.
 
-iso :: ArrowApply cat => Isomorphism cat f o -> Lens cat f o
+iso :: ArrowApply cat => Iso cat f o -> Lens cat f o
 iso (Iso f b) = lens f (app . arr (\(m, v) -> (b . m . f, v)))
 
 -------------------------------------------------------------------------------

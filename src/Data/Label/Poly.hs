@@ -24,7 +24,7 @@ where
 import Control.Category
 import Control.Arrow
 import Prelude hiding ((.), id)
-import Data.Label.Point (Point (Point), Isomorphism(..), identity, compose)
+import Data.Label.Point (Point (Point), Iso(..), identity, compose)
 
 import qualified Data.Label.Point as Point
 
@@ -77,7 +77,7 @@ set = Point.set . unpack
 --
 -- The isomorphism needs to be passed in twice to properly unify.
 
-iso :: ArrowApply cat => Isomorphism cat f o -> Isomorphism cat g i -> Lens cat (f -> g) (o -> i)
+iso :: ArrowApply cat => Iso cat f o -> Iso cat g i -> Lens cat (f -> g) (o -> i)
 iso (Iso f _) (Iso _ y) = lens f (app . arr (\(m, v) -> (y . m . f, v)))
 
 -------------------------------------------------------------------------------

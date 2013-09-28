@@ -21,7 +21,7 @@ module Data.Label.Point
 , compose
 
 -- * Working with isomorphisms.
-, Isomorphism (..)
+, Iso (..)
 , inv
 
 -- * Specialized lens contexts.
@@ -110,11 +110,11 @@ infix 8 `Iso`
 
 -- | An isomorphism is like a `Category` that works in two directions.
 
-data Isomorphism cat i o = Iso { fw :: cat i o, bw :: cat o i }
+data Iso cat i o = Iso { fw :: cat i o, bw :: cat o i }
 
 -- | Isomorphisms are categories.
 
-instance Category cat => Category (Isomorphism cat) where
+instance Category cat => Category (Iso cat) where
   id = Iso id id
   Iso a b . Iso c d = Iso (a . c) (d . b)
   {-# INLINE id  #-}
@@ -122,7 +122,7 @@ instance Category cat => Category (Isomorphism cat) where
 
 -- | Flip an isomorphism.
 
-inv :: Isomorphism cat i o -> Isomorphism cat o i
+inv :: Iso cat i o -> Iso cat o i
 inv i = Iso (bw i) (fw i)
 
 -------------------------------------------------------------------------------

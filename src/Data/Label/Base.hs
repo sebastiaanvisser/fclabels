@@ -36,7 +36,7 @@ where
 
 import Prelude hiding (fst, snd, head, tail)
 import Control.Arrow (arr, ArrowApply, ArrowZero, ArrowChoice)
-import Data.Label (getLabel, Isomorphism(..))
+import Data.Label (getLabel, Iso(..))
 
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
