@@ -100,6 +100,10 @@ instance Arrow arr => Applicative (Point arr f i f) where
   {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
 
+instance Alternative (Point Partial f view f) where
+  empty = Point zeroArrow zeroArrow
+  Point a b <|> Point c d = Point (a <|> c) (b <|> d)
+
 -------------------------------------------------------------------------------
 
 infix 8 `Iso`
