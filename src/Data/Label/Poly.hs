@@ -14,8 +14,8 @@ module Data.Label.Poly
 , lens
 , point
 , get
-, set
 , modify
+, set
 , (>-)
 )
 where
@@ -29,8 +29,8 @@ import qualified Data.Label.Point as Point
 
 {-# INLINE lens   #-}
 {-# INLINE get    #-}
-{-# INLINE set    #-}
 {-# INLINE modify #-}
+{-# INLINE set    #-}
 {-# INLINE (>-)   #-}
 {-# INLINE point  #-}
 {-# INLINE unpack #-}
@@ -62,15 +62,15 @@ point = Lens
 get :: Lens cat (f -> g) (o -> i) -> cat f o
 get = Point.get . unpack
 
--- | Get the setter arrow from a lens.
-
-set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
-set = Point.set . unpack
-
 -- | Get the modifier arrow from a lens.
 
 modify :: Lens cat (f -> g) (o -> i) -> cat (cat o i, f) g
 modify = Point.modify . unpack
+
+-- | Get the setter arrow from a lens.
+
+set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
+set = Point.set . unpack
 
 -------------------------------------------------------------------------------
 

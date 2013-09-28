@@ -12,8 +12,8 @@ module Data.Label.Point
 (
 -- * The point data type that generalizes lens.
   Point (Point)
-, modify
 , get
+, modify
 , set
 , identity
 , compose

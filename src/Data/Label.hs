@@ -176,8 +176,8 @@ import qualified Data.Label.Mono as Mono
 
 {-# INLINE lens   #-}
 {-# INLINE get    #-}
-{-# INLINE set    #-}
 {-# INLINE modify #-}
+{-# INLINE set    #-}
 
 -------------------------------------------------------------------------------
 
@@ -202,13 +202,13 @@ lens g s = Mono.lens g (uncurry s)
 get :: (f :-> a) -> f -> a
 get = Mono.get
 
--- | Get the setter function from a lens.
-
-set :: (f :-> a) -> a -> f -> f
-set = curry . Mono.set
-
 -- | Get the modifier function from a lens.
 
 modify :: f :-> a -> (a -> a) -> f -> f
 modify = curry . Mono.modify
+
+-- | Get the setter function from a lens.
+
+set :: (f :-> a) -> a -> f -> f
+set = curry . Mono.set
 

@@ -10,8 +10,8 @@ module Data.Label.Mono
 ( Lens
 , lens
 , get
-, set
 , modify
+, set
 , iso
 )
 where
@@ -25,8 +25,8 @@ import qualified Data.Label.Poly as Poly
 
 {-# INLINE lens   #-}
 {-# INLINE get    #-}
-{-# INLINE set    #-}
 {-# INLINE modify #-}
+{-# INLINE set    #-}
 {-# INLINE iso    #-}
 
 -------------------------------------------------------------------------------
@@ -49,15 +49,15 @@ lens = Poly.lens
 get :: Lens cat f o -> cat f o
 get = Poly.get
 
--- | Get the setter arrow from a lens.
-
-set :: Arrow arr => Lens arr f o -> arr (o, f) f
-set = Poly.set
-
 -- | Get the modifier arrow from a lens.
 
 modify :: Lens cat f o -> cat (cat o o, f) f
 modify = Poly.modify
+
+-- | Get the setter arrow from a lens.
+
+set :: Arrow arr => Lens arr f o -> arr (o, f) f
+set = Poly.set
 
 -- | Lift an isomorphism into a `Lens`.
 

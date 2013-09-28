@@ -10,8 +10,8 @@ module Data.Label.Total
 ( (:->)
 , lens
 , get
-, set
 , modify
+, set
 )
 where
 
@@ -22,8 +22,8 @@ import qualified Data.Label.Poly as Poly
 
 {-# INLINE lens   #-}
 {-# INLINE get    #-}
-{-# INLINE set    #-}
 {-# INLINE modify #-}
+{-# INLINE set    #-}
 
 -------------------------------------------------------------------------------
 
@@ -49,13 +49,13 @@ lens g s = Poly.lens g (uncurry s)
 get :: ((f -> g) :-> (o -> i)) -> f -> o
 get = Poly.get
 
--- | Get the setter function from a lens.
-
-set :: ((f -> g) :-> (o -> i)) -> i -> f -> g
-set = curry . Poly.set
-
 -- | Get the modifier function from a lens.
 
 modify :: (f -> g) :-> (o -> i) -> (o -> i) -> f -> g
 modify = curry . Poly.modify
+
+-- | Get the setter function from a lens.
+
+set :: ((f -> g) :-> (o -> i)) -> i -> f -> g
+set = curry . Poly.set
 

@@ -10,8 +10,8 @@ module Data.Label.Partial
 , Partial
 , lens
 , get
-, set
 , modify
+, set
 , embed
 
 -- * Seemingly total modifications.
@@ -32,8 +32,8 @@ import qualified Data.Label.Poly as Poly
 
 {-# INLINE lens    #-}
 {-# INLINE get     #-}
-{-# INLINE set     #-}
 {-# INLINE modify  #-}
+{-# INLINE set     #-}
 {-# INLINE embed   #-}
 {-# INLINE set'    #-}
 {-# INLINE modify' #-}
@@ -58,17 +58,17 @@ lens g s = Poly.lens (Kleisli g) (Kleisli (\(m, f) -> s (runKleisli m) f))
 get :: (f -> g) :~> (o -> i) -> f -> Maybe o
 get l = runKleisli (Poly.get l)
 
--- | Setter for a lens that can fail. When the field to which the lens points
--- is not accessible this function returns 'Nothing'.
-
-set :: (f -> g) :~> (o -> i) -> i -> f -> Maybe g
-set l v = runKleisli (Poly.set l . arr ((,) v))
-
 -- | Modifier for a lens that can fail. When the field to which the lens points
 -- is not accessible this function returns 'Nothing'.
 
 modify :: (f -> g) :~> (o -> i) -> (o -> i) -> f -> Maybe g
 modify l m = runKleisli (Poly.modify l . arr ((,) (arr m)))
+
+-- | Setter for a lens that can fail. When the field to which the lens points
+-- is not accessible this function returns 'Nothing'.
+
+set :: (f -> g) :~> (o -> i) -> i -> f -> Maybe g
+set l v = runKleisli (Poly.set l . arr ((,) v))
 
 -- | Embed a total lens that points to a `Maybe` field into a lens that might
 -- fail.
@@ -78,15 +78,15 @@ embed l = lens (Poly.get l) (\m f -> const (Poly.modify l ((>>= m), f)) <$> Poly
 
 -------------------------------------------------------------------------------
 
--- | Like 'set' but return behaves like the identity function when the field
--- could not be set.
-
-set' :: (f -> f) :~> (o -> o) -> o -> f -> f
-set' l v f = f `fromMaybe` set l v f
-
 -- | Like 'modify' but return behaves like the identity function when the field
 -- could not be set.
 
 modify' :: (f -> f) :~> (o -> o) -> (o -> o) -> f -> f
 modify' l m f = f `fromMaybe` modify l m f
+
+-- | Like 'set' but return behaves like the identity function when the field
+-- could not be set.
+
+set' :: (f -> f) :~> (o -> o) -> o -> f -> f
+set' l v f = f `fromMaybe` set l v f
 
