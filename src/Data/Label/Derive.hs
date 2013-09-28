@@ -338,7 +338,7 @@ unifiable x y =
     ( VarT _        ,      _        ) -> True
     ( _             , VarT _        ) -> True
     ( AppT a b      , AppT c d      ) -> unifiable a c && unifiable b d
-    ( SigT t k      , SigT s j      ) -> unifiable t s && unifiable k j
+    ( SigT t k      , SigT s j      ) -> unifiable t s && k == j
     ( ForallT _ _ t , ForallT _ _ s ) -> unifiable t s
     ( a             , b             ) -> a == b
 
