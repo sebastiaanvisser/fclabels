@@ -16,6 +16,7 @@ module Data.Label.Poly
 , get
 , modify
 , set
+, iso
 , (>-)
 )
 where
@@ -23,7 +24,7 @@ where
 import Control.Category
 import Control.Arrow
 import Prelude hiding ((.), id)
-import Data.Label.Point (Point (Point), identity, compose)
+import Data.Label.Point (Point (Point), Isomorphism(..), identity, compose)
 
 import qualified Data.Label.Point as Point
 
@@ -71,6 +72,12 @@ modify = Point.modify . unpack
 
 set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
 set = Point.set . unpack
+
+-- | Lift a polymorphic isomorphism into a `Lens`. The isomorphism needs to be
+-- passed in twice to properly unify with the right type variables.
+
+iso :: ArrowApply cat => Isomorphism cat f o -> Isomorphism cat g i -> Lens cat (f -> g) (o -> i)
+iso (Iso f _) (Iso _ y) = lens f (app . arr (\(m, v) -> (y . m . f, v)))
 
 -------------------------------------------------------------------------------
 
