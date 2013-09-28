@@ -1,6 +1,7 @@
 {-  OPTIONS -ddump-splices #-}
 {-# LANGUAGE
     NoMonomorphismRestriction
+  , GADTs
   , TemplateHaskell
   , TypeOperators
   , RankNTypes
@@ -34,6 +35,8 @@ import qualified Data.Label.Monadic as Monadic
 data NoRecord = NoRecord Integer Bool
   deriving (Eq, Ord, Show)
 
+mkLabel ''NoRecord
+
 newtype Newtype a = Newtype { _unNewtype :: [a] }
   deriving (Eq, Ord, Show)
 
@@ -59,7 +62,6 @@ data Multi
   | Second { _mB :: Double }
   deriving (Eq, Ord, Show)
 
-mkLabel ''NoRecord
 mkLabels [''Newtype, ''Multi]
 
 data View = View
@@ -79,6 +81,29 @@ data Direction i a b c d
   deriving (Eq, Ord, Show)
 
 mkLabelsWith defaultNaming True False True True ''Direction
+
+-------------------------------------------------------------------------------
+
+data Gadt a where
+  C1 :: { ga :: Integer, gb :: Bool       } -> Gadt (Int, Bool)
+  C2 :: { gc :: Integer, gd :: Maybe Bool } -> Gadt Bool
+  C3 :: { ge :: a,       gf :: b          } -> Gadt (a, b)
+  C4 :: { gg :: a                         } -> Gadt [a]
+  C5 :: {                gd :: Maybe Bool } -> Gadt Bool
+  C6 :: { gh :: [a]                       } -> Gadt (a, a, a)
+
+mkLabel ''Gadt
+
+_Ga :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Mono.Lens cat (Gadt (Int, Bool)) Integer
+_Gb :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Mono.Lens cat (Gadt (Int, Bool)) Bool
+_Gc :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Mono.Lens cat (Gadt Bool) Integer
+_Gd :: (ArrowApply cat                                ) => Mono.Lens cat (Gadt Bool) (Maybe Bool)
+_Ge :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Poly.Lens cat (Gadt (a, b) -> Gadt (c, b)) (a -> c)
+_Gf :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Poly.Lens cat (Gadt (a, b) -> Gadt (a, c)) (b -> c)
+_Gg :: (ArrowApply cat                                ) => Poly.Lens cat (Gadt [a] -> Gadt [b]) (a -> b)
+_Gh :: (ArrowApply cat                                ) => Poly.Lens cat (Gadt (a, a, a) -> Gadt (b, b, b)) ([a] -> [b])
+
+_Ga = lGa; _Gb = lGb; _Gc = lGc; _Gd = lGd; _Ge = lGe; _Gf = lGf; _Gg = lGg; _Gh = lGh;
 
 -------------------------------------------------------------------------------
 

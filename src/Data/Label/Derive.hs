@@ -231,7 +231,7 @@ data Context = Context
   Int                  -- Field index.
   Name                 -- Constructor name.
   Con                  -- Constructor.
-  deriving Eq
+  deriving (Eq, Show)
 
 data Typing = Typing
   Bool                 -- Monomorphic type or polymorphic.
@@ -272,7 +272,7 @@ generateLabels mk concrete failing dec =
         -- We are only interested in lenses of record constructors.
         fields = groupFields mk cons
 
-    forM fields $ generateLabel failing concrete name vars (length cons)
+    forM fields $ generateLabel failing concrete name vars cons
 
 groupFields :: (String -> String) -> [Con] -> [Field ([Context], Subst)]
 groupFields mk
@@ -311,32 +311,55 @@ constructorFields con =
               where fsTys = map (typeVariables . snd) [a, b]
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
-    ForallC _ x v -> setEqs <$> constructorFields v
-      where eqs = [ (a, b) | EqualP a b <- x ]
-            setEqs (Field a b c d) = Field a b c (second (eqs ++) d)
+    ForallC x y v -> setEqs <$> constructorFields v
+      where eqs = [ (a, b) | EqualP a b <- y ]
+            setEqs (Field a b c d) = Field a b c (first upd . second (eqs ++) $ d)
+            upd (Context a b c) = Context a b (ForallC x y c)
+
+prune :: [Context] -> [Con] -> [Con]
+prune contexts allCons =
+  case contexts of
+    (Context _ _ con) : _
+       -> filter (unifiableCon con) allCons
+    [] -> []
+
+unifiableCon :: Con -> Con -> Bool
+unifiableCon a b = and (zipWith unifiable (indices a) (indices b))
+  where indices con =
+          case con of
+            NormalC {}    -> []
+            RecC    {}    -> []
+            InfixC  {}    -> []
+            ForallC _ x _ -> [ c | EqualP _ c <- x ]
+
+unifiable :: Type -> Type -> Bool
+unifiable x y =
+  case (x, y) of
+    ( VarT _        ,      _        ) -> True
+    ( _             , VarT _        ) -> True
+    ( AppT a b      , AppT c d      ) -> unifiable a c && unifiable b d
+    ( SigT t k      , SigT s j      ) -> unifiable t s && unifiable k j
+    ( ForallT _ _ t , ForallT _ _ s ) -> unifiable t s
+    ( a             , b             ) -> a == b
 
 generateLabel
   :: Bool
   -> Bool
   -> Name
   -> [TyVarBndr]
-  -> Int
+  -> [Con]
   -> Field ([Context], Subst)
   -> Q Label
 
-generateLabel failing concrete datatype dtVars conCount
-              field@(Field name forcedMono fieldtype ctors) =
+generateLabel failing concrete datatype dtVars allCons
+              field@(Field name forcedMono fieldtype (contexts, subst)) =
 
-  do let total = length (fst ctors) == conCount
+  do let total = length contexts == length (prune contexts allCons)
 
      (Typing mono tyI tyO vars)
-        <- computeTypes forcedMono fieldtype datatype dtVars (snd ctors)
+        <- computeTypes forcedMono fieldtype datatype dtVars subst
 
      let cat     = varT (mkName "cat")
-         tvs     = if concrete
-                   then vars
-                   else PlainTV (mkName "cat") : vars
-         forall  = forallT tvs (return [])
          failE   = if failing
                    then [| failArrow |]
                    else [| zeroArrow |]
@@ -375,6 +398,7 @@ generateLabel failing concrete datatype dtVars conCount
                         then [t| Mono.Lens $cat $tyI $tyO |]
                         else [t| Poly.Lens $cat $tyI $tyO |]
 
+     tvs <- nub . binderFromType <$> ty
      return $
        case name of
          Nothing -> LabelExpr tvs cont ty body
@@ -467,7 +491,7 @@ computeTypes forcedMono fieldtype datatype dtVars_ subst =
                mono
                (prettyType <$> tyI)
                (prettyType <$> tyO)
-               pretties
+               (nub pretties)
        else
          do let names = return <$> ['a'..'z']
                 used  = show . pretty <$> varNames
@@ -479,7 +503,7 @@ computeTypes forcedMono fieldtype datatype dtVars_ subst =
               mono
               (prettyType <$> [t| $tyI -> $(rename <$> tyI) |])
               (prettyType <$> [t| $tyO -> $(rename <$> tyO) |])
-              (pretties ++ map (mapTyVarBndr pretty) (PlainTV . snd <$> subs))
+              (nub (pretties ++ map (mapTyVarBndr pretty) (PlainTV . snd <$> subs)))
 
 isMonomorphic :: Type -> [TyVarBndr] -> Bool
 isMonomorphic field vars =
