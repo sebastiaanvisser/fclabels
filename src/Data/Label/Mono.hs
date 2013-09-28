@@ -4,7 +4,9 @@ same type. -}
 
 {-# LANGUAGE
     FlexibleInstances
-  , MultiParamTypeClasses #-}
+  , MultiParamTypeClasses
+  , TypeOperators
+  #-}
 
 module Data.Label.Mono
 ( Lens
@@ -13,12 +15,16 @@ module Data.Label.Mono
 , modify
 , set
 , iso
+
+-- * Specialized monomorphic lens operators.
+, (:->)
+, (:~>)
 )
 where
 
 import Control.Category
 import Control.Arrow
-import Data.Label.Point (Isomorphism (Iso))
+import Data.Label.Point (Isomorphism (Iso), Total, Partial)
 import Prelude hiding ((.), id)
 
 import qualified Data.Label.Poly as Poly
@@ -63,4 +69,14 @@ set = Poly.set
 
 iso :: ArrowApply cat => Isomorphism cat f o -> Lens cat f o
 iso (Iso f b) = lens f (app . arr (\(m, v) -> (b . m . f, v)))
+
+-------------------------------------------------------------------------------
+
+-- | Total monomorphic lens.
+
+type f :-> o = Lens Total f o
+
+-- | Partial monomorphic lens.
+
+type f :~> o = Lens Partial f o
 

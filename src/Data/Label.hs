@@ -167,9 +167,9 @@ Amsterdam over exactly two years:
 )
 where
 
-import Data.Label.Point (Isomorphism(..), inv, Total)
+import Data.Label.Point (Isomorphism(..), inv)
 import Data.Label.Poly (point, (>-))
-import Data.Label.Mono (Lens, iso)
+import Data.Label.Mono (iso, (:->))
 import Data.Label.Derive
 
 import qualified Data.Label.Mono as Mono
@@ -180,11 +180,6 @@ import qualified Data.Label.Mono as Mono
 {-# INLINE set    #-}
 
 -------------------------------------------------------------------------------
-
--- | Monomorphic lens type specialized for total accessor functions. This is
--- the simplest lens type compatible with older version of fclabels.
-
-type f :-> a = Lens Total f a
 
 -- | Create a total lens from a getter and a modifier.
 --
