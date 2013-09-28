@@ -56,6 +56,9 @@ import Prelude hiding ((.), id)
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
 
+-------------------------------------------------------------------------------
+-- Publicly exposed functions.
+
 -- | Derive labels including type signatures for all the record selectors for a
 -- collection of datatypes. The types will be polymorphic and can be used in an
 -- arbitrary context.
@@ -199,6 +202,7 @@ fclabels decls =
           con c            = c
 
 -------------------------------------------------------------------------------
+-- Intermediate data types.
 
 data Label
  = LabelDecl
@@ -221,6 +225,8 @@ data Field c = Field
   c                    -- Occurs in this/these constructors.
   deriving (Eq, Functor, Foldable)
 
+type Subst = [(Type, Type)]
+
 data Context = Context
   Int                  -- Field index.
   Name                 -- Constructor name.
@@ -228,9 +234,12 @@ data Context = Context
   deriving Eq
 
 data Typing = Typing
+  Bool                 -- Monomorphic type or polymorphic.
   TypeQ                -- The lens input type.
   TypeQ                -- The lens output type.
   [TyVarBndr]          -- All used type variables.
+
+-------------------------------------------------------------------------------
 
 mkLabelsWithForDec :: (String -> String) -> Bool -> Bool -> Bool -> Bool -> Dec -> Q [Dec]
 mkLabelsWithForDec mk sigs concrete failing inl dec =
@@ -265,10 +274,14 @@ generateLabels mk concrete failing dec =
 
     forM fields $ generateLabel failing concrete name vars (length cons)
 
-groupFields :: (String -> String) -> [Con] -> [Field [Context]]
+groupFields :: (String -> String) -> [Con] -> [Field ([Context], Subst)]
 groupFields mk
   = map (rename mk)
-  . concatMap (\fs -> let cons = concat (toList <$> fs) in nub $ map (fmap (const cons)) fs)
+  . concatMap (\fs -> let vals  = concat (toList <$> fs)
+                          cons  = fst <$> vals
+                          subst = concat (snd <$> vals)
+                       in nub (fmap (const (cons, subst)) <$> fs)
+              )
   . groupBy eq
   . sortBy (comparing name)
   . concatMap constructorFields
@@ -277,28 +290,30 @@ groupFields mk
         rename f (Field n a b c) =
           Field (mkName . f . nameBase <$> n) a b c
 
-constructorFields :: Con -> [Field Context]
+constructorFields :: Con -> [Field (Context, Subst)]
 constructorFields con =
 
   case con of
 
     NormalC c fs -> one <$> zip [0..] fs
-      where one (i, f@(_, ty)) = Field Nothing mono ty (Context i c con)
+      where one (i, f@(_, ty)) = Field Nothing mono ty (Context i c con, [])
               where fsTys = map (typeVariables . snd) (delete f fs)
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
     RecC c fs -> one <$> zip [0..] fs
-      where one (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con)
+      where one (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con, [])
               where fsTys = map (typeVariables . trd) (delete f fs)
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
                     trd (_, _, x) = x
 
     InfixC a c b -> one <$> [(0, a), (1, b)]
-      where one (i, (_, ty)) = Field Nothing mono ty (Context i c con)
+      where one (i, (_, ty)) = Field Nothing mono ty (Context i c con, [])
               where fsTys = map (typeVariables . snd) [a, b]
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
-    ForallC _ _ c -> constructorFields c
+    ForallC _ x v -> setEqs <$> constructorFields v
+      where eqs = [ (a, b) | EqualP a b <- x ]
+            setEqs (Field a b c d) = Field a b c (second (eqs ++) d)
 
 generateLabel
   :: Bool
@@ -306,16 +321,16 @@ generateLabel
   -> Name
   -> [TyVarBndr]
   -> Int
-  -> Field [Context]
+  -> Field ([Context], Subst)
   -> Q Label
 
-generateLabel failing concrete tyname tyvars conCount
-              field@(Field name forcedMono fieldtyp ctors) =
+generateLabel failing concrete datatype dtVars conCount
+              field@(Field name forcedMono fieldtype ctors) =
 
-  do let total = length ctors == conCount
-         mono  = forcedMono || isMonomorphic fieldtyp tyvars
+  do let total = length (fst ctors) == conCount
 
-     (Typing tyI tyO vars) <- computeTypes mono fieldtyp tyname tyvars
+     (Typing mono tyI tyO vars)
+        <- computeTypes forcedMono fieldtype datatype dtVars (snd ctors)
 
      let cat     = varT (mkName "cat")
          tvs     = if concrete
@@ -382,8 +397,8 @@ modifier g m = m . first app . arr (\(n, (f, o)) -> ((n, o), f)) . second (id &&
 
 -------------------------------------------------------------------------------
 
-getter :: Bool -> Field [Context] -> Q Exp
-getter total (Field mn _ _ cons) =
+getter :: Bool -> Field ([Context], Subst) -> Q Exp
+getter total (Field mn _ _ (cons, _)) =
   do let pt = mkName "f"
          nm = maybe (tupE []) (litE . StringL . nameBase) mn
          wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
@@ -404,8 +419,8 @@ getter total (Field mn _ _ cons) =
           pats  = replicate i wildP ++ [pats1 !! i] ++ repeat wildP
           var   = varE (fresh !! i)
 
-setter :: Bool -> Field [Context] -> Q Exp
-setter total (Field mn _ _ cons) =
+setter :: Bool -> Field ([Context], Subst) -> Q Exp
+setter total (Field mn _ _ (cons, _)) =
   do let pt = mkName "f"
          md = mkName "v"
          nm = maybe (tupE []) (litE . StringL . nameBase) mn
@@ -434,29 +449,25 @@ setter total (Field mn _ _ cons) =
 
 -------------------------------------------------------------------------------
 
-isMonomorphic :: Type -> [TyVarBndr] -> Bool
-isMonomorphic field vars =
+computeTypes :: Bool -> Type -> Name -> [TyVarBndr] -> Subst -> Q Typing
+computeTypes forcedMono fieldtype datatype dtVars_ subst =
 
-  let fieldVars = typeVariables field
-      varNames  = fromTyVarBndr <$> vars
-      usedVars  = filter (`elem` fieldVars) varNames
-   in null usedVars
-
-computeTypes :: Bool -> Type -> Name -> [TyVarBndr] -> Q Typing
-computeTypes mono field datatype vars =
-
-  do let fieldVars = typeVariables field
-         tyO       = return field
-         varNames  = fromTyVarBndr <$> vars
+  do let fieldVars = typeVariables fieldtype
+         tyO       = return fieldtype
+         dtTypes   = substitute subst . typeFromBinder <$> dtVars_
+         dtBinders = concatMap binderFromType dtTypes
+         varNames  = nameFromBinder <$> dtBinders
          usedVars  = filter (`elem` fieldVars) varNames
-         tyI       = foldr (flip appT) (conT datatype)
-                           (return . tvToVarT <$> reverse vars)
+         tyI       = return $ foldr (flip AppT) (ConT datatype) (reverse dtTypes)
+         pretties  = mapTyVarBndr pretty <$> dtBinders
+         mono      = forcedMono || isMonomorphic fieldtype dtBinders
 
      if mono
        then return $ Typing
+               mono
                (prettyType <$> tyI)
                (prettyType <$> tyO)
-               (mapTyVarBndr pretty <$> vars)
+               pretties
        else
          do let names = return <$> ['a'..'z']
                 used  = show . pretty <$> varNames
@@ -465,39 +476,70 @@ computeTypes mono field datatype vars =
             let rename = mapTypeVariables (\a -> a `fromMaybe` lookup a subs)
 
             return $ Typing
+              mono
               (prettyType <$> [t| $tyI -> $(rename <$> tyI) |])
               (prettyType <$> [t| $tyO -> $(rename <$> tyO) |])
-              (mapTyVarBndr pretty <$> vars ++ (PlainTV . snd <$> subs))
+              (pretties ++ map (mapTyVarBndr pretty) (PlainTV . snd <$> subs))
 
-  where -- Convert a binder to a regular type variable.
-        tvToVarT (PlainTV  tv     ) = VarT tv
-        tvToVarT (KindedTV tv kind) = SigT (VarT tv) kind
+isMonomorphic :: Type -> [TyVarBndr] -> Bool
+isMonomorphic field vars =
+  let fieldVars = typeVariables field
+      varNames  = nameFromBinder <$> vars
+      usedVars  = filter (`elem` fieldVars) varNames
+   in null usedVars
 
 -------------------------------------------------------------------------------
-
--- Compute all the free type variables from a type.
+-- Generic helper functions dealing with Template Haskell
 
 typeVariables :: Type -> [Name]
-typeVariables ty =
-  case ty of
-    ForallT ts _ _ -> fromTyVarBndr <$> ts
-    AppT a b       -> typeVariables a ++ typeVariables b
-    SigT t _       -> typeVariables t
-    VarT n         -> [n]
-    _              -> []
+typeVariables = map nameFromBinder . binderFromType
+
+typeFromBinder :: TyVarBndr -> Type
+typeFromBinder (PlainTV  tv     ) = VarT tv
+typeFromBinder (KindedTV tv kind) = SigT (VarT tv) kind
+
+binderFromType :: Type -> [TyVarBndr]
+binderFromType = go
+  where
+  go ty =
+    case ty of
+      ForallT ts _ _ -> ts
+      AppT a b       -> go a ++ go b
+      SigT t _       -> go t
+      VarT n         -> [PlainTV n]
+      _              -> []
 
 mapTypeVariables :: (Name -> Name) -> Type -> Type
-mapTypeVariables f ty =
-  case ty of
-    ForallT ts a b -> ForallT (mapTyVarBndr f <$> ts) (mapPred f <$> a) (mapTypeVariables f b)
-    AppT a b       -> AppT (mapTypeVariables f a) (mapTypeVariables f b)
-    SigT t a       -> SigT (mapTypeVariables f t) a
-    VarT n         -> VarT (f n)
-    t              -> t
+mapTypeVariables f = go
+  where
+  go ty =
+    case ty of
+      ForallT ts a b -> ForallT (mapTyVarBndr f <$> ts)
+                                (mapPred f <$> a) (go b)
+      AppT a b       -> AppT (go a) (go b)
+      SigT t a       -> SigT (go t) a
+      VarT n         -> VarT (f n)
+      t              -> t
 
-fromTyVarBndr :: TyVarBndr -> Name
-fromTyVarBndr (PlainTV  n  ) = n
-fromTyVarBndr (KindedTV n _) = n
+mapType :: (Type -> Type) -> Type -> Type
+mapType f = go
+  where
+  go ty =
+    case ty of
+      ForallT v c t -> f (ForallT v c (go t))
+      AppT a b      -> f (AppT (go a) (go b))
+      SigT t k      -> f (SigT (go t) k)
+      _             -> f ty
+
+substitute :: Subst -> Type -> Type
+substitute env = mapType sub
+  where sub v = case lookup v env of
+                  Nothing -> v
+                  Just w  -> w
+
+nameFromBinder :: TyVarBndr -> Name
+nameFromBinder (PlainTV  n  ) = n
+nameFromBinder (KindedTV n _) = n
 
 mapPred :: (Name -> Name) -> Pred -> Pred
 mapPred f (ClassP n ts) = ClassP (f n) (mapTypeVariables f <$> ts)
