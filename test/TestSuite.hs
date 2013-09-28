@@ -16,8 +16,9 @@ import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
 import Data.Label.Derive (defaultNaming, mkLabelsWith, fclabels)
-import Data.Label.Partial ((:~>))
+import Data.Label.Mono ((:~>))
 import Data.Label.Failing (Failing)
+import Data.Tuple (swap)
 
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalState, execState, runState)
@@ -112,7 +113,7 @@ _Ga = lGa; _Gb = lGb; _Gc = lGc; _Gd = lGd; _Ge = lGe; _Gf = lGf; _Gg = lGg; _Gh
 
 -------------------------------------------------------------------------------
 
-embed_fB :: (Record -> Record) :~> (Newtype Bool -> Newtype Bool)
+embed_fB :: Record :~> Newtype Bool
 embed_fB = Partial.embed fB
 
 manual_fA :: Record :-> Integer
@@ -121,7 +122,7 @@ manual_fA = Total.lens _fA (\m f -> f { _fA = m (_fA f) })
 manual_fA_m :: Mono.Lens (->) Record Integer
 manual_fA_m = lens _fA (\m f -> f { _fA = m (_fA f) })
 
-manual_mA :: (Multi -> Multi) :~> (Record -> Record)
+manual_mA :: Multi :~> Record
 manual_mA = Partial.lens
   (\p   -> case p of First {} -> Just (_mA p); _ -> Nothing)
   (\m p -> case p of First {} -> (\v -> p { _mA = v }) `fmap` m (_mA p); _ -> Nothing)
@@ -143,7 +144,7 @@ manual_dir = Poly.lens _dir (\(m, f) -> f {_dir = m (_dir f) })
 north_f :: Poly.Lens (Failing String) (Direction i a b c d -> Direction i e b c d) (a -> e)
 north_f = north
 
-fAmA :: (Multi -> Multi) :~> (Integer -> Integer)
+fAmA :: Multi :~> Integer
 fAmA = fA . mA
 
 recordView :: Record :-> View
@@ -154,6 +155,32 @@ recordView = Poly.point $
 
 newtypeId :: Newtype Bool :-> Newtype Bool
 newtypeId = Poly.point (id <$> id >- id)
+
+-------------------------------------------------------------------------------
+
+fclabels [d|
+
+  data View2 a
+    = Con1 { field1 :: Bool
+           , field2 :: (a, a)
+           }
+    | Con2 { field1 :: Bool
+           , field3 :: [a]
+           }
+    deriving (Eq, Show)
+
+  |]
+
+view :: View2 a :~> Either (Bool, (a, a)) (Bool, [a])
+view = point $
+      Left  <$> L.left  >- con1
+  <|> Right <$> L.right >- con2
+  where con1 = point $
+          (,) <$> L.fst >- field1
+              <*> L.snd >- field2
+        con2 = point $
+          (,) <$> L.fst >- field1
+              <*> L.snd >- field3
 
 -------------------------------------------------------------------------------
 
@@ -216,7 +243,8 @@ allTests = TestList
   , partialPoly
   , failingPoly
   , composition
-  , applicative
+  , applicativeTotal
+  , applicativePartial
   , bijections
   , monadic
   , base
@@ -358,8 +386,8 @@ composition = TestList
   , eq0 "mod fAmA id" (Partial.modify (fAmA . id) (+ 1) first0) (Just first2)
   ] where eq0 x = equality ("composition partial mono" ++ x)
 
-applicative :: Test
-applicative = TestList
+applicativeTotal :: Test
+applicativeTotal = TestList
   [ eq "get vA" (Total.get (vA . recordView) record0) Nothing
   , eq "get vB" (Total.get (vB . recordView) record0) (Left 1)
   , eq "get vC" (Total.get (vC . recordView) record0) newtype0
@@ -370,6 +398,28 @@ applicative = TestList
   , eq "set newtypeId" (Total.set newtypeId newtype1 newtype0) newtype1
   , eq "mod newtypeId" (Total.modify newtypeId (const newtype2) newtype0) newtype2
   ] where eq x = equality ("applicative total mono" ++ x)
+
+myCon1 :: View2 Char
+myCon1 = Con1 False ('a', 'z')
+
+myCon2 :: View2 Char
+myCon2 = Con2 True "abc"
+
+applicativePartial :: Test
+applicativePartial = TestList
+  [ eq "get" (Partial.get    (L.snd . L.left  . view) myCon1) (Just ('a', 'z'))
+  , eq "get" (Partial.get    (L.snd . L.left  . view) myCon2) Nothing
+  , eq "get" (Partial.get    (L.snd . L.right . view) myCon1) Nothing
+  , eq "get" (Partial.get    (L.snd . L.right . view) myCon2) (Just "abc")
+  , eq "mod" (Partial.modify (L.fst . L.left  . view) not myCon1) (Just (Con1 True ('a', 'z')))
+  , eq "mod" (Partial.modify (L.fst . L.left  . view) not myCon2) Nothing
+  , eq "mod" (Partial.modify (L.fst . L.right . view) not myCon1) Nothing
+  , eq "mod" (Partial.modify (L.fst . L.right . view) not myCon2) (Just (Con2 False "abc"))
+  , eq "mod" (Partial.modify (L.snd . L.left  . view) swap myCon1) (Just (Con1 False ('z', 'a')))
+  , eq "mod" (Partial.modify (L.snd . L.left  . view) swap myCon2) Nothing
+  , eq "mod" (Partial.modify (L.snd . L.right . view) reverse myCon1) Nothing
+  , eq "mod" (Partial.modify (L.snd . L.right . view) reverse myCon2) (Just (Con2 True "cba"))
+  ] where eq x = equality ("applicative partial mono" ++ x)
 
 bijections :: Test
 bijections = TestList
