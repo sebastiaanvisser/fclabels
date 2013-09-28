@@ -480,8 +480,8 @@ base = TestList
   , eq "mod right" (Partial.modify L.right (=='c') (Left ())) (Nothing :: Maybe (Either () Bool))
   , eq "mod just" (Partial.modify L.just (=='a') (Just 'a')) (Just (Just True))
   , eq "mod just" (Partial.modify L.just (=='a') Nothing) Nothing
-  , eq "mod fst" (Total.modify (L.fst . L.swap) (+ 1) ((), 1)) ((), 2::Int)
-  , eq "mod snd" (Total.modify (L.snd . L.swap) (+ 1) (1, ())) (2::Int, ())
+  , eq "mod fst" (Total.modify (L.fst . L.swap) (== 'a') ((), 'a')) ((), True)
+  , eq "mod snd" (Total.modify (L.snd . L.swap) (== 'a') ('a', ())) (True, ())
   , eq "mod fst3" (Total.modify L.fst3 (== 'a') ('a', (), ())) (True, (), ())
   , eq "mod snd3" (Total.modify L.snd3 (== 'a') ((), 'b', ())) ((), False, ())
   , eq "mod trd3" (Total.modify L.trd3 (== 'a') ((), (), 'c')) ((), (), False)

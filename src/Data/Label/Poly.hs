@@ -73,8 +73,9 @@ modify = Point.modify . unpack
 set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
 set = Point.set . unpack
 
--- | Lift a polymorphic isomorphism into a `Lens`. The isomorphism needs to be
--- passed in twice to properly unify with the right type variables.
+-- | Lift a polymorphic isomorphism into a `Lens`.
+--
+-- The isomorphism needs to be passed in twice to properly unify.
 
 iso :: ArrowApply cat => Isomorphism cat f o -> Isomorphism cat g i -> Lens cat (f -> g) (o -> i)
 iso (Iso f _) (Iso _ y) = lens f (app . arr (\(m, v) -> (y . m . f, v)))

@@ -35,8 +35,8 @@ module Data.Label.Base
 where
 
 import Prelude hiding (fst, snd, head, tail)
-import Control.Arrow (ArrowApply, ArrowZero, ArrowChoice)
-import Data.Label (getLabel, Isomorphism(..), iso, (:->))
+import Control.Arrow (arr, ArrowApply, ArrowZero, ArrowChoice)
+import Data.Label (getLabel, Isomorphism(..))
 
 import qualified Data.Label.Mono as Mono
 import qualified Data.Label.Poly as Poly
@@ -83,10 +83,10 @@ snd :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
 
 (fst, snd) = $(getLabel ''(,))
 
--- | Lens that swap the components of a tuple.
+-- | Polymorphic lens that swap the components of a tuple.
 
-swap :: (a, b) :-> (b, a)
-swap = iso (Iso Tuple.swap Tuple.swap)
+swap :: ArrowApply arr => Poly.Lens arr ((a, b) -> (c, d)) ((b, a) -> (d, c))
+swap = let iso = Iso (arr Tuple.swap) (arr Tuple.swap) in Poly.iso iso iso
 
 -- | Lens pointing to the first component of a 3-tuple. (Total and polymorphic)
 
