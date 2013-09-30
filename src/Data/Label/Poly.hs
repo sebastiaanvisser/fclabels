@@ -92,7 +92,10 @@ instance ArrowApply arr => Category (Lens arr) where
   {-# INLINE id  #-}
   {-# INLINE (.) #-}
 
--- | Make a Lens output diverge by changing the input of the modifier.
+-- | Make a Lens output diverge by changing the input of the modifier. The
+-- operator can be read as /points-to/.
+
+infix 7 >-
 
 (>-) :: Arrow arr => Lens arr (j -> a) (i -> b) -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
 (>-) (Lens (Point f _)) (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
