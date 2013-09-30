@@ -83,7 +83,7 @@ snd :: ArrowApply arr => Poly.Lens arr ((a, b) -> (a, o)) (b -> o)
 
 (fst, snd) = $(getLabel ''(,))
 
--- | Polymorphic lens that swap the components of a tuple.
+-- | Polymorphic lens that swaps the components of a tuple. (Total and polymorphic)
 
 swap :: ArrowApply arr => Poly.Lens arr ((a, b) -> (c, d)) ((b, a) -> (d, c))
 swap = let iso = Iso (arr Tuple.swap) (arr Tuple.swap) in Poly.iso iso iso
