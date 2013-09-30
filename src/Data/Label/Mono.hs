@@ -13,6 +13,7 @@ module Data.Label.Mono
 , lens
 , get
 , modify
+, point
 , set
 , iso
 
@@ -24,7 +25,7 @@ where
 
 import Control.Category
 import Control.Arrow
-import Data.Label.Point (Iso (..), Total, Partial)
+import Data.Label.Point (Point, Iso (..), Total, Partial)
 import Prelude hiding ((.), id)
 
 import qualified Data.Label.Poly as Poly
@@ -33,6 +34,7 @@ import qualified Data.Label.Poly as Poly
 {-# INLINE get    #-}
 {-# INLINE modify #-}
 {-# INLINE set    #-}
+{-# INLINE point  #-}
 {-# INLINE iso    #-}
 
 -------------------------------------------------------------------------------
@@ -64,6 +66,11 @@ modify = Poly.modify
 
 set :: Arrow arr => Lens arr f o -> arr (o, f) f
 set = Poly.set
+
+-- | Create lens from a `Point`.
+
+point :: Point cat f o f o -> Lens cat f o
+point = Poly.point
 
 -- | Lift an isomorphism into a `Lens`.
 
