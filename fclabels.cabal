@@ -10,7 +10,9 @@ Description:   This package provides first class labels that can act as
                /lenses/ and are fully composable. Lenses can be used to /get/,
                /set/ and /modify/ parts of a data type in a consistent way.
                .
-               See "Data.Label" for an introductory explanation.
+               See "Data.Label" for an introductory explanation or see the
+               introductory blog post at
+               <http://fvisser.nl/post/2013/okt/1/fclabels-2.0.html>
                .
                * /Total and partial lenses/
                .
@@ -27,7 +29,7 @@ Description:   This package provides first class labels that can act as
                We have both polymorphic and monomorphic lenses. Polymorphic
                lenses allow updates that change the type. The types of
                polymorphic lenses are slightly more verbose than their
-               monomorphic counterparts, but there usage is similar. Because
+               monomorphic counterparts, but their usage is similar. Because
                monomorphic lenses are built by restricting the types of
                polymorphic lenses they are essentially the same and can be
                freely composed with eachother.

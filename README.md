@@ -21,7 +21,7 @@ See `Data.Label.Partial` for the use of partial labels.
 
 We have both polymorphic and monomorphic lenses. Polymorphic lenses allow
 updates that change the type. The types of polymorphic lenses are slightly more
-verbose than their monomorphic counterparts, but there usage is similar.
+verbose than their monomorphic counterparts, but their usage is similar.
 Because monomorphic lenses are built by restricting the types of polymorphic
 lenses they are essentially the same and can be freely composed with eachother.
 
@@ -37,4 +37,6 @@ combinators for working with labels for values in the Reader and State monad.
 See `Data.Label.Base` and `Data.Label.Monadic` for more information.
 
 On Hackage: http://hackage.haskell.org/package/fclabels
+
+Introduction: http://fvisser.nl/post/2013/okt/1/fclabels-2.0.html
 
