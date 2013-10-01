@@ -8,6 +8,7 @@ datatypes.
 
 module Data.Label.Total
 ( (:->)
+, Total
 , lens
 , get
 , modify
