@@ -1,7 +1,7 @@
-{-| Default lenses for simple total getters and monomorphic updates. Useful for
-creating accessor labels for single constructor datatypes. Also useful field
-labels that are shared between all the constructors of a multi constructor
-datatypes.
+{-| Default lenses for simple total getters and total possibly polymorphic,
+updates. Useful for creating accessor labels for single constructor datatypes.
+Also useful field labels that are shared between all the constructors of a
+multi constructor datatypes.
 -}
 
 {-# LANGUAGE TypeOperators #-}
