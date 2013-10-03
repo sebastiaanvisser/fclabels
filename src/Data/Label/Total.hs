@@ -13,6 +13,7 @@ module Data.Label.Total
 , get
 , modify
 , set
+, traverse
 )
 where
 
@@ -59,4 +60,9 @@ modify = curry . Poly.modify
 
 set :: ((f -> g) :-> (o -> i)) -> i -> f -> g
 set = curry . Poly.set
+
+-- | Modify in some context.
+
+traverse :: Functor m => (f -> g) :-> (o -> i) -> (o -> m i) -> f -> m g
+traverse l m f = (\w -> set l w f) `fmap` m (get l f)
 
