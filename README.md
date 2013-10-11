@@ -10,7 +10,7 @@ See `Data.Label` for an introductory explanation.
 
 ### Total and partial lenses
 
-Internally lenses do not used Haskell functions directly, but are implemented
+Internally lenses do not use Haskell functions directly, but are implemented
 as categories. Categories allow the lenses to be run in custom computational
 contexts. This approach allows us to make partial lenses that point to fields
 of multi-constructor datatypes in an elegant way.
