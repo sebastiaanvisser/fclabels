@@ -13,10 +13,14 @@ module Data.Label.Total
 , get
 , modify
 , set
+
+-- * Working in contexts.
 , traverse
+, lifted
 )
 where
 
+import Control.Monad ((<=<), liftM)
 import Data.Label.Poly (Lens)
 import Data.Label.Point (Total)
 
@@ -65,4 +69,20 @@ set = curry . Poly.set
 
 traverse :: Functor m => (f -> g) :-> (o -> i) -> (o -> m i) -> f -> m g
 traverse l m f = (\w -> set l w f) `fmap` m (get l f)
+
+
+-- | Lifted lens composition.
+--
+-- For example, useful when specialized to lists:
+--
+-- > :: (f :-> [o])
+-- > -> (o :-> [a])
+-- > -> (f :-> [a])
+
+lifted
+  :: Monad m
+  => (f -> g) :-> (m o -> m i)
+  -> (o -> i) :-> (m a -> m b)
+  -> (f -> g) :-> (m a -> m b)
+lifted a b = lens (get b <=< get a) (modify a . liftM . modify b)
 
