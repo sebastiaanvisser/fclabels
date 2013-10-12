@@ -17,6 +17,9 @@ module Data.Label.Partial
 -- * Seemingly total modifications.
 , set'
 , modify'
+
+-- * Potentially removing modification.
+, update
 )
 where
 
@@ -89,4 +92,10 @@ modify' l m f = f `fromMaybe` modify l m f
 
 set' :: (f -> f) :~> (o -> o) -> o -> f -> f
 set' l v f = f `fromMaybe` set l v f
+
+-- | Like `modify`, but update allows, depending on the underlying lens, to
+-- remove items by modifying to `Nothing`.
+
+update :: (f -> b) :~> (o -> i) -> (o -> Maybe i) -> f -> Maybe b
+update l m = runKleisli (Poly.modify l . arr ((,) (Kleisli m)))
 
