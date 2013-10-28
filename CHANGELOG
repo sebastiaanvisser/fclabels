@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0 -> 2.0.0.1
+  - Remove warnings on generated labels with OverloadedStrings.
+
 1.1.7.1 -> 2.0
 
   - Introduced polymorphic lenses.

@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0
+Version:       2.0.0.1
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.
@@ -47,30 +47,9 @@ Description:   This package provides first class labels that can act as
                See "Data.Label.Base" and "Data.Label.Monadic" for more
                information.
                .
-               * /Changelog from 1.1.7.1 to 2.0/
+               * /Changelog from 2.0 to 2.0.0.1/
                .
-               >   - Introduced polymorphic lenses.
-               >   - Lenses are now based on getters and modifiers, not getters and setters.
-               >   - Pure lenses are now named Total lenses.
-               >   - Maybe lenses are now named Partial lenses.
-               >   - Introduced Failing lenses that preserve errors.
-               >   - Generalized Point data type.
-               >   - Removed unused monadic functions for partial lenses.
-               >   - Added ArrowFail type class.
-               >   - Added lenses for base types. (tuples, lists, Maybe, Either)
-               >   - Isomorphisms now uses regular function space for base morphism.
-               >   - Swapped iso for more useful inv.
-               >   - Introduced iso to more easily lift isomorphisms into lenses.
-               >   - Removed mainly unused bimap.
-               >   - Added derivation of lenses as expressions.
-               >   - Convert record declarations directly into fclabels variants.
-               >   - Allow deriving lenses for GADTs.
-               >   - Added reasonably sophisticated totality checker for GADT labels.
-               >   - Derived lenses can now fail in either ArrowZero or ArrowFail.
-               >   - Alternative instance for Point.
-               >   - Vertical composition for multi-constructor data types.
-               >   - Extensive test suite.
-               >   - Fully documented.
+               >   - Remove warnings on generated labels with OverloadedStrings.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 Homepage:      https://github.com/sebastiaanvisser/fclabels
