@@ -363,8 +363,8 @@ generateLabel failing concrete datatype dtVars allCons
          failE   = if failing
                    then [| failArrow |]
                    else [| zeroArrow |]
-         getT    = [| arr $(getter total field) |]
-         putT    = [| arr $(setter total field) |]
+         getT    = [| arr $(getter failing total field) |]
+         putT    = [| arr $(setter failing total field) |]
          getP    = [| $(failE) ||| id <<< $getT |]
          putP    = [| $(failE) ||| id <<< $putT |]
          failP   = if failing
@@ -421,10 +421,10 @@ modifier g m = m . first app . arr (\(n, (f, o)) -> ((n, o), f)) . second (id &&
 
 -------------------------------------------------------------------------------
 
-getter :: Bool -> Field ([Context], Subst) -> Q Exp
-getter total (Field mn _ _ (cons, _)) =
+getter :: Bool -> Bool -> Field ([Context], Subst) -> Q Exp
+getter failing total (Field mn _ _ (cons, _)) =
   do let pt = mkName "f"
-         nm = maybe (tupE []) (litE . StringL . nameBase) mn
+         nm = maybe (tupE []) (litE . StringL . nameBase) (guard failing >> mn)
          wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
          mkCase (Context i _ c) = match pat (normalB (rght var)) []
@@ -443,11 +443,11 @@ getter total (Field mn _ _ (cons, _)) =
           pats  = replicate i wildP ++ [pats1 !! i] ++ repeat wildP
           var   = varE (fresh !! i)
 
-setter :: Bool -> Field ([Context], Subst) -> Q Exp
-setter total (Field mn _ _ (cons, _)) =
+setter :: Bool -> Bool -> Field ([Context], Subst) -> Q Exp
+setter failing total (Field mn _ _ (cons, _)) =
   do let pt = mkName "f"
          md = mkName "v"
-         nm = maybe (tupE []) (litE . StringL . nameBase) mn
+         nm = maybe (tupE []) (litE . StringL . nameBase) (guard failing >> mn)
          wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
          mkCase (Context i _ c) = match pat (normalB (rght var)) []
