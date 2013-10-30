@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0.0.1 -> 2.0.0.2
+  - Fix deriving with data types with more than 24 fields.
+
 2.0 -> 2.0.0.1
   - Remove warnings on generated labels with OverloadedStrings.
 
