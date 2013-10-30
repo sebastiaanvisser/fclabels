@@ -438,7 +438,7 @@ getter failing total (Field mn _ _ (cons, _)) =
       RecC    c fs  -> let s = take (length fs) in (conP c (s pats), var)
       InfixC  _ c _ -> (infixP (pats !! 0) c (pats !! 1), var)
       ForallC _ _ c -> case1 i c
-    where fresh = mkName . pure <$> delete 'f' ['a'..'z']
+    where fresh = mkName <$> delete "f" freshNames
           pats1 = varP <$> fresh
           pats  = replicate i wildP ++ [pats1 !! i] ++ repeat wildP
           var   = varE (fresh !! i)
@@ -463,13 +463,16 @@ setter failing total (Field mn _ _ (cons, _)) =
                        , infixE (Just (vars !! 0)) (conE c) (Just (vars !! 1))
                        )
       ForallC _ _ c -> case1 i c
-    where fresh     = mkName . pure <$> delete 'f' (delete 'v' ['a'..'z'])
+    where fresh     = mkName <$> delete "f" (delete "v" freshNames)
           pats1     = varP <$> fresh
           pats      = take i pats1 ++ [wildP] ++ drop (i + 1) pats1
           vars1     = varE <$> fresh
           v         = varE (mkName "v")
           vars      = take i vars1 ++ [v] ++ drop (i + 1) vars1
           apps f as = foldl appE f as
+
+freshNames :: [String]
+freshNames = map pure ['a'..'z'] ++ map (('a':) . show) [0 :: Integer ..]
 
 -------------------------------------------------------------------------------
 
