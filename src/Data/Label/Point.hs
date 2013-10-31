@@ -8,7 +8,8 @@ basis for vertical composition using the `Applicative` type class.
     TypeOperators
   , Arrows
   , FlexibleInstances
-  , MultiParamTypeClasses #-}
+  , MultiParamTypeClasses
+  , TypeSynonymInstances #-}
 
 module Data.Label.Point
 (
