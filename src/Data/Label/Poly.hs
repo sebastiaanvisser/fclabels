@@ -23,7 +23,7 @@ where
 
 import Control.Category
 import Control.Arrow
-import Prelude hiding ((.), id)
+import Prelude ()
 import Data.Label.Point (Point (Point), Iso(..), identity, compose)
 
 import qualified Data.Label.Point as Point

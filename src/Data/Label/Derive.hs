@@ -49,7 +49,6 @@ import Data.Label.Point
 import Data.List (groupBy, sortBy, delete, nub)
 import Data.Maybe (fromMaybe)
 import Data.Ord
-import Data.String
 import Language.Haskell.TH
 import Prelude hiding ((.), id)
 

@@ -26,7 +26,7 @@ where
 import Control.Category
 import Control.Arrow
 import Data.Label.Point (Point, Iso (..), Total, Partial)
-import Prelude hiding ((.), id)
+import Prelude ()
 
 import qualified Data.Label.Poly as Poly
 
