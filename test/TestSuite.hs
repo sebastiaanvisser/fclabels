@@ -502,5 +502,5 @@ base = TestList
   ] where eq x = equality ("base" ++ x)
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
-equality d a b = TestCase (assertEqual d a b)
+equality d a b = TestCase (assertEqual d b a)
 
