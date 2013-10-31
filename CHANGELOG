@@ -1,5 +1,9 @@
 CHANGELOG
 
+2.0.0.2 -> 2.0.0.3
+  - Support GHC 7.0. Note that there seems to be a problem with the
+    appicative syntax, see test cases.
+
 2.0.0.1 -> 2.0.0.2
   - Fix deriving with data types with more than 24 fields.
 

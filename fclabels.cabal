@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0.0.2
+Version:       2.0.0.3
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.
@@ -47,9 +47,10 @@ Description:   This package provides first class labels that can act as
                See "Data.Label.Base" and "Data.Label.Monadic" for more
                information.
                .
-               * /Changelog from 2.0.0.1 to 2.0.0.2/
+               * /Changelog from 2.0.0.2 to 2.0.0.3/
                .
-               >   - Fix deriving with data types with more than 24 fields.
+               >   - Support GHC 7.0. Note that there seems to be a problem with the
+               >     appicative syntax, see test cases.
 
 Maintainer:    Sebastiaan Visser <code@fvisser.nl>
 Homepage:      https://github.com/sebastiaanvisser/fclabels
