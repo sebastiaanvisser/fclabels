@@ -501,9 +501,6 @@ base = TestList
   , eq "mod trd3" (Total.modify L.trd3 (== 'a') ((), (), 'c')) ((), (), False)
   ] where eq x = equality ("base" ++ x)
 
-xxx :: (b, o) :-> o
-xxx = L.fst . L.swap
-
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d a b)
 
