@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0.0.3 -> 2.0.0.4
+  - Include CHANGELOG in source distribution.
+
 2.0.0.2 -> 2.0.0.3
   - Support GHC 7.0. Note that there seems to be a problem with the
     appicative syntax, see test cases.
