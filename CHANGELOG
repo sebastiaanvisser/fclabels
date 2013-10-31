@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0.0.4 -> 2.0.0.5
+  - Add Bug-Reports url again.
+
 2.0.0.3 -> 2.0.0.4
   - Include CHANGELOG in source distribution.
 
