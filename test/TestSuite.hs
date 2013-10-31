@@ -270,7 +270,8 @@ mono = TestList
   [ eq "get manual_fA_m" (get manual_fA_m record0) 0
   , eq "set manual_fA_m" (set manual_fA_m 1 record0) record1
   , eq "mod manual_fA_m" (modify manual_fA_m (+ 1) record0) record1
-  ] where eq x = equality ("total mono " ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("total mono " ++ x)
 
 totalMono :: Test
 totalMono = TestList
@@ -283,7 +284,8 @@ totalMono = TestList
   , eq "get mB" (Total.get mB first0) 0
   , eq "set mB" (Total.set mB 1 first0) first1
   , eq "mod mB" (Total.modify mB (+ 1) first0) first1
-  ] where eq x = equality ("total mono " ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("total mono " ++ x)
 
 partialMono :: Test
 partialMono = TestList
@@ -313,7 +315,8 @@ partialMono = TestList
   , eq4 "get embed_fB" (Partial.get embed_fB record0) Nothing
   , eq4 "set embed_fB" (Partial.set embed_fB newtype0 record0) Nothing
   , eq4 "mod embed_fB" (Partial.modify embed_fB (const newtype0) record0) Nothing
-  ] where eq0 x = equality ("partial mono " ++ x)
+  ] where eq0, eq1, eq2, eq3, eq4 :: (Eq a, Show a) => String -> a -> a -> Test
+          eq0 x = equality ("partial mono " ++ x)
           eq1 x = equality ("partial mono fail " ++ x)
           eq2 x = equality ("partial mono prime " ++ x)
           eq3 x = equality ("partial mono embed " ++ x)
@@ -347,7 +350,8 @@ failingMono = TestList
   , eq4 "get embed_fD" (Failing.get embed_fD record0) (Left 1)
   , eq4 "set embed_fD" (Failing.set embed_fD False record0) (Left 1)
   , eq4 "mod embed_fD" (Failing.modify embed_fD not record0) (Left 1)
-  ] where eq0 x = equality ("failing mono " ++ x)
+  ] where eq0, eq1, eq2, eq3, eq4 :: (Eq a, Show a) => String -> a -> a -> Test
+          eq0 x = equality ("failing mono " ++ x)
           eq1 x = equality ("failing mono fail " ++ x)
           eq2 x = equality ("failing mono prime " ++ x)
           eq3 x = equality ("failing mono embed " ++ x)
@@ -361,7 +365,8 @@ totalPoly = TestList
   , eq "get manual_dir" (Total.get manual_dir north0) 0
   , eq "set manual_dir" (Total.set manual_dir False north0) north1
   , eq "mod manual_dir" (Total.modify manual_dir (> 1) north0) north1
-  ] where eq x = equality ("total mono " ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("total mono " ++ x)
 
 partialPoly :: Test
 partialPoly = TestList
@@ -371,7 +376,8 @@ partialPoly = TestList
   , eq1 "get north" (Partial.get north west0) Nothing
   , eq1 "set north" (Partial.set north False west0) Nothing
   , eq1 "mod north" (Partial.modify north (> ()) west0) Nothing
-  ] where eq0 x = equality ("partial poly " ++ x)
+  ] where eq0, eq1 :: (Eq a, Show a) => String -> a -> a -> Test
+          eq0 x = equality ("partial poly " ++ x)
           eq1 x = equality ("partial poly fail " ++ x)
 
 failingPoly :: Test
@@ -382,7 +388,8 @@ failingPoly = TestList
   , eq1 "get north" (Failing.get north_f west0) (Left "north")
   , eq1 "set north" (Failing.set north_f False west0) (Left "north")
   , eq1 "mod north" (Failing.modify north_f (> ()) west0) (Left "north")
-  ] where eq0 x = equality ("failing poly " ++ x)
+  ] where eq0, eq1 :: (Eq a, Show a) => String -> a -> a -> Test
+          eq0 x = equality ("failing poly " ++ x)
           eq1 x = equality ("failing poly fail " ++ x)
 
 composition :: Test
@@ -399,7 +406,8 @@ composition = TestList
   , eq0 "get fAmA id" (Partial.get (fAmA . id) first0) (Just 0)
   , eq0 "set fAmA id" (Partial.set (fAmA . id) 1 first0) (Just first2)
   , eq0 "mod fAmA id" (Partial.modify (fAmA . id) (+ 1) first0) (Just first2)
-  ] where eq0 x = equality ("composition partial mono" ++ x)
+  ] where eq0 :: (Eq a, Show a) => String -> a -> a -> Test
+          eq0 x = equality ("composition partial mono" ++ x)
 
 applicativeTotal :: Test
 applicativeTotal = TestList
@@ -412,7 +420,8 @@ applicativeTotal = TestList
   , eq "get newtypeId" (Total.get newtypeId newtype0) newtype0
   , eq "set newtypeId" (Total.set newtypeId newtype1 newtype0) newtype1
   , eq "mod newtypeId" (Total.modify newtypeId (const newtype2) newtype0) newtype2
-  ] where eq x = equality ("applicative total mono" ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("applicative total mono" ++ x)
 
 myCon1 :: View2 Char
 myCon1 = Con1 False ('a', 'z')
@@ -434,7 +443,8 @@ applicativePartial = TestList
   , eq "mod" (Partial.modify (L.snd . L.left  . view) swap myCon2) Nothing
   , eq "mod" (Partial.modify (L.snd . L.right . view) reverse myCon1) Nothing
   , eq "mod" (Partial.modify (L.snd . L.right . view) reverse myCon2) (Just (Con2 True "cba"))
-  ] where eq x = equality ("applicative partial mono" ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("applicative partial mono" ++ x)
 
 bijections :: Test
 bijections = TestList
@@ -451,7 +461,8 @@ bijections = TestList
   , eq "get id mulDiv" (get (iso (mulDiv . id) . fA) record0) 0
   , eq "set id mulDiv" (set (iso (mulDiv . id) . fA) 1 record0) record10
   , eq "mod id mulDiv" (modify (iso (mulDiv . id) . fA) (+ 1) record0) record10
-  ] where eq x = equality ("isomorphisms mono " ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("isomorphisms mono " ++ x)
 
 monadic :: Test
 monadic = TestList
@@ -465,7 +476,8 @@ monadic = TestList
 
   , eq "local fA total" (runReader (Monadic.local fA (+1) $ Monadic.asks id) record0) record1
   , eq "modifyAndGet fA total" (runState (Monadic.modifyAndGet fA (\a -> (a+10, a+1))) record0) (10, record1)
-  ] where eq x = equality ("total monadic " ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("total monadic " ++ x)
 
 base :: Test
 base = TestList
@@ -499,7 +511,8 @@ base = TestList
   , eq "mod fst3" (Total.modify L.fst3 (== 'a') ('a', (), ())) (True, (), ())
   , eq "mod snd3" (Total.modify L.snd3 (== 'a') ((), 'b', ())) ((), False, ())
   , eq "mod trd3" (Total.modify L.trd3 (== 'a') ((), (), 'c')) ((), (), False)
-  ] where eq x = equality ("base" ++ x)
+  ] where eq :: (Eq a, Show a) => String -> a -> a -> Test
+          eq x = equality ("base" ++ x)
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d b a)
