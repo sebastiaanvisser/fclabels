@@ -355,7 +355,7 @@ generateLabel failing concrete datatype dtVars allCons
 
   do let total = length contexts == length (prune contexts allCons)
 
-     (Typing mono tyI tyO vars)
+     (Typing mono tyI tyO _)
         <- computeTypes forcedMono fieldtype datatype dtVars subst
 
      let cat     = varT (mkName "cat")
