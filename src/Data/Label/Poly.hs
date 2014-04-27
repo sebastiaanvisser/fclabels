@@ -18,15 +18,21 @@ module Data.Label.Poly
 , set
 , iso
 , (>-)
+
+-- * Specialized polymorphic lens operators.
+, (:->)
+, (:~>)
 )
 where
 
-import Control.Category
-import Control.Arrow
-import Prelude ()
-import Data.Label.Point (Point (Point), Iso(..), identity, compose)
+import Prelude hiding ((.), id)
 
-import qualified Data.Label.Point as Point
+import Control.Category
+import Control.Monad
+import Control.Monad.Identity (Identity)
+import Data.Label.Label (Label (Label), Iso(..), identity, compose)
+
+import qualified Data.Label.Label as Label
 
 {-# INLINE lens   #-}
 {-# INLINE get    #-}
@@ -42,49 +48,49 @@ import qualified Data.Label.Point as Point
 -- in some category. Categories allow for effectful lenses, for example, lenses
 -- that might fail or use state.
 
-data Lens cat f o where
-  Lens :: !(Point cat g i f o) -> Lens cat (f -> g) (o -> i)
-  Id   :: ArrowApply cat => Lens cat f f
+data Lens m f o where
+  Lens :: !(Label m m g i f o) -> Lens m (f -> g) (o -> i)
+  Id   :: Monad m => Lens m f f
 
 -- | Create a lens out of a getter and setter.
 
-lens :: cat f o             -- ^ Getter.
-     -> cat (cat o i, f) g  -- ^ Modifier.
-     -> Lens cat (f -> g) (o -> i)
-lens g m = Lens (Point g m)
+lens :: (f -> m o)                -- ^ Getter.
+     -> ((o -> m i) -> f -> m g)  -- ^ Modifier.
+     -> Lens m (f -> g) (o -> i)
+lens g m = Lens (Label g m)
 
--- | Create lens from a `Point`.
+-- | Create lens from a `Label`.
 
-point :: Point cat g i f o -> Lens cat (f -> g) (o -> i)
+point :: Label m m g i f o -> Lens m (f -> g) (o -> i)
 point = Lens
 
 -- | Get the getter arrow from a lens.
 
-get :: Lens cat (f -> g) (o -> i) -> cat f o
-get = Point.get . unpack
+get :: Lens m (f -> g) (o -> i) -> f -> m o
+get = Label.get . unpack
 
 -- | Get the modifier arrow from a lens.
 
-modify :: Lens cat (f -> g) (o -> i) -> cat (cat o i, f) g
-modify = Point.modify . unpack
+modify :: Lens m (f -> g) (o -> i) -> (o -> m i) -> f -> m g
+modify = Label.modify . unpack
 
 -- | Get the setter arrow from a lens.
 
-set :: Arrow arr => Lens arr (f -> g) (o -> i) -> arr (i, f) g
-set = Point.set . unpack
+set :: Lens m (f -> g) (o -> i) -> m i -> f -> m g
+set = Label.set . unpack
 
 -- | Lift a polymorphic isomorphism into a `Lens`.
 --
 -- The isomorphism needs to be passed in twice to properly unify.
 
-iso :: ArrowApply cat => Iso cat f o -> Iso cat g i -> Lens cat (f -> g) (o -> i)
-iso (Iso f _) (Iso _ y) = lens f (app . arr (\(m, v) -> (y . m . f, v)))
+iso :: Monad m => Iso m m f o -> Iso m m g i -> Lens m (f -> g) (o -> i)
+iso (Iso f _) (Iso _ y) = lens f (\m -> y <=< m <=< f)
 
 -------------------------------------------------------------------------------
 
--- | Category instance for monomorphic lenses.
+-- | Category instance for polymorphic lenses.
 
-instance ArrowApply arr => Category (Lens arr) where
+instance Monad m => Category (Lens m) where
   id              = Id
   Lens f . Lens g = Lens (compose f g)
   Id     . u      = u
@@ -97,16 +103,26 @@ instance ArrowApply arr => Category (Lens arr) where
 
 infix 7 >-
 
-(>-) :: Arrow arr => Lens arr (j -> a) (i -> b) -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
-(>-) (Lens (Point f _)) (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
-(>-) (Lens (Point f _)) Id       = Point id (app . first (arr (f .)))
+(>-) :: Monad m => Lens m (j -> a) (i -> b) -> Lens m (f -> g) (o -> i) -> Label m m g j f o
+(>-) (Lens (Label f _)) (Lens l) = Label (Label.get l) (\m -> Label.modify l (f <=< m))
+(>-) (Lens (Label f _)) Id       = Label return (f <=<)
 (>-) Id                 l        = unpack l
 
 -------------------------------------------------------------------------------
 
 -- | Convert a polymorphic lens back to point.
 
-unpack :: Lens cat (f -> g) (o -> i) -> Point cat g i f o
+unpack :: Lens m (f -> g) (o -> i) -> Label m m g i f o
 unpack Id       = identity
 unpack (Lens p) = p
+
+-------------------------------------------------------------------------------
+
+-- | Total polymorphic lens.
+
+type f :-> o = Lens Identity f o
+
+-- | Partial polymorphic lens.
+
+type f :~> o = Lens Maybe f o
 

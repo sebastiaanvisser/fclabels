@@ -8,7 +8,6 @@ multi constructor datatypes.
 
 module Data.Label.Total
 ( (:->)
-, Total
 , lens
 , get
 , modify
@@ -20,9 +19,9 @@ module Data.Label.Total
 )
 where
 
+import Control.Monad.Identity (runIdentity)
 import Control.Monad ((<=<), liftM)
-import Data.Label.Poly (Lens)
-import Data.Label.Point (Total)
+import Data.Label.Poly ((:->))
 
 import qualified Data.Label.Poly as Poly
 
@@ -33,10 +32,6 @@ import qualified Data.Label.Poly as Poly
 
 -------------------------------------------------------------------------------
 
--- | Total lens type specialized for total accessor functions.
-
-type f :-> o = Lens Total f o
-
 -- | Create a total lens from a getter and a modifier.
 --
 -- We expect the following law to hold:
@@ -45,31 +40,30 @@ type f :-> o = Lens Total f o
 --
 -- > set l (get l f) f == f
 
-lens :: (f -> o)              -- ^ Getter.
-     -> ((o -> i) -> f -> g)  -- ^ Modifier.
+lens :: (f -> o)
+     -> ((o -> i) -> f -> g)
      -> (f -> g) :-> (o -> i)
-lens g s = Poly.lens g (uncurry s)
+lens g s = Poly.lens (return . g) (\m -> return . s (runIdentity . m))
 
 -- | Get the getter function from a lens.
 
-get :: ((f -> g) :-> (o -> i)) -> f -> o
-get = Poly.get
+get :: (f -> g) :-> (o -> i) -> f -> o
+get l = runIdentity . Poly.get l
 
 -- | Get the modifier function from a lens.
 
 modify :: (f -> g) :-> (o -> i) -> (o -> i) -> f -> g
-modify = curry . Poly.modify
+modify l m = runIdentity . Poly.modify l (return . m)
 
 -- | Get the setter function from a lens.
 
 set :: ((f -> g) :-> (o -> i)) -> i -> f -> g
-set = curry . Poly.set
+set l m = runIdentity . Poly.set l (return m)
 
 -- | Modify in some context.
 
 traverse :: Functor m => (f -> g) :-> (o -> i) -> (o -> m i) -> f -> m g
 traverse l m f = (\w -> set l w f) `fmap` m (get l f)
-
 
 -- | Lifted lens composition.
 --
