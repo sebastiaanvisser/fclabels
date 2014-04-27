@@ -13,7 +13,7 @@ module Data.Label.Mono
 , lens
 , get
 , modify
-, point
+, label
 , set
 , iso
 
@@ -33,7 +33,7 @@ import qualified Data.Label.Poly as Poly
 {-# INLINE get    #-}
 {-# INLINE modify #-}
 {-# INLINE set    #-}
-{-# INLINE point  #-}
+{-# INLINE label  #-}
 {-# INLINE iso    #-}
 
 -------------------------------------------------------------------------------
@@ -68,8 +68,8 @@ set = Poly.set
 
 -- | Create lens from a `Label`.
 
-point :: Label m m f o f o -> Lens m f o
-point = Poly.point
+label :: Label m m f o f o -> Lens m f o
+label = Poly.label
 
 -- | Lift an isomorphism into a `Lens`.
 

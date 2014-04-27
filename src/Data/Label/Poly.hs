@@ -12,7 +12,7 @@ module Data.Label.Poly
 -- * The polymorphic Lens type.
   Lens
 , lens
-, point
+, label
 , get
 , modify
 , set
@@ -39,7 +39,7 @@ import qualified Data.Label.Label as Label
 {-# INLINE modify #-}
 {-# INLINE set    #-}
 {-# INLINE (>-)   #-}
-{-# INLINE point  #-}
+{-# INLINE label  #-}
 {-# INLINE unpack #-}
 
 -------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ lens g m = Lens (Label g m)
 
 -- | Create lens from a `Label`.
 
-point :: Label m m g i f o -> Lens m (f -> g) (o -> i)
-point = Lens
+label :: Label m m g i f o -> Lens m (f -> g) (o -> i)
+label = Lens
 
 -- | Get the getter arrow from a lens.
 
@@ -110,7 +110,7 @@ infix 7 >-
 
 -------------------------------------------------------------------------------
 
--- | Convert a polymorphic lens back to point.
+-- | Convert a polymorphic lens back to label.
 
 unpack :: Lens m (f -> g) (o -> i) -> Label m m g i f o
 unpack Id       = identity
