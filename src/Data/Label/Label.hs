@@ -1,93 +1,100 @@
-{- | The Label data type which generalizes the different lenses.  -}
+{- | The Label data type which generalizes the different lenses. -}
 
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs, FlexibleInstances #-}
 module Data.Label.Label
 (
 -- * The point data type that generalizes lens.
-  Label (Label)
+  Label
 , get
 , modify
 , set
-, identity
-, compose
+
+, (>-)
 
 -- * Working with isomorphisms.
 , Iso (..)
 , inv
+
 )
 where
 
-import Control.Applicative
-import Control.Category
-import Control.Monad
 import Prelude hiding ((.), id)
 
-{-# INLINE get      #-}
-{-# INLINE modify   #-}
-{-# INLINE set      #-}
-{-# INLINE identity #-}
-{-# INLINE compose  #-}
-{-# INLINE inv      #-}
+import Control.Applicative
+import Control.Category
+import Control.Monad hiding (mapM)
+
+{-# INLINE get    #-}
+{-# INLINE modify #-}
+{-# INLINE set    #-}
+{-# INLINE inv    #-}
 
 -------------------------------------------------------------------------------
-
 -- | Abstract Label datatype. The getter and modifier operations work in some
 -- monad. The type of the value pointed to might change, thereby changing the
 -- type of the outer structure.
 
-data Label m n g i f o =
-  Label (f -> m o) ((o -> n i) -> f -> n g)
+data Label m n f o where
+  Ops :: !(f -> m o)
+      -> !((o -> n i) -> f -> n g)
+      -> Label m n (f -> g) (o -> i)
+  Id :: Label m n f f
 
--- | Get the getter from a Label.
+instance Monad m => Category (Label m n) where
+  id                = Id
+  Ops a b . Ops c d = Ops (a <=< c) (d . b)
+  Id      . u       = u
+  u       . Id      = u
+  {-# INLINE id  #-}
+  {-# INLINE (.) #-}
 
-get :: Label m n g i f o -> f -> m o
-get (Label g _) = g
+get :: Monad m => Label m n (f -> g) (o -> i) -> f -> m o
+get (Ops g _) = g
+get Id        = return
 
--- | Get the modifier from a Label.
+modify :: Monad n => Label m n (f -> g) (o -> i) -> (o -> n i) -> f -> n g
+modify (Ops _ m) = m
+modify Id        = id
 
-modify :: Label m n g i f o -> (o -> n i) -> f -> n g
-modify (Label _ m) = m
-
--- | Get the setter from a Label.
-
-set :: Label m n g i f o -> n i -> f -> n g
+set :: Monad n => Label m n (f -> g) (o -> i) -> n i -> f -> n g
 set l = modify l . const
 
--- | Identity Label.
-
-identity :: (Monad n, Monad m) => Label m n f f o o
-identity = Label return id
-
--- | Label composition.
-
-compose :: Monad m
-        => Label m n t i b o
-        -> Label m n g t f b
-        -> Label m n g i f o
-compose (Label f m) (Label g n)
-  = Label (f <=< g) (n . m)
-
 -------------------------------------------------------------------------------
+-- Applicative composition.
 
-instance Monad m => Functor (Label m m f i f) where
+infix 7 >-
+
+(>-) :: Monad m
+     => Label m m (j -> a) (i -> b)
+     -> Label m m (f -> g) (o -> i)
+     -> Open m f g j o
+(>-) (Ops f _) (Ops g m) = Open $ Ops g (\n -> m (f <=< n))
+(>-) (Ops f _) Id        = Open $ Ops return (f <=<)
+(>-) Id        l         = Open l
+
+newtype Open m f g i o = Open (Label m m (f -> g) (o -> i))
+
+instance Monad m => Functor (Open m f f i) where
   fmap f x = pure f <*> x
   {-# INLINE fmap #-}
 
-instance Monad m => Applicative (Label m m f i f) where
-  pure a  = Label (const (return a)) (const return)
-  a <*> b = Label (liftM2 ap (get a) (get b))
-                  (\m f -> modify b (\y -> get a f >>= m . ($ y))
-                       =<< modify a (\x -> get b f >>= m . (x $)) f
-                  )
+instance Monad m => Applicative (Open m f f i) where
+  pure a = Open $ Ops (const (return a)) (const return)
+  Open a <*> Open b = Open $ Ops
+    (liftM2 ap (get a) (get b))
+    (\m f -> modify b (\y -> get a f >>= m . ($ y))
+         =<< modify a (\x -> get b f >>= m . (x $)) f
+    )
   {-# INLINE pure  #-}
   {-# INLINE (<*>) #-}
 
-instance MonadPlus m => Alternative (Label m m f i f) where
-  empty   = Label (const mzero) (const (const mzero))
-  a <|> b = Label (liftM2 mplus (get a) (get b))
-                  (\m -> liftM2 mplus (modify a m) (modify b m))
+instance MonadPlus m => Alternative (Open m f f i) where
+  empty             = Open $ Ops (const mzero) (const (const mzero))
+  Open a <|> Open b = Open $ Ops (liftM2 mplus (get a) (get b))
+                                 (\m -> liftM2 mplus (modify a m) (modify b m))
 
 -------------------------------------------------------------------------------
+-- | Affectful isomorphisms.
 
 infix 8 `Iso`
 
