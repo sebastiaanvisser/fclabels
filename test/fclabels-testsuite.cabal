@@ -9,9 +9,9 @@ Executable suite
 
   Build-Depends:
       base                       < 5
-    , template-haskell >= 2.2 && < 2.9
-    , mtl              >= 1.0 && < 2.2
-    , transformers     >= 0.2 && < 0.4
+    , template-haskell >= 2.2 && < 2.10
+    , mtl              >= 1.0 && < 2.3
+    , transformers     >= 0.2 && < 0.5
     , HUnit            >= 1.2 && < 1.3
 
   Ghc-Options: -O2 -Wall -fhpc -threaded
