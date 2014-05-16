@@ -1,1 +1,10 @@
 language: haskell
+install:
+  - "cabal install . test/ -v3 --dry-run"
+script:
+  - "cabal install . test/ --jobs=1"
+  - "suite"
+notifications:
+  email:
+    on_success: never
+    on_failure: change
