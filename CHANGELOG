@@ -1,5 +1,10 @@
 CHANGELOG
 
+2.0.1.1
+
+ - Allow mtl 2.2.* and transformers 0.4.*
+ - Allow template-haskell 2.9.* in test-suite
+
 2.0.0.5 to 2.0.1
 
  - Widened TH dependencies.
