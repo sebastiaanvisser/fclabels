@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0.1.1
+Version:       2.0.2
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.
@@ -47,9 +47,9 @@ Description:   This package provides first class labels that can act as
                See "Data.Label.Base" and "Data.Label.Monadic" for more
                information.
                .
-               * /Changelog from 2.0.0.5 to 2.0.1/
+               * /Changelog from 2.0.1.1 to 2.0.2/
                .
-               >   - Widened TH dependencies.
+               >   - Add `for` as a synonym for `>-` to avoid a clash with the Arrows extension.
 
 Maintainer:         Sebastiaan Visser <code@fvisser.nl>
 Homepage:           https://github.com/sebastiaanvisser/fclabels

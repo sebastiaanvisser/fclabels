@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0.2
+ - Add `for` as a synonym for `>-` to avoid a clash with the Arrows extension.
+
 2.0.1.1
 
  - Allow mtl 2.2.* and transformers 0.4.*

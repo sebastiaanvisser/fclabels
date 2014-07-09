@@ -18,6 +18,7 @@ module Data.Label.Poly
 , set
 , iso
 , (>-)
+, for
 )
 where
 
@@ -101,6 +102,14 @@ infix 7 >-
 (>-) (Lens (Point f _)) (Lens l) = Point (Point.get l) (Point.modify l . first (arr (f .)))
 (>-) (Lens (Point f _)) Id       = Point id (app . first (arr (f .)))
 (>-) Id                 l        = unpack l
+
+-- | Non-operator version of `>-`, since it clashes with an operator
+-- when the Arrows language extension is used.
+
+infix 7 `for`
+
+for :: Arrow arr => Lens arr (j -> a) (i -> b) -> Lens arr (f -> g) (o -> i) -> Point arr g j f o
+for = (>-)
 
 -------------------------------------------------------------------------------
 

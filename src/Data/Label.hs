@@ -127,6 +127,7 @@ Amsterdam over exactly two years:
 
 , point
 , (>-)
+, for
 
 -- * Working with isomorphisms.
 --
@@ -169,7 +170,7 @@ Amsterdam over exactly two years:
 where
 
 import Data.Label.Point (Iso(..), inv)
-import Data.Label.Poly (point, (>-))
+import Data.Label.Poly (point, (>-), for)
 import Data.Label.Mono (iso, (:->))
 import Data.Label.Derive (mkLabel, mkLabels, getLabel, fclabels)
 
