@@ -1,16 +1,20 @@
 CHANGELOG
 
+2.0.2 to 2.0.2.1
+
+  - Support for GHC 7.10 by widening TH dependencies.
+
 2.0.2
- - Add `for` as a synonym for `>-` to avoid a clash with the Arrows extension.
+  - Add `for` as a synonym for `>-` to avoid a clash with the Arrows extension.
 
 2.0.1.1
 
- - Allow mtl 2.2.* and transformers 0.4.*
- - Allow template-haskell 2.9.* in test-suite
+  - Allow mtl 2.2.* and transformers 0.4.*
+  - Allow template-haskell 2.9.* in test-suite
 
 2.0.0.5 to 2.0.1
 
- - Widened TH dependencies.
+  - Widened TH dependencies.
 
 2.0.0.4 -> 2.0.0.5
   - Add Bug-Reports url again.

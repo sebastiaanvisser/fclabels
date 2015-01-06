@@ -2,6 +2,7 @@
 
 {-# LANGUAGE
     NoMonomorphismRestriction
+  , KindSignatures
   , GADTs
   , TemplateHaskell
   , TypeOperators
@@ -88,6 +89,12 @@ data Direction i a b c d
   deriving (Eq, Ord, Show)
 
 mkLabelsWith defaultNaming True False True True ''Direction
+
+-- Higher kinded type variable, requires KindSignatures.
+
+data Fa f a = Fa { fa :: f a }
+
+mkLabel ''Fa
 
 -------------------------------------------------------------------------------
 

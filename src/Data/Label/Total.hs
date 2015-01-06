@@ -4,7 +4,7 @@ Also useful field labels that are shared between all the constructors of a
 multi constructor datatypes.
 -}
 
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE CPP, TypeOperators #-}
 
 module Data.Label.Total
 ( (:->)
@@ -20,6 +20,9 @@ module Data.Label.Total
 )
 where
 
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding (traverse)
+#endif
 import Control.Monad ((<=<), liftM)
 import Data.Label.Poly (Lens)
 import Data.Label.Point (Total)

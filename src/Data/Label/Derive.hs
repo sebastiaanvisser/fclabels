@@ -44,16 +44,24 @@ import Control.Arrow
 import Control.Category
 import Control.Monad
 import Data.Char (toLower, toUpper)
+#if MIN_VERSION_base(4,8,0)
+import Data.Foldable (toList)
+#else
 import Data.Foldable (Foldable, toList)
+#endif
 import Data.Label.Point
 import Data.List (groupBy, sortBy, delete, nub)
 import Data.Maybe (fromMaybe)
 import Data.Ord
+#if MIN_VERSION_template_haskell(2,10,0)
+import Language.Haskell.TH hiding (classP)
+#else
 import Language.Haskell.TH
+#endif
 import Prelude hiding ((.), id)
 
-import qualified Data.Label.Mono as Mono
-import qualified Data.Label.Poly as Poly
+import qualified Data.Label.Mono     as Mono
+import qualified Data.Label.Poly     as Poly
 
 -------------------------------------------------------------------------------
 -- Publicly exposed functions.
@@ -311,7 +319,11 @@ constructorFields con =
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
     ForallC x y v -> setEqs <$> constructorFields v
+#if MIN_VERSION_template_haskell(2,10,0)
+      where eqs = [ (a, b) | AppT (AppT EqualityT a) b <- y ]
+#else
       where eqs = [ (a, b) | EqualP a b <- y ]
+#endif
             setEqs (Field a b c d) = Field a b c (first upd . second (eqs ++) $ d)
             upd (Context a b c) = Context a b (ForallC x y c)
 
@@ -329,7 +341,11 @@ unifiableCon a b = and (zipWith unifiable (indices a) (indices b))
             NormalC {}    -> []
             RecC    {}    -> []
             InfixC  {}    -> []
+#if MIN_VERSION_template_haskell(2,10,0)
+            ForallC _ x _ -> [ c | AppT (AppT EqualityT _) c <- x ]
+#else
             ForallC _ x _ -> [ c | EqualP _ c <- x ]
+#endif
 
 unifiable :: Type -> Type -> Bool
 unifiable x y =
@@ -521,8 +537,9 @@ typeVariables :: Type -> [Name]
 typeVariables = map nameFromBinder . binderFromType
 
 typeFromBinder :: TyVarBndr -> Type
-typeFromBinder (PlainTV  tv     ) = VarT tv
-typeFromBinder (KindedTV tv kind) = SigT (VarT tv) kind
+typeFromBinder (PlainTV  tv      ) = VarT tv
+typeFromBinder (KindedTV tv StarT) = VarT tv
+typeFromBinder (KindedTV tv kind ) = SigT (VarT tv) kind
 
 binderFromType :: Type -> [TyVarBndr]
 binderFromType = go
@@ -568,8 +585,12 @@ nameFromBinder (PlainTV  n  ) = n
 nameFromBinder (KindedTV n _) = n
 
 mapPred :: (Name -> Name) -> Pred -> Pred
+#if MIN_VERSION_template_haskell(2,10,0)
+mapPred = mapTypeVariables
+#else
 mapPred f (ClassP n ts) = ClassP (f n) (mapTypeVariables f <$> ts)
 mapPred f (EqualP t x ) = EqualP (mapTypeVariables f t) (mapTypeVariables f x)
+#endif
 
 mapTyVarBndr :: (Name -> Name) -> TyVarBndr -> TyVarBndr
 mapTyVarBndr f (PlainTV  n  ) = PlainTV (f n)
@@ -598,4 +619,12 @@ reifyDec name =
 
 fclError :: String -> a
 fclError err = error ("Data.Label.Derive: " ++ err)
+
+#if MIN_VERSION_template_haskell(2,10,0)
+classP :: Name -> [Q Type] -> Q Pred
+classP cla tys
+  = do tysl <- sequence tys
+       return (foldl AppT (ConT cla) tysl)
+#endif
+
 
