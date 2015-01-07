@@ -1,9 +1,9 @@
 language: haskell
 install:
-  - "cabal install . test/ -v3 --dry-run"
+  - "cabal install -v3 --dry-run --enable-tests"
 script:
-  - "cabal install . test/ --jobs=1"
-  - "suite"
+  - "cabal install --enable-tests --jobs=1"
+  - "cabal test"
 notifications:
   email:
     on_success: never

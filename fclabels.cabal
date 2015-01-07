@@ -57,7 +57,7 @@ Bug-Reports:        https://github.com/sebastiaanvisser/fclabels/issues
 License:            BSD3
 License-File:       LICENSE
 Category:           Data, Lenses
-Cabal-Version:      >= 1.6
+Cabal-Version:      >= 1.8
 Build-Type:         Simple
 Extra-Source-Files: CHANGELOG
 
@@ -87,3 +87,15 @@ Source-Repository head
   Type:     git
   Location: git://github.com/sebastiaanvisser/fclabels.git
 
+Test-Suite suite
+  Type:            exitcode-stdio-1.0
+  HS-Source-Dirs:  test
+  Main-Is:         TestSuite.hs
+  Ghc-Options: -Wall -fhpc -threaded
+  Build-Depends:
+      base                       < 5
+    , fclabels
+    , template-haskell >= 2.2 && < 2.11
+    , mtl              >= 1.0 && < 2.3
+    , transformers     >= 0.2 && < 0.5
+    , HUnit            >= 1.2 && < 1.3
