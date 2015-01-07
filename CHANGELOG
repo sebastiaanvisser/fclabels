@@ -1,5 +1,9 @@
 CHANGELOG
 
+2.0.2.1 to 2.0.2.2
+
+  - Restored support for GHC 7.4.
+
 2.0.2 to 2.0.2.1
 
   - Support for GHC 7.10 by widening TH dependencies.
