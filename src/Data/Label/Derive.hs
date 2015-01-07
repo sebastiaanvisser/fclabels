@@ -538,7 +538,11 @@ typeVariables = map nameFromBinder . binderFromType
 
 typeFromBinder :: TyVarBndr -> Type
 typeFromBinder (PlainTV  tv      ) = VarT tv
+#if MIN_VERSION_template_haskell(2,8,0)
 typeFromBinder (KindedTV tv StarT) = VarT tv
+#else
+typeFromBinder (KindedTV tv StarK) = VarT tv
+#endif
 typeFromBinder (KindedTV tv kind ) = SigT (VarT tv) kind
 
 binderFromType :: Type -> [TyVarBndr]
@@ -626,5 +630,3 @@ classP cla tys
   = do tysl <- sequence tys
        return (foldl AppT (ConT cla) tysl)
 #endif
-
-
