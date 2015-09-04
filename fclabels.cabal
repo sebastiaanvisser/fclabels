@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0.2.2
+Version:       2.0.2.3
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.

@@ -1,5 +1,9 @@
 CHANGELOG
 
+2.0.2.2 to 2.0.2.3
+
+  - Allow HUNit 1.3.*
+
 2.0.2.1 to 2.0.2.2
 
   - Restored support for GHC 7.4.
@@ -217,4 +221,3 @@ CHANGELOG
   - Minor documentaion update.
   - Exported Point internals.
   - Renamed Lens to Bijection, which is more correct.
-
