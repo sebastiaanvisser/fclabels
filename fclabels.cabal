@@ -98,4 +98,4 @@ Test-Suite suite
     , template-haskell >= 2.2 && < 2.11
     , mtl              >= 1.0 && < 2.3
     , transformers     >= 0.2 && < 0.5
-    , HUnit            >= 1.2 && < 1.3
+    , HUnit            >= 1.2 && < 1.4
