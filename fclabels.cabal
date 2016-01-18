@@ -59,7 +59,9 @@ License-File:       LICENSE
 Category:           Data, Lenses
 Cabal-Version:      >= 1.8
 Build-Type:         Simple
-Extra-Source-Files: CHANGELOG
+Extra-Source-Files:
+  README.md
+  CHANGELOG
 
 Library
   HS-Source-Dirs: src
