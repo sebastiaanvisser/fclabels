@@ -80,7 +80,7 @@ Library
 
   GHC-Options: -Wall
   Build-Depends:
-      base                       < 5
+      base             >= 4.6 && < 4.8
     , template-haskell >= 2.2 && < 2.11
     , mtl              >= 1.0 && < 2.3
     , transformers     >= 0.2 && < 0.6
