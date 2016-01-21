@@ -202,8 +202,13 @@ fclabels decls =
   delabelize :: Dec -> Dec
   delabelize dec =
     case dec of
+#if MIN_VERSION_template_haskell(2,11,0)
+      DataD    ctx nm vars mk cs ns -> DataD    ctx nm vars mk (con <$> cs) ns
+      NewtypeD ctx nm vars mk c  ns -> NewtypeD ctx nm vars mk (con c)      ns
+#else
       DataD    ctx nm vars cs ns -> DataD    ctx nm vars (con <$> cs) ns
       NewtypeD ctx nm vars c  ns -> NewtypeD ctx nm vars (con c)      ns
+#endif
       rest                       -> rest
     where con (RecC n vst) = NormalC n (map (\(_, s, t) -> (s, t)) vst)
           con c            = c
@@ -272,8 +277,13 @@ generateLabels mk concrete failing dec =
     -- constructors and the type variables.
     let (name, cons, vars) =
           case dec of
+#if MIN_VERSION_template_haskell(2,11,0)
+            DataD    _ n vs _ cs _ -> (n, cs,  vs)
+            NewtypeD _ n vs _ c  _ -> (n, [c], vs)
+#else
             DataD    _ n vs cs _ -> (n, cs,  vs)
             NewtypeD _ n vs c  _ -> (n, [c], vs)
+#endif
             _ -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
