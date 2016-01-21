@@ -337,6 +337,19 @@ constructorFields con =
             setEqs (Field a b c d) = Field a b c (first upd . second (eqs ++) $ d)
             upd (Context a b c) = Context a b (ForallC x y c)
 
+#if MIN_VERSION_template_haskell(2,11,0)
+    RecGadtC cs fs _ty -> concatMap (\c -> one c <$> zip [0..] fs) cs
+      where one c (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con, [])
+              where fsTys = map (typeVariables . trd) (delete f fs)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
+                    trd (_, _, x) = x
+
+    GadtC cs fs _ty ->  concatMap (\c -> one c <$> zip [0..] fs) cs
+      where one c (i, f@(_, ty)) = Field Nothing mono ty (Context i c con, [])
+              where fsTys = map (typeVariables . snd) (delete f fs)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
+#endif
+
 prune :: [Context] -> [Con] -> [Con]
 prune contexts allCons =
   case contexts of
@@ -355,6 +368,10 @@ unifiableCon a b = and (zipWith unifiable (indices a) (indices b))
             ForallC _ x _ -> [ c | AppT (AppT EqualityT _) c <- x ]
 #else
             ForallC _ x _ -> [ c | EqualP _ c <- x ]
+#endif
+#if MIN_VERSION_template_haskell(2,11,0)
+            RecGadtC {}   -> []
+            GadtC    {}   -> []
 #endif
 
 unifiable :: Type -> Type -> Bool
@@ -463,6 +480,10 @@ getter failing total (Field mn _ _ (cons, _)) =
       RecC    c fs  -> let s = take (length fs) in (conP c (s pats), var)
       InfixC  _ c _ -> (infixP (pats !! 0) c (pats !! 1), var)
       ForallC _ _ c -> case1 i c
+#if MIN_VERSION_template_haskell(2,11,0)
+      RecGadtC cs fs _ty   -> error "getter.RecGadC to be completed"
+      GadtC    cs fs _ty   -> error "getter.RecGadC to be completed"
+#endif
     where fresh = mkName <$> delete "f" freshNames
           pats1 = varP <$> fresh
           pats  = replicate i wildP ++ [pats1 !! i] ++ repeat wildP
@@ -488,6 +509,10 @@ setter failing total (Field mn _ _ (cons, _)) =
                        , infixE (Just (vars !! 0)) (conE c) (Just (vars !! 1))
                        )
       ForallC _ _ c -> case1 i c
+#if MIN_VERSION_template_haskell(2,11,0)
+      RecGadtC cs fs _ty   -> error "setter.RecGadC to be completed"
+      GadtC    cs fs _ty   -> error "setter.RecGadC to be completed"
+#endif
     where fresh     = mkName <$> delete "f" (delete "v" freshNames)
           pats1     = varP <$> fresh
           pats      = take i pats1 ++ [wildP] ++ drop (i + 1) pats1
