@@ -107,5 +107,5 @@ Test-Suite suite
     , fclabels
     , template-haskell >= 2.2 && < 2.11
     , mtl              >= 1.0 && < 2.3
-    , transformers     >= 0.2 && < 0.5
+    , transformers     >= 0.2 && < 0.6
     , HUnit            >= 1.2 && < 1.4

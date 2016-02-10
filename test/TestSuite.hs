@@ -7,13 +7,23 @@
   , TemplateHaskell
   , TypeOperators
   , RankNTypes
-  , FlexibleContexts #-}
+  , FlexibleContexts
+  , CPP #-}
+
+-- Needed for the Either String orphan instances.
+#if MIN_VERSION_transformers(0,5,0) && MIN_VERSION_base(4,9,0)
+{-# OPTIONS_GHC -Wno-orphans -Wno-warnings-deprecations #-}
+#endif
 
 module Main where
 
 import Control.Arrow
 import Control.Applicative
 import Control.Category
+#if MIN_VERSION_transformers(0,5,0) && MIN_VERSION_base(4,9,0)
+import Control.Monad (MonadPlus (..))
+import Control.Monad.Trans.Error (Error (noMsg))
+#endif
 import Prelude hiding ((.), id)
 import Test.HUnit
 import Data.Label
@@ -118,6 +128,28 @@ _Gg :: (ArrowApply cat                                ) => Poly.Lens cat (Gadt [
 _Gh :: (ArrowApply cat                                ) => Poly.Lens cat (Gadt (a, a, a) -> Gadt (b, b, b)) ([a] -> [b])
 
 _Ga = lGa; _Gb = lGb; _Gc = lGc; _Gd = lGd; _Ge = lGe; _Gf = lGf; _Gg = lGg; _Gh = lGh;
+
+-------------------------------------------------------------------------------
+
+-- These instance are needed for the `Failing.Lens String` instance,
+-- since that needs a `MonadZero` constraint on `Kleisli (Either String)`,
+-- which in turn needs a `MonadPlus (Either String)` constraint.
+-- These instances used to exist in transformers but were removed in
+-- 0.5.0.0 accidentally, and added in 0.5.2.0. We can probably remove
+-- this ifdef after GHC 8 rc3 is released, which will include
+-- transformers-0.5.2.0.
+
+#if MIN_VERSION_transformers(0,5,0) && !MIN_VERSION_transformers(0,5,2) && MIN_VERSION_base(4,9,0)
+instance (Error e) => Alternative (Either e) where
+    empty        = Left noMsg
+    Left _ <|> n = n
+    m      <|> _ = m
+
+instance Error e => MonadPlus (Either e) where
+    mzero            = Left noMsg
+    Left _ `mplus` n = n
+    m      `mplus` _ = m
+#endif
 
 -------------------------------------------------------------------------------
 
