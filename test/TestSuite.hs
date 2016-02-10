@@ -129,6 +129,16 @@ _Gh :: (ArrowApply cat                                ) => Poly.Lens cat (Gadt (
 
 _Ga = lGa; _Gb = lGb; _Gc = lGc; _Gd = lGd; _Ge = lGe; _Gf = lGf; _Gg = lGg; _Gh = lGh;
 
+data Gadt2 a b where
+  C7, C8 :: { gi :: b, gj :: a } -> Gadt2 a b
+
+mkLabel ''Gadt2
+
+_Gi :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Poly.Lens cat (Gadt2 a b -> Gadt2 a c) (b -> c)
+_Gj :: (ArrowApply cat, ArrowChoice cat, ArrowZero cat) => Poly.Lens cat (Gadt2 a b -> Gadt2 c b) (a -> c)
+
+_Gi = lGi; _Gj = lGj;
+
 -------------------------------------------------------------------------------
 
 -- These instance are needed for the `Failing.Lens String` instance,

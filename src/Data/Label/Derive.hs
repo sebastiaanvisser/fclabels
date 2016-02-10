@@ -202,10 +202,18 @@ fclabels decls =
   delabelize :: Dec -> Dec
   delabelize dec =
     case dec of
+#if MIN_VERSION_template_haskell(2,11,0)
+      DataD    ctx nm vars mk cs ns -> DataD    ctx nm vars mk (con <$> cs) ns
+      NewtypeD ctx nm vars mk c  ns -> NewtypeD ctx nm vars mk (con c)      ns
+#else
       DataD    ctx nm vars cs ns -> DataD    ctx nm vars (con <$> cs) ns
       NewtypeD ctx nm vars c  ns -> NewtypeD ctx nm vars (con c)      ns
+#endif
       rest                       -> rest
     where con (RecC n vst) = NormalC n (map (\(_, s, t) -> (s, t)) vst)
+#if MIN_VERSION_template_haskell(2,11,0)
+          con (RecGadtC ns vst ty) = GadtC ns (map (\(_, s, t) -> (s, t)) vst) ty
+#endif
           con c            = c
 
 -------------------------------------------------------------------------------
@@ -272,17 +280,22 @@ generateLabels mk concrete failing dec =
     -- constructors and the type variables.
     let (name, cons, vars) =
           case dec of
+#if MIN_VERSION_template_haskell(2,11,0)
+            DataD    _ n vs _ cs _ -> (n, cs,  vs)
+            NewtypeD _ n vs _ c  _ -> (n, [c], vs)
+#else
             DataD    _ n vs cs _ -> (n, cs,  vs)
             NewtypeD _ n vs c  _ -> (n, [c], vs)
+#endif
             _ -> fclError "Can only derive labels for datatypes and newtypes."
 
         -- We are only interested in lenses of record constructors.
-        fields = groupFields mk cons
+        fields = groupFields mk vars cons
 
     forM fields $ generateLabel failing concrete name vars cons
 
-groupFields :: (String -> String) -> [Con] -> [Field ([Context], Subst)]
-groupFields mk
+groupFields :: (String -> String) -> [TyVarBndr] -> [Con] -> [Field ([Context], Subst)]
+groupFields mk vs
   = map (rename mk)
   . concatMap (\fs -> let vals  = concat (toList <$> fs)
                           cons  = fst <$> vals
@@ -291,14 +304,14 @@ groupFields mk
               )
   . groupBy eq
   . sortBy (comparing name)
-  . concatMap constructorFields
+  . concatMap (constructorFields vs)
   where name (Field n _ _ _) = n
         eq f g = False `fromMaybe` ((==) <$> name f <*> name g)
         rename f (Field n a b c) =
           Field (mkName . f . nameBase <$> n) a b c
 
-constructorFields :: Con -> [Field (Context, Subst)]
-constructorFields con =
+constructorFields :: [TyVarBndr] -> Con -> [Field (Context, Subst)]
+constructorFields vs con =
 
   case con of
 
@@ -311,14 +324,13 @@ constructorFields con =
       where one (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con, [])
               where fsTys = map (typeVariables . trd) (delete f fs)
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
-                    trd (_, _, x) = x
 
     InfixC a c b -> one <$> [(0, a), (1, b)]
       where one (i, (_, ty)) = Field Nothing mono ty (Context i c con, [])
               where fsTys = map (typeVariables . snd) [a, b]
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
-    ForallC x y v -> setEqs <$> constructorFields v
+    ForallC x y v -> setEqs <$> constructorFields vs v
 #if MIN_VERSION_template_haskell(2,10,0)
       where eqs = [ (a, b) | AppT (AppT EqualityT a) b <- y ]
 #else
@@ -326,6 +338,23 @@ constructorFields con =
 #endif
             setEqs (Field a b c d) = Field a b c (first upd . second (eqs ++) $ d)
             upd (Context a b c) = Context a b (ForallC x y c)
+#if MIN_VERSION_template_haskell(2,11,0)
+    GadtC cs fs resTy -> concatMap (\c -> one c <$> zip [0..] fs) cs
+      where one c (i, f@(_, ty)) = Field Nothing mono ty (Context i c con, mkSubst vs resTy)
+              where fsTys = map (typeVariables . snd) (delete f fs)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
+    RecGadtC cs fs resTy -> concatMap (\c -> one c <$> zip [0..] fs) cs
+      where one c (i, f@(n, _, ty)) = Field (Just n) mono ty (Context i c con, mkSubst vs resTy)
+              where fsTys = map (typeVariables . trd) (delete f fs)
+                    mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
+
+mkSubst :: [TyVarBndr] -> Type -> Subst
+mkSubst vars t = go (reverse vars) t
+  where
+    go [] _ = []
+    go (v:vs) (AppT t1 t2) = (typeFromBinder v, t2) : go vs t1
+    go _  _ = fclError "Non-AppT with type variables in mkSubst. Please report this as a bug for fclabels."
+#endif
 
 prune :: [Context] -> [Con] -> [Con]
 prune contexts allCons =
@@ -338,13 +367,23 @@ unifiableCon :: Con -> Con -> Bool
 unifiableCon a b = and (zipWith unifiable (indices a) (indices b))
   where indices con =
           case con of
-            NormalC {}    -> []
-            RecC    {}    -> []
-            InfixC  {}    -> []
-#if MIN_VERSION_template_haskell(2,10,0)
-            ForallC _ x _ -> [ c | AppT (AppT EqualityT _) c <- x ]
+            NormalC {}      -> []
+            RecC    {}      -> []
+            InfixC  {}      -> []
+#if MIN_VERSION_template_haskell(2,11,0)
+            ForallC _ _ ty  -> indices ty
+#elif MIN_VERSION_template_haskell(2,10,0)
+            ForallC _ x _   -> [ c | AppT (AppT EqualityT _) c <- x ]
 #else
-            ForallC _ x _ -> [ c | EqualP _ c <- x ]
+            ForallC _ x _   -> [ c | EqualP _ c <- x ]
+#endif
+#if MIN_VERSION_template_haskell(2,11,0)
+            GadtC _ _ ty    -> conIndices ty
+            RecGadtC _ _ ty -> conIndices ty
+         where
+           conIndices (AppT (ConT _) ty) = [ty]
+           conIndices (AppT rest     ty) = conIndices rest ++ [ty]
+           conIndices _                  = fclError "Non-AppT in conIndices. Please report this as a bug for fclabels."
 #endif
 
 unifiable :: Type -> Type -> Bool
@@ -442,21 +481,26 @@ getter failing total (Field mn _ _ (cons, _)) =
          nm = maybe (tupE []) (litE . StringL . nameBase) (guard failing >> mn)
          wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
-         mkCase (Context i _ c) = match pat (normalB (rght var)) []
-           where (pat, var) = case1 i c
+         mkCase (Context i _ c) = map (\(pat, var) -> match pat (normalB (rght var)) []) (case1 i c)
      lamE [varP pt]
-          (caseE (varE pt) (map mkCase cons ++ wild))
+          (caseE (varE pt) (concatMap mkCase cons ++ wild))
   where
+  case1 :: Int -> Con -> [(Q Pat, Q Exp)]
   case1 i con =
     case con of
-      NormalC c fs  -> let s = take (length fs) in (conP c (s pats), var)
-      RecC    c fs  -> let s = take (length fs) in (conP c (s pats), var)
-      InfixC  _ c _ -> (infixP (pats !! 0) c (pats !! 1), var)
-      ForallC _ _ c -> case1 i c
+      NormalC  c  fs   -> [one fs c]
+      RecC     c  fs   -> [one fs c]
+      InfixC   _  c  _ -> [(infixP (pats !! 0) c (pats !! 1), var)]
+      ForallC  _  _  c -> case1 i c
+#if MIN_VERSION_template_haskell(2,11,0)
+      GadtC    cs fs _ -> map (one fs) cs
+      RecGadtC cs fs _ -> map (one fs) cs
+#endif
     where fresh = mkName <$> delete "f" freshNames
           pats1 = varP <$> fresh
           pats  = replicate i wildP ++ [pats1 !! i] ++ repeat wildP
           var   = varE (fresh !! i)
+          one fs c = let s = take (length fs) in (conP c (s pats), var)
 
 setter :: Bool -> Bool -> Field ([Context], Subst) -> Q Exp
 setter failing total (Field mn _ _ (cons, _)) =
@@ -465,19 +509,23 @@ setter failing total (Field mn _ _ (cons, _)) =
          nm = maybe (tupE []) (litE . StringL . nameBase) (guard failing >> mn)
          wild = if total then [] else [match wildP (normalB [| Left $(nm) |]) []]
          rght = if total then id else appE [| Right |]
-         mkCase (Context i _ c) = match pat (normalB (rght var)) []
-           where (pat, var) = case1 i c
+         mkCase (Context i _ c) = map (\(pat, var) -> match pat (normalB (rght var)) []) (case1 i c)
      lamE [tupP [varP md, varP pt]]
-          (caseE (varE pt) (map mkCase cons ++ wild))
+          (caseE (varE pt) (concatMap mkCase cons ++ wild))
   where
   case1 i con =
     case con of
-      NormalC c fs  -> let s = take (length fs) in (conP c (s pats), apps (conE c) (s vars))
-      RecC    c fs  -> let s = take (length fs) in (conP c (s pats), apps (conE c) (s vars))
-      InfixC  _ c _ -> ( infixP (pats !! 0) c (pats !! 1)
-                       , infixE (Just (vars !! 0)) (conE c) (Just (vars !! 1))
-                       )
-      ForallC _ _ c -> case1 i c
+      NormalC  c  fs   -> [one fs c]
+      RecC     c  fs   -> [one fs c]
+      InfixC   _  c  _ -> [( infixP (pats !! 0) c (pats !! 1)
+                          , infixE (Just (vars !! 0)) (conE c) (Just (vars !! 1))
+                          )
+                         ]
+      ForallC  _  _  c -> case1 i c
+#if MIN_VERSION_template_haskell(2,11,0)
+      GadtC    cs fs _ -> map (one fs) cs
+      RecGadtC cs fs _ -> map (one fs) cs
+#endif
     where fresh     = mkName <$> delete "f" (delete "v" freshNames)
           pats1     = varP <$> fresh
           pats      = take i pats1 ++ [wildP] ++ drop (i + 1) pats1
@@ -485,6 +533,7 @@ setter failing total (Field mn _ _ (cons, _)) =
           v         = varE (mkName "v")
           vars      = take i vars1 ++ [v] ++ drop (i + 1) vars1
           apps f as = foldl appE f as
+          one fs c  = let s = take (length fs) in (conP c (s pats), apps (conE c) (s vars))
 
 freshNames :: [String]
 freshNames = map pure ['a'..'z'] ++ map (('a':) . show) [0 :: Integer ..]
@@ -630,3 +679,6 @@ classP cla tys
   = do tysl <- sequence tys
        return (foldl AppT (ConT cla) tysl)
 #endif
+
+trd :: (a, b, c) -> c
+trd (_, _, x) = x
