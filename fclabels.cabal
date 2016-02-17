@@ -101,7 +101,7 @@ Test-Suite suite
   Type:            exitcode-stdio-1.0
   HS-Source-Dirs:  test
   Main-Is:         TestSuite.hs
-  Ghc-Options: -Wall -fhpc -threaded
+  Ghc-Options: -Wall -threaded
   Build-Depends:
       base                       < 5
     , fclabels
