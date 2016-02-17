@@ -8,6 +8,7 @@
   , TypeOperators
   , RankNTypes
   , FlexibleContexts
+  , StandaloneDeriving
   , CPP #-}
 
 -- Needed for the Either String orphan instances.
@@ -52,8 +53,11 @@ mkLabel ''NoRecord
 
 fclabels [d|
   newtype Newtype a = Newtype { unNewtype :: [a] }
-    deriving (Eq, Ord, Show)
   |]
+
+deriving instance Eq   a => Eq   (Newtype a)
+deriving instance Ord  a => Ord  (Newtype a)
+deriving instance Show a => Show (Newtype a)
 
 newtypeL :: ArrowApply cat => Poly.Lens cat (Newtype a -> Newtype b) ([a] -> [b])
 newtypeL = unNewtype
@@ -217,9 +221,11 @@ fclabels [d|
     | Con2 { field1 :: Bool
            , field3 :: [a]
            }
-    deriving (Eq, Show)
 
   |]
+
+deriving instance Eq   a => Eq   (View2 a)
+deriving instance Show a => Show (View2 a)
 
 view :: View2 a :~> Either (Bool, (a, a)) (Bool, [a])
 view = point $
@@ -327,7 +333,7 @@ totalMono = TestList
   [ eq "get fA" (Total.get fA record0) 0
   , eq "set fA" (Total.set fA 1 record0) record1
   , eq "mod fA" (Total.modify fA (+ 1) record0) record1
-  , eq "get manual_fA" (Total.get manual_fA record0) 0 
+  , eq "get manual_fA" (Total.get manual_fA record0) 0
   , eq "set manual_fA" (Total.set manual_fA 1 record0) record1
   , eq "mod manual_fA" (Total.modify manual_fA (+ 1) record0) record1
   , eq "get mB" (Total.get mB first0) 0
@@ -565,4 +571,3 @@ base = TestList
 
 equality :: (Eq a, Show a) => String -> a -> a -> Test
 equality d a b = TestCase (assertEqual d b a)
-
