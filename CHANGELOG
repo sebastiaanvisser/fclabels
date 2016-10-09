@@ -1,5 +1,10 @@
 CHANGELOG
 
+2.0.3.1
+
+  - Allow HUnit 1.4.*.
+  - Fix test suite on GHC 7.4.
+
 2.0.3
 
   - Support GHC 8.
