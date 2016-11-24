@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0.3.1
+Version:       2.0.3.2
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.
@@ -47,10 +47,9 @@ Description:   This package provides first class labels that can act as
                See "Data.Label.Base" and "Data.Label.Monadic" for more
                information.
                .
-               * /Changelog from 2.0.2.4 to 2.0.3/
+               * /Changelog from 2.0.3.1 to 2.0.3.2/
                .
-               >   - Allow HUnit 1.4.*.
-               >   - Fix test suite on GHC 7.4.
+               >   - Allow HUnit 1.5.*.
 
 Maintainer:         Sebastiaan Visser <code@fvisser.nl>
 Homepage:           https://github.com/sebastiaanvisser/fclabels
@@ -107,7 +106,7 @@ Test-Suite suite
     , template-haskell >= 2.2 && < 2.12
     , mtl              >= 1.0 && < 2.3
     , transformers     >= 0.2 && < 0.6
-    , HUnit            >= 1.2 && < 1.5
+    , HUnit            >= 1.2 && < 1.6
 
 Benchmark benchmark
   Type:            exitcode-stdio-1.0
