@@ -106,7 +106,7 @@ Test-Suite suite
     , template-haskell >= 2.2 && < 2.12
     , mtl              >= 1.0 && < 2.3
     , transformers     >= 0.2 && < 0.6
-    , HUnit            >= 1.2 && < 1.6
+    , HUnit            >= 1.2 && < 1.7
 
 Benchmark benchmark
   Type:            exitcode-stdio-1.0
