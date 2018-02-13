@@ -1,6 +1,11 @@
 CHANGELOG
 
+2.0.3.3
+
+  - Allow GHC 8.4 pre-releases.
+
 2.0.3.2
+
   - Allow HUnit 1.5.*
 
 2.0.3.1
