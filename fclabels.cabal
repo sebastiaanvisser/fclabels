@@ -116,4 +116,4 @@ Benchmark benchmark
   Build-Depends:
       base      < 5
     , fclabels
-    , criterion < 1.3
+    , criterion < 1.5
