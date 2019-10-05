@@ -86,8 +86,8 @@ Library
 
   GHC-Options: -Wall
   Build-Depends:
-      base             >= 4.5 && < 4.13
-    , template-haskell >= 2.2 && < 2.15
+      base             >= 4.5 && < 4.14
+    , template-haskell >= 2.2 && < 2.16
     , mtl              >= 1.0 && < 2.3
     , transformers     >= 0.2 && < 0.6
 
@@ -103,9 +103,9 @@ Test-Suite suite
   Build-Depends:
       base                       < 5
     , fclabels
-    , template-haskell >= 2.2 && < 2.15
-    , mtl              >= 1.0 && < 2.3
-    , transformers     >= 0.2 && < 0.6
+    , template-haskell
+    , mtl
+    , transformers
     , HUnit            >= 1.2 && < 1.7
 
 Benchmark benchmark

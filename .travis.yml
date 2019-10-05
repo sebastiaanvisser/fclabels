@@ -27,22 +27,24 @@ before_cache:
 matrix:
   include:
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-    - compiler: "ghc-8.6.1"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.6.1], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.8.1"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-8.8.1], sources: [hvr-ghc]}}
     - compiler: "ghc-7.4.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.4.2], sources: [hvr-ghc]}}
-    - compiler: "ghc-8.4.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.4.3], sources: [hvr-ghc]}}
-    - compiler: "ghc-8.2.1"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.2.1], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-7.4.2], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.6.5"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-8.6.5], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.4.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-8.4.4], sources: [hvr-ghc]}}
+    - compiler: "ghc-8.2.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-8.2.2], sources: [hvr-ghc]}}
     - compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.0.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-8.0.2], sources: [hvr-ghc]}}
     - compiler: "ghc-7.10.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.10.3], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-7.10.3], sources: [hvr-ghc]}}
     - compiler: "ghc-7.8.4"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.8.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-7.8.4], sources: [hvr-ghc]}}
     - compiler: "ghc-7.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-7.6.3], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-3.0,ghc-7.6.3], sources: [hvr-ghc]}}
 
 before_install:
  - HC=${CC}
@@ -67,9 +69,9 @@ install:
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
  - if [ -f configure.ac ]; then autoreconf -i; fi
- - rm -rf dist/
+ - rm -rf dist-newstyle
  - cabal sdist # test that a source-distribution can be generated
- - cd dist/
+ - cd dist-newstyle/sdist
  - SRCTAR=(${PKGNAME}-*.tar.gz)
  - SRC_BASENAME="${SRCTAR/%.tar.gz}"
  - tar -xvf "./$SRC_BASENAME.tar.gz"
