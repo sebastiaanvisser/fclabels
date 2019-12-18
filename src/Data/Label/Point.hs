@@ -2,8 +2,6 @@
 basis for vertical composition using the `Applicative` type class.
 -}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
 {-# LANGUAGE
     TypeOperators
   , Arrows
@@ -38,6 +36,7 @@ where
 import Control.Arrow
 import Control.Applicative
 import Control.Category
+import Data.Orphans ()
 import Prelude hiding ((.), id, const, curry, uncurry)
 
 {-# INLINE get      #-}
@@ -153,25 +152,6 @@ instance ArrowFail e Partial where
 instance ArrowFail e (Failing e) where
   failArrow = Kleisli Left
   {-# INLINE failArrow #-}
-
--------------------------------------------------------------------------------
-
--- | Missing Functor instance for Kleisli.
-
-instance Functor f => Functor (Kleisli f i) where
-  fmap f (Kleisli m) = Kleisli (fmap f . m)
-
--- | Missing Applicative instance for Kleisli.
-
-instance Applicative f => Applicative (Kleisli f i) where
-  pure a = Kleisli (const (pure a))
-  Kleisli a <*> Kleisli b = Kleisli ((<*>) <$> a <*> b)
-
--- | Missing Alternative instance for Kleisli.
-
-instance Alternative f => Alternative (Kleisli f i) where
-  empty = Kleisli (const empty)
-  Kleisli a <|> Kleisli b = Kleisli ((<|>) <$> a <*> b)
 
 -------------------------------------------------------------------------------
 -- Common operations experessed in a generalized form.
