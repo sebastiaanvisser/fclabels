@@ -1,9 +1,8 @@
 CHANGELOG
 
-next
-
+2.0.4
   - Import Functor, Applicative, and Monad instances for Kleisli from the
-    base-orphans package.
+    base-orphans package for future GHC 8.10 support.
 
 2.0.3.3
 
