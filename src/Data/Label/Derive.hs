@@ -128,10 +128,12 @@ getLabelWith sigs concrete failing name =
          types   =        map (\(LabelExpr _ _ t _) -> t) labels
          context = head $ map (\(LabelExpr _ c _ _) -> c) labels
          vars    = head $ map (\(LabelExpr v _ _ _) -> v) labels
-     if sigs
-       then tupE bodies `sigE`
-              forallT vars context (foldl appT (tupleT (length bodies)) types)
-       else tupE bodies
+     case bodies of
+       [b] -> if sigs then b `sigE` forallT vars context (head types) else b
+       _   -> if sigs
+          then tupE bodies `sigE`
+               forallT vars context (foldl appT (tupleT (length bodies)) types)
+          else tupE bodies
 
 -- | Low level standalone label derivation function.
 
