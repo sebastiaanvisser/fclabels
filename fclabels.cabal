@@ -57,7 +57,7 @@ Bug-Reports:        https://github.com/sebastiaanvisser/fclabels/issues
 License:            BSD3
 License-File:       LICENSE
 Category:           Data, Lenses
-Cabal-Version:      >= 1.8
+Cabal-Version:      >= 1.10
 Build-Type:         Simple
 Tested-With:
   GHC==7.4.2,
@@ -92,6 +92,8 @@ Library
     , mtl              >= 1.0   && < 2.3
     , transformers     >= 0.2   && < 0.6
 
+  Default-Language: Haskell2010
+
 Source-Repository head
   Type:     git
   Location: git://github.com/sebastiaanvisser/fclabels.git
@@ -108,6 +110,7 @@ Test-Suite suite
     , mtl
     , transformers
     , HUnit            >= 1.2 && < 1.7
+  Default-Language: Haskell2010
 
 Benchmark benchmark
   Type:            exitcode-stdio-1.0
@@ -118,3 +121,4 @@ Benchmark benchmark
       base      < 5
     , fclabels
     , criterion < 1.6
+  Default-Language: Haskell2010
