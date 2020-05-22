@@ -1,5 +1,5 @@
 Name:          fclabels
-Version:       2.0.4
+Version:       2.0.5
 Author:        Sebastiaan Visser, Erik Hesselink, Chris Eidhof, Sjoerd Visscher
                with lots of help and feedback from others.
 Synopsis:      First class accessor labels implemented as lenses.
@@ -47,11 +47,9 @@ Description:   This package provides first class labels that can act as
                See "Data.Label.Base" and "Data.Label.Monadic" for more
                information.
                .
-               * /Changelog from 2.0.3.2 to 2.0.4/
+               * /Changelog from 2.0.4 to 2.0.5/
                .
-               >   - Import Functor, Applicative, and Monad instances for
-               >     Kleisli from the base-orphans package for future GHC 8.10
-               >     support.
+               >   - Support for GHC 8.10. Thanks to Potato Hatsue.
 
 Maintainer:         Sebastiaan Visser <code@fvisser.nl>
 Homepage:           https://github.com/sebastiaanvisser/fclabels
