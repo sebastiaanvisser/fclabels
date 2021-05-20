@@ -53,15 +53,28 @@ import Data.Label.Point
 import Data.List (groupBy, sortBy, delete, nub)
 import Data.Maybe (fromMaybe)
 import Data.Ord
-#if MIN_VERSION_template_haskell(2,10,0)
+
+#if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH hiding (classP)
+#elif MIN_VERSION_template_haskell(2,10,0)
+import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH hiding (classP, TyVarBndr)
 #else
-import Language.Haskell.TH
+import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH hiding (TyVarBndr)
 #endif
+
 import Prelude hiding ((.), id)
 
 import qualified Data.Label.Mono     as Mono
 import qualified Data.Label.Poly     as Poly
+
+
+#if MIN_VERSION_template_haskell(2,17,0)
+#else
+data Specificity = SpecifiedSpec -- old versions don't have this
+type TyVarBndr a = TH.TyVarBndr
+#endif
 
 -------------------------------------------------------------------------------
 -- Publicly exposed functions.
@@ -225,12 +238,12 @@ data Label
  = LabelDecl
      Name              -- The label name.
      DecQ              -- An INLINE pragma for the label.
-     [TyVarBndr]       -- The type variables requiring forall.
+     [TyVarBndr Specificity] -- The type variables requiring forall.
      CxtQ              -- The context.
      TypeQ             -- The type.
      ExpQ              -- The label body.
  | LabelExpr
-     [TyVarBndr]       -- The type variables requiring forall.
+     [TyVarBndr Specificity] -- The type variables requiring forall.
      CxtQ              -- The context.
      TypeQ             -- The type.
      ExpQ              -- The label body.
@@ -254,7 +267,7 @@ data Typing = Typing
   Bool                 -- Monomorphic type or polymorphic.
   TypeQ                -- The lens input type.
   TypeQ                -- The lens output type.
-  [TyVarBndr]          -- All used type variables.
+  [TyVarBndr Specificity] -- All used type variables.
 
 -------------------------------------------------------------------------------
 
@@ -296,7 +309,8 @@ generateLabels mk concrete failing dec =
 
     forM fields $ generateLabel failing concrete name vars cons
 
-groupFields :: (String -> String) -> [TyVarBndr] -> [Con] -> [Field ([Context], Subst)]
+groupFields :: (String -> String) -> [TyVarBndr a] -> [Con]
+  -> [Field ([Context], Subst)]
 groupFields mk vs
   = map (rename mk)
   . concatMap (\fs -> let vals  = concat (toList <$> fs)
@@ -312,7 +326,7 @@ groupFields mk vs
         rename f (Field n a b c) =
           Field (mkName . f . nameBase <$> n) a b c
 
-constructorFields :: [TyVarBndr] -> Con -> [Field (Context, Subst)]
+constructorFields :: [TyVarBndr a] -> Con -> [Field (Context, Subst)]
 constructorFields vs con =
 
   case con of
@@ -350,7 +364,7 @@ constructorFields vs con =
               where fsTys = map (typeVariables . trd) (delete f fs)
                     mono  = any (\x -> any (elem x) fsTys) (typeVariables ty)
 
-mkSubst :: [TyVarBndr] -> Type -> Subst
+mkSubst :: [TyVarBndr a] -> Type -> Subst
 mkSubst vars t = go (reverse vars) t
   where
     go [] _ = []
@@ -402,7 +416,7 @@ generateLabel
   :: Bool
   -> Bool
   -> Name
-  -> [TyVarBndr]
+  -> [TyVarBndr ()]
   -> [Con]
   -> Field ([Context], Subst)
   -> Q Label
@@ -542,7 +556,7 @@ freshNames = map pure ['a'..'z'] ++ map (('a':) . show) [0 :: Integer ..]
 
 -------------------------------------------------------------------------------
 
-computeTypes :: Bool -> Type -> Name -> [TyVarBndr] -> Subst -> Q Typing
+computeTypes :: Bool -> Type -> Name -> [TyVarBndr ()] -> Subst -> Q Typing
 computeTypes forcedMono fieldtype datatype dtVars_ subst =
 
   do let fieldVars = typeVariables fieldtype
@@ -572,9 +586,14 @@ computeTypes forcedMono fieldtype datatype dtVars_ subst =
               mono
               (prettyType <$> [t| $tyI -> $(rename <$> tyI) |])
               (prettyType <$> [t| $tyO -> $(rename <$> tyO) |])
-              (nub (pretties ++ map (mapTyVarBndr pretty) (PlainTV . snd <$> subs)))
+              (nub (pretties ++ map (mapTyVarBndr pretty)
+#if MIN_VERSION_template_haskell(2,17,0)
+                (flip PlainTV SpecifiedSpec . snd <$> subs)))
+#else
+                (PlainTV . snd <$> subs)))
+#endif
 
-isMonomorphic :: Type -> [TyVarBndr] -> Bool
+isMonomorphic :: Type -> [TyVarBndr Specificity] -> Bool
 isMonomorphic field vars =
   let fieldVars = typeVariables field
       varNames  = nameFromBinder <$> vars
@@ -587,16 +606,25 @@ isMonomorphic field vars =
 typeVariables :: Type -> [Name]
 typeVariables = map nameFromBinder . binderFromType
 
-typeFromBinder :: TyVarBndr -> Type
-typeFromBinder (PlainTV  tv      ) = VarT tv
-#if MIN_VERSION_template_haskell(2,8,0)
+typeFromBinder :: TyVarBndr a -> Type
+#if MIN_VERSION_template_haskell(2,17,0)
+typeFromBinder (PlainTV  tv      _) = VarT tv
+#else
+typeFromBinder (PlainTV  tv       ) = VarT tv
+#endif
+
+#if MIN_VERSION_template_haskell(2,17,0)
+typeFromBinder (KindedTV tv _ StarT) = VarT tv
+typeFromBinder (KindedTV tv _ kind) = SigT (VarT tv) kind
+#elif MIN_VERSION_template_haskell(2,8,0)
 typeFromBinder (KindedTV tv StarT) = VarT tv
+typeFromBinder (KindedTV tv kind) = SigT (VarT tv) kind
 #else
 typeFromBinder (KindedTV tv StarK) = VarT tv
+typeFromBinder (KindedTV tv kind) = SigT (VarT tv) kind
 #endif
-typeFromBinder (KindedTV tv kind ) = SigT (VarT tv) kind
 
-binderFromType :: Type -> [TyVarBndr]
+binderFromType :: Type -> [TyVarBndr Specificity]
 binderFromType = go
   where
   go ty =
@@ -604,7 +632,11 @@ binderFromType = go
       ForallT ts _ _ -> ts
       AppT a b       -> go a ++ go b
       SigT t _       -> go t
+#if MIN_VERSION_template_haskell(2,17,0)
+      VarT n         -> [PlainTV n SpecifiedSpec]
+#else
       VarT n         -> [PlainTV n]
+#endif
       _              -> []
 
 mapTypeVariables :: (Name -> Name) -> Type -> Type
@@ -635,9 +667,14 @@ substitute env = mapType sub
                   Nothing -> v
                   Just w  -> w
 
-nameFromBinder :: TyVarBndr -> Name
+nameFromBinder :: TyVarBndr Specificity -> Name
+#if MIN_VERSION_template_haskell(2,17,0)
+nameFromBinder (PlainTV  n  _) = n
+nameFromBinder (KindedTV n _ _) = n
+#else
 nameFromBinder (PlainTV  n  ) = n
 nameFromBinder (KindedTV n _) = n
+#endif
 
 mapPred :: (Name -> Name) -> Pred -> Pred
 #if MIN_VERSION_template_haskell(2,10,0)
@@ -647,9 +684,15 @@ mapPred f (ClassP n ts) = ClassP (f n) (mapTypeVariables f <$> ts)
 mapPred f (EqualP t x ) = EqualP (mapTypeVariables f t) (mapTypeVariables f x)
 #endif
 
-mapTyVarBndr :: (Name -> Name) -> TyVarBndr -> TyVarBndr
-mapTyVarBndr f (PlainTV  n  ) = PlainTV (f n)
+mapTyVarBndr :: (Name -> Name) -> TyVarBndr Specificity
+  -> TyVarBndr Specificity
+#if MIN_VERSION_template_haskell(2,17,0)
+mapTyVarBndr f (PlainTV  n flag) = PlainTV (f n) flag
+mapTyVarBndr f (KindedTV n a flag) = KindedTV (f n) a flag
+#else
+mapTyVarBndr f (PlainTV  n) = PlainTV (f n)
 mapTyVarBndr f (KindedTV n a) = KindedTV (f n) a
+#endif
 
 -- Prettify a TH name.
 
