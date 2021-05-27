@@ -1,5 +1,8 @@
 CHANGELOG
 
+2.0.5.1
+  - Support for GHC 9.0. Thanks to Evan Laforge.
+
 2.0.5
   - Support for GHC 8.10. Thanks to Potato Hatsue.
 
