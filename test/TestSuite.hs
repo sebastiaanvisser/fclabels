@@ -8,6 +8,7 @@
   , TypeOperators
   , RankNTypes
   , FlexibleContexts
+  , FlexibleInstances
   , StandaloneDeriving
   , CPP #-}
 
@@ -21,9 +22,12 @@ module Main where
 import Control.Arrow
 import Control.Applicative
 import Control.Category
-#if MIN_VERSION_transformers(0,5,0) && MIN_VERSION_base(4,9,0)
+#if MIN_VERSION_transformers(0,5,0) && MIN_VERSION_base(4,9,0) && !MIN_VERSION_mtl(2,3,0)
 import Control.Monad (MonadPlus (..))
 import Control.Monad.Trans.Error (Error (noMsg))
+#endif
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad(MonadPlus (..))
 #endif
 import Prelude hiding ((.), id)
 import Test.HUnit
@@ -153,7 +157,7 @@ _Gi = lGi; _Gj = lGj;
 -- this ifdef after GHC 8 rc3 is released, which will include
 -- transformers-0.5.2.0.
 
-#if MIN_VERSION_transformers(0,5,0) && !MIN_VERSION_transformers(0,5,2) && MIN_VERSION_base(4,9,0)
+#if MIN_VERSION_transformers(0,5,0) && !MIN_VERSION_transformers(0,5,2) && MIN_VERSION_base(4,9,0) && !MIN_VERSION_mtl(2,3,0)
 instance (Error e) => Alternative (Either e) where
     empty        = Left noMsg
     Left _ <|> n = n
@@ -164,7 +168,16 @@ instance Error e => MonadPlus (Either e) where
     Left _ `mplus` n = n
     m      `mplus` _ = m
 #endif
-
+#if MIN_VERSION_mtl(2,3,0)
+instance Alternative (Either String) where
+    empty        = Left empty
+    Left _ <|> n = n
+    m      <|> _ = m
+instance MonadPlus (Either String) where
+    mzero            = Left mzero
+    Left _ `mplus` n = n
+    m      `mplus` _ = m
+#endif
 -------------------------------------------------------------------------------
 
 embed_fB :: Record :~> Newtype Bool
