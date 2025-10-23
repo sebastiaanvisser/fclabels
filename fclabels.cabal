@@ -86,11 +86,11 @@ Library
 
   GHC-Options: -Wall
   Build-Depends:
-      base             >= 4.5   && < 4.17
-    , base-orphans     >= 0.8.2 && < 0.9
-    , template-haskell >= 2.2   && < 2.19
-    , mtl              >= 1.0   && < 2.3
-    , transformers     >= 0.2   && < 0.6
+      base             >= 4.5   && < 5
+    , base-orphans     >= 0.8.2 && < 0.10
+    , template-haskell >= 2.2   && < 2.24
+    , mtl              >= 1.0   && < 2.4
+    , transformers     >= 0.2   && < 0.7
 
   Default-Language: Haskell2010
 
